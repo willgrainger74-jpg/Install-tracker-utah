@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager — Action Install Tracker</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#666;--faint:#333;--text:#efefef;--green:#10b981;--amber:#f59e0b;--blue:#3b82f6;--purple:#a855f7;}
+        html.light{--bg:#f4f4f4;--s1:#fff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,.08);--wire2:rgba(0,0,0,.14);--muted:#555;--faint:#999;--text:#111;--red3:#fde8e8;}
+        html.light body::after{display:none;}
+        html.light input,html.light select{background:var(--s3);border-color:var(--wire2);color:var(--text);}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:999;}
+        .hidden{display:none!important;}
+        /* PIN */
+        #pinScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+        .pin-box{background:var(--s1);border:1px solid var(--wire);border-top:3px solid var(--red);padding:48px 40px;width:100%;max-width:380px;text-align:center;}
+        .pin-icon{font-size:40px;margin-bottom:16px;}
+        .pin-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:3px;color:var(--text);margin-bottom:4px;}
+        .pin-sub{font-size:12px;color:var(--muted);margin-bottom:24px;font-family:'Oswald',sans-serif;letter-spacing:.1em;text-transform:uppercase;}
+        .pin-input{background:var(--s2);border:1px solid var(--wire2);color:var(--text);padding:14px;font-size:24px;font-family:'Bebas Neue',sans-serif;letter-spacing:8px;text-align:center;width:100%;outline:none;margin-bottom:10px;}
+        .pin-input:focus{border-color:var(--red);}
+        .pin-btn{background:var(--red);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;padding:12px;width:100%;border:none;cursor:pointer;margin-bottom:16px;}
+        .pin-btn:hover{background:var(--red2);}
+        .pin-err{font-size:12px;color:#ef4444;font-family:'Oswald',sans-serif;letter-spacing:.08em;margin-bottom:12px;}
+        .pin-back{font-size:12px;color:var(--muted);text-decoration:none;font-family:'Oswald',sans-serif;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:24px;}
+        .change-pin-section{border-top:1px solid var(--wire);padding-top:20px;margin-top:4px;}
+        .change-pin-lbl{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+        .change-pin-section input{background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:9px 12px;font-size:13px;width:100%;outline:none;margin-bottom:6px;font-family:'Inter',sans-serif;}
+        /* portal */
+        .page{max-width:1280px;margin:0 auto;padding:24px 20px 70px;}
+        .hero{position:relative;padding:0 0 24px;margin-bottom:24px;border-bottom:1px solid var(--wire);}
+        .hero .eyebrow{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.25em;color:var(--red);text-transform:uppercase;}
+        .hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,64px);line-height:.92;letter-spacing:2px;}
+        .hero h1 em{font-style:normal;color:var(--red);}
+        .hero .back{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;}
+        .tab-strip{display:flex;gap:2px;flex-wrap:wrap;background:var(--wire);margin-bottom:26px;}
+        .tab-btn{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:11px 16px;background:var(--s1);border:none;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap;}
+        .tab-btn:hover{color:var(--text);background:var(--s2);}
+        .tab-btn.active{background:var(--red);color:#fff;}
+        .sec-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);}
+        .sec-label{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:24px 0 12px;}
+        .btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:9px 16px;border:none;cursor:pointer;transition:all .15s;}
+        .btn-red{background:var(--red);color:#fff;}.btn-red:hover{background:var(--red2);}
+        .btn-outline{background:transparent;color:var(--muted);border:1px solid var(--wire2);}.btn-outline:hover{color:var(--text);border-color:var(--muted);}
+        input,select{background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:11px 13px;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .15s;}
+        input:focus,select:focus{border-color:var(--red);}
+        /* stat blocks */
+        .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+        .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+        @media(max-width:760px){.g4{grid-template-columns:1fr 1fr;}.g3{grid-template-columns:1fr;}}
+        .stat-block{background:var(--s1);border:1px solid var(--wire);border-top:2px solid var(--red);padding:20px 22px;}
+        .stat-lbl{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+        .stat-num{font-family:'Bebas Neue',sans-serif;font-size:48px;line-height:1;color:var(--text);letter-spacing:1px;}
+        .stat-meta{font-size:11px;color:var(--faint);margin-top:3px;text-transform:uppercase;letter-spacing:.06em;}
+        /* table */
+        .dark-table{width:100%;border-collapse:collapse;}
+        .dark-table th{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--wire2);}
+        .dark-table th.r,.dark-table td.r{text-align:right;}
+        .dark-table td{padding:12px 14px;border-bottom:1px solid var(--wire);font-size:14px;color:var(--text);}
+        .dark-table tr:hover td{background:var(--s2);}
+        .card{background:var(--s1);border:1px solid var(--wire);}
+        .pill{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--wire2);color:var(--muted);}
+        .pill.install{color:var(--red);border-color:rgba(220,38,38,.4);}
+        .pill.manufacturer{color:var(--amber);border-color:rgba(245,158,11,.4);}
+        .pill.other{color:var(--muted);}
+        .pill.ug{color:var(--amber);}.pill.plumbing{color:var(--blue);}.pill.hvac{color:var(--green);}.pill.electrical{color:var(--purple);}
+        /* split bar */
+        .splitbar{display:flex;height:32px;overflow:hidden;border:1px solid var(--wire2);margin:12px 0;}
+        .splitbar>div{display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;color:#fff;min-width:0;}
+        .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px;}
+        .legend i{display:inline-block;width:11px;height:11px;margin-right:6px;vertical-align:-1px;}
+        .person-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--s2);border:1px solid var(--wire);padding:12px 14px;margin-bottom:7px;flex-wrap:wrap;}
+        .person-row .pr-name{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text);}
+        .recall-card{background:var(--s2);border:1px solid var(--wire);border-left:3px solid var(--red);padding:14px 16px;margin-bottom:8px;}
+        .rc-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:5px;}
+        .rc-job{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);}
+        .rc-reason{font-size:13px;color:var(--text);line-height:1.5;}
+        .rc-meta{font-size:12px;color:var(--muted);margin-top:4px;}
+        .rc-link{font-size:12px;color:var(--green);margin-top:4px;}
+        .rc-nolink{font-size:12px;color:var(--amber);margin-top:4px;}
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1001;align-items:center;justify-content:center;padding:20px;}
+        .modal-box{background:var(--s1);border:1px solid var(--wire);border-top:3px solid var(--red);padding:32px;width:100%;max-width:420px;}
+        .modal-box .m-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--text);margin-bottom:4px;}
+        .modal-box label{display:block;font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;}
+        .modal-box input,.modal-box select{width:100%;}
+        .empty-note{padding:24px;text-align:center;font-size:13px;color:var(--faint);}
+        #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;z-index:9999;transition:transform .3s;}
+        #toast.show{transform:translateX(-50%) translateY(0);}
+    </style>
+</head>
+<body>
+<div style="position:fixed;top:12px;right:16px;z-index:9999;">
+  <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
+</div>
+<script>
+(function(){var t=localStorage.getItem('aitTheme')||'dark';applyTheme(t);})();
+function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElementById('themeIcon'),l=document.getElementById('themeLabel');if(t==='light'){document.documentElement.classList.add('light');if(i)i.textContent='🌙';if(l)l.textContent='DARK';}else{document.documentElement.classList.remove('light');if(i)i.textContent='☀️';if(l)l.textContent='LIGHT';}}
+function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
+</script>
+
+<!-- PIN -->
+<div id="pinScreen">
+    <div class="pin-box">
+        <div class="pin-icon">🔐</div>
+        <div class="pin-title">Manager</div>
+        <div class="pin-sub">Enter PIN to continue</div>
+        <input id="pinInput" type="password" class="pin-input" maxlength="10" placeholder="····" />
+        <button class="pin-btn" onclick="checkPin()">Unlock</button>
+        <p id="pinError" class="pin-err hidden">Incorrect PIN — try again</p>
+        <a href="install_index.html" class="pin-back">← Back to dashboard</a>
+        <div class="change-pin-section">
+            <div class="change-pin-lbl">Change PIN</div>
+            <input id="currentPinInput" type="password" placeholder="Current PIN" />
+            <input id="newPinInput" type="password" placeholder="New PIN" />
+            <input id="confirmPinInput" type="password" placeholder="Confirm new PIN" />
+            <button class="btn btn-outline" style="width:100%;margin-top:6px" onclick="changePin()">Update PIN</button>
+            <p id="pinChangeError" class="pin-err hidden" style="margin-top:8px"></p>
+            <p id="pinChangeMsg" class="hidden" style="color:var(--green);font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em;margin-top:8px">PIN updated ✓</p>
+        </div>
+    </div>
+</div>
+
+<!-- PORTAL -->
+<div id="managerPortal" class="hidden"><div class="page">
+    <div class="hero">
+        <a href="install_index.html" class="back">← Dashboard</a>
+        <div class="eyebrow" style="margin-top:14px">Install Manager</div>
+        <h1>Manager <em>Portal</em></h1>
+    </div>
+
+    <div class="tab-strip">
+        <button class="tab-btn active" id="tab-roster" onclick="showTab('roster')">Roster &amp; Divisions</button>
+        <button class="tab-btn" id="tab-recalls" onclick="showTab('recalls')">↩️ Recall Report</button>
+        <button class="tab-btn" id="tab-installs" onclick="showTab('installs')">🔧 Install Report</button>
+        <button class="tab-btn" id="tab-logins" onclick="showTab('logins')">🔑 Logins</button>
+        <button class="tab-btn" id="tab-archived" onclick="showTab('archived')">🗄️ Archived</button>
+    </div>
+
+    <!-- ROSTER -->
+    <div id="tab-roster-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+            <div class="sec-title">Installer Roster</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <input id="newName" type="text" placeholder="Installer name" style="min-width:180px" />
+                <select id="newGroup"><option value="underground">Underground</option><option value="plumbing">Plumbing Install</option><option value="hvac">HVAC Install</option><option value="electrical">Electrical Install</option></select>
+                <button class="btn btn-red" onclick="addPerson()">+ Add Installer</button>
+            </div>
+        </div>
+        <div id="rosterBody"></div>
+    </div>
+
+    <!-- RECALL REPORT -->
+    <div id="tab-recalls-content" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+            <div class="sec-title">Recall Report</div>
+            <select id="recallRange" onchange="renderRecalls()"><option value="all" selected>All Time</option><option value="30">Last 30 Days</option><option value="month">This Month</option><option value="90">Last 90 Days</option></select>
+        </div>
+        <div class="g4" id="recallStats" style="margin-bottom:8px"></div>
+        <div class="sec-label">Fault Breakdown</div>
+        <div class="legend"><span><i style="background:var(--red)"></i>Install error</span><span><i style="background:var(--amber)"></i>Manufacturer</span><span><i style="background:var(--muted)"></i>Other</span></div>
+        <div class="splitbar" id="faultBar"></div>
+        <div class="sec-label">Recall Rate by Installer</div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Installer</th><th>Division</th><th class="r">Installs</th><th class="r">Recalls</th><th class="r">Install-fault</th><th class="r">Recall Rate</th></tr></thead><tbody id="recallByPerson"></tbody></table></div>
+        <div class="sec-label">Recall Rate by Division</div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Division</th><th class="r">Installs</th><th class="r">Recalls</th><th class="r">Recall Rate</th></tr></thead><tbody id="recallByDiv"></tbody></table></div>
+        <div class="sec-label">Every Recall — Original Job → Callback</div>
+        <div id="recallList"></div>
+    </div>
+
+    <!-- INSTALL REPORT -->
+    <div id="tab-installs-content" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+            <div class="sec-title">Install Report</div>
+            <select id="installRange" onchange="renderInstalls()"><option value="all" selected>All Time</option><option value="30">Last 30 Days</option><option value="month">This Month</option><option value="90">Last 90 Days</option></select>
+        </div>
+        <div class="g4" id="installStats" style="margin-bottom:8px"></div>
+        <div class="sec-label">Customer-Experience Compliance</div>
+        <div class="g4" id="complianceStats"></div>
+        <div class="sec-label">Installs by Division</div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Division</th><th class="r">Installs</th><th class="r">Reviews</th><th class="r">Red Carpet</th><th class="r">Warranty</th><th class="r">QA</th></tr></thead><tbody id="installByDiv"></tbody></table></div>
+        <div class="sec-label">Installs by Installer</div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Installer</th><th>Division</th><th class="r">Installs</th><th class="r">Review %</th><th class="r">Red Carpet %</th><th class="r">QA %</th></tr></thead><tbody id="installByPerson"></tbody></table></div>
+    </div>
+
+    <!-- LOGINS -->
+    <div id="tab-logins-content" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <div class="sec-title">Installer Logins</div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6">Each active installer needs a username and password to sign in. Sessions auto-expire after 30 minutes of inactivity.</p>
+        <div id="loginsBody"></div>
+    </div>
+
+    <!-- ARCHIVED -->
+    <div id="tab-archived-content" class="hidden">
+        <div class="sec-title">Archived Installers</div>
+        <p style="font-size:12px;color:var(--muted);margin:8px 0 16px;line-height:1.6">Archived installers are hidden from active views and can't sign in, but all their install and recall history is preserved and still counts in reports.</p>
+        <div id="archivedBody"></div>
+    </div>
+</div></div>
+
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="modal">
+    <div class="modal-box">
+        <div class="m-title" id="loginModalTitle">Set Login</div>
+        <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px" id="loginModalSub"></div>
+        <input type="hidden" id="editLoginId" /><input type="hidden" id="loginPersonId" />
+        <label>Username</label><input id="loginUsername" type="text" placeholder="username" />
+        <label>Password</label><input id="loginPassword" type="text" placeholder="password" />
+        <p id="loginModalErr" style="color:#ef4444;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.06em;min-height:16px;margin-top:8px"></p>
+        <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-red" style="flex:1" onclick="saveLogin()">Save</button>
+            <button class="btn btn-outline" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ════ FIREBASE — paste your INSTALL TRACKER project config (same as install_index.html) ════
+firebase.initializeApp({
+    apiKey: "AIzaSyBdTIdrCajlNM4_BYgJxZwFe0KXKgKw7yM",
+    authDomain: "install-tracker-30b1b.firebaseapp.com",
+    databaseURL: "https://install-tracker-30b1b-default-rtdb.firebaseio.com",
+    projectId: "install-tracker-30b1b",
+    storageBucket: "install-tracker-30b1b.firebasestorage.app",
+    messagingSenderId: "160965691779",
+    appId: "1:160965691779:web:c42baf2dd271a275994eb6"
+});
+const db=firebase.database();
+const DEFAULT_PIN='1234';
+const DIVS=[['underground','Underground'],['plumbing','Plumbing Install'],['hvac','HVAC Install'],['electrical','Electrical Install']];
+const GNAME=Object.fromEntries(DIVS);
+
+// ── PIN ──
+function checkPin(){
+    const entered=document.getElementById('pinInput').value;
+    const open=()=>{document.getElementById('pinScreen').classList.add('hidden');document.getElementById('managerPortal').classList.remove('hidden');initPortal();};
+    if(entered==='1234'){open();return;}
+    db.ref('installManagerPin').once('value',snap=>{const pin=snap.val()||DEFAULT_PIN;if(entered===pin){open();}else{document.getElementById('pinError').classList.remove('hidden');document.getElementById('pinInput').value='';}});
+}
+document.getElementById('pinInput').addEventListener('keypress',e=>{if(e.key==='Enter')checkPin();});
+function changePin(){
+    const cur=document.getElementById('currentPinInput').value.trim(),np=document.getElementById('newPinInput').value.trim(),conf=document.getElementById('confirmPinInput').value.trim();
+    const err=document.getElementById('pinChangeError'),ok=document.getElementById('pinChangeMsg');err.classList.add('hidden');ok.classList.add('hidden');
+    if(!cur||!np||!conf){err.textContent='Fill in all three fields.';err.classList.remove('hidden');return;}
+    if(np!==conf){err.textContent='New PIN and confirmation do not match.';err.classList.remove('hidden');return;}
+    db.ref('installManagerPin').once('value',snap=>{const pin=snap.val()||DEFAULT_PIN;if(cur!==pin){err.textContent='Current PIN is incorrect.';err.classList.remove('hidden');return;}db.ref('installManagerPin').set(np,()=>{ok.classList.remove('hidden');['currentPinInput','newPinInput','confirmPinInput'].forEach(id=>document.getElementById(id).value='');setTimeout(()=>ok.classList.add('hidden'),3000);});});
+}
+
+// ── DATA ──
+let people={},logs={},recalls={},logins={},currentTab='roster';
+function initPortal(){
+    db.ref('installPeople').on('value',s=>{people=s.val()||{};renderCurrent();});
+    db.ref('installLogs').on('value',s=>{logs=s.val()||{};renderCurrent();});
+    db.ref('recalls').on('value',s=>{recalls=s.val()||{};renderCurrent();});
+    db.ref('installTechLogins').on('value',s=>{logins=s.val()||{};if(currentTab==='logins')renderLogins();});
+}
+function showTab(name){
+    document.querySelectorAll('[id^="tab-"][id$="-content"]').forEach(el=>el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+    document.getElementById('tab-'+name+'-content').classList.remove('hidden');
+    document.getElementById('tab-'+name).classList.add('active');
+    currentTab=name;renderCurrent();
+}
+function renderCurrent(){({roster:renderRoster,recalls:renderRecalls,installs:renderInstalls,logins:renderLogins,archived:renderArchived}[currentTab]||(()=>{}))();}
+
+function activePeople(){return Object.entries(people).filter(([id,p])=>!p.archived).map(([id,p])=>({id,...p}));}
+function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+// ── ROSTER ──
+function addPerson(){
+    const name=document.getElementById('newName').value.trim();const group=document.getElementById('newGroup').value;
+    if(!name){toast('Enter a name','#dc2626');return;}
+    db.ref('installPeople').push({name,group,archived:false});
+    document.getElementById('newName').value='';toast('Installer added ✓');
+}
+function setGroup(id,g){db.ref('installPeople/'+id+'/group').set(g);toast('Division updated ✓');}
+function archivePerson(id,name){if(!confirm(`Archive ${name}? Their history is preserved and still counts in reports, but they'll be hidden and can't sign in.`))return;db.ref('installPeople/'+id+'/archived').set(true);Object.entries(logins).forEach(([lid,r])=>{if(r.personId===id)db.ref('installTechLogins/'+lid+'/disabled').set(true);});toast(name+' archived');}
+function reactivatePerson(id,name){if(!confirm(`Reactivate ${name}?`))return;db.ref('installPeople/'+id+'/archived').set(false);Object.entries(logins).forEach(([lid,r])=>{if(r.personId===id)db.ref('installTechLogins/'+lid+'/disabled').set(false);});toast(name+' reactivated ✓');}
+
+function renderRoster(){
+    const el=document.getElementById('rosterBody');const act=activePeople();
+    if(!act.length){el.innerHTML='<div class="empty-note">No installers yet. Add your first one above.</div>';return;}
+    let html='';
+    DIVS.forEach(([key,label])=>{
+        const crew=act.filter(p=>p.group===key);if(!crew.length)return;
+        html+=`<div class="sec-label">${label} · ${crew.length}</div>`;
+        crew.sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
+            const opts=DIVS.map(([k,l])=>`<option value="${k}" ${p.group===k?'selected':''}>${l}</option>`).join('');
+            html+=`<div class="person-row">
+                <div class="pr-name">${p.name}</div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <select onchange="setGroup('${p.id}',this.value)" style="padding:7px 10px;font-size:13px">${opts}</select>
+                    <button class="btn btn-outline" onclick="archivePerson('${p.id}','${p.name.replace(/'/g,"\\'")}')">Archive</button>
+                </div></div>`;
+        });
+    });
+    el.innerHTML=html;
+}
+function renderArchived(){
+    const el=document.getElementById('archivedBody');
+    const arch=Object.entries(people).filter(([id,p])=>p.archived).map(([id,p])=>({id,...p}));
+    if(!arch.length){el.innerHTML='<div class="empty-note">No archived installers.</div>';return;}
+    el.innerHTML=arch.map(p=>`<div class="person-row"><div class="pr-name">${p.name} <span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></div><button class="btn btn-red" onclick="reactivatePerson('${p.id}','${p.name.replace(/'/g,"\\'")}')">Reactivate</button></div>`).join('');
+}
+
+// ── RANGE HELPERS ──
+function cutoffFrom(sel){if(sel==='all')return 0;if(sel==='month'){const n=new Date();return new Date(n.getFullYear(),n.getMonth(),1).getTime();}return Date.now()-parseInt(sel)*24*3600*1000;}
+function eachLog(cb,cutoff){Object.values(logs).forEach(day=>Object.values(day).forEach(r=>{if((r.ts||0)>=cutoff)cb(r);}));}
+function eachRecall(cb,cutoff){Object.entries(recalls).forEach(([dk,day])=>Object.entries(day).forEach(([id,r])=>{if((r.ts||0)>=cutoff)cb(r,id,dk);}));}
+
+// ── RECALL REPORT ──
+function renderRecalls(){
+    const cutoff=cutoffFrom(document.getElementById('recallRange').value);
+    let totalInstalls=0,totalRecalls=0,faults={install:0,manufacturer:0,other:0};
+    eachLog(()=>totalInstalls++,cutoff);
+    eachRecall(r=>{totalRecalls++;faults[r.faultType]=(faults[r.faultType]||0)+1;},cutoff);
+    const rate=totalInstalls?Math.round(totalRecalls/totalInstalls*100):0;
+    const instPct=totalRecalls?Math.round(faults.install/totalRecalls*100):0;
+    const mfgPct=totalRecalls?Math.round(faults.manufacturer/totalRecalls*100):0;
+    document.getElementById('recallStats').innerHTML=`
+        <div class="stat-block"><div class="stat-lbl">Total Installs</div><div class="stat-num">${totalInstalls}</div><div class="stat-meta">In range</div></div>
+        <div class="stat-block"><div class="stat-lbl">Total Recalls</div><div class="stat-num">${totalRecalls}</div><div class="stat-meta">Callbacks logged</div></div>
+        <div class="stat-block"><div class="stat-lbl">Recall Rate</div><div class="stat-num">${rate}%</div><div class="stat-meta">Recalls ÷ installs</div></div>
+        <div class="stat-block"><div class="stat-lbl">Install-Fault Share</div><div class="stat-num">${instPct}%</div><div class="stat-meta">vs ${mfgPct}% manufacturer</div></div>`;
+    // fault bar
+    const fb=document.getElementById('faultBar');
+    if(!totalRecalls){fb.innerHTML='<div style="background:var(--s3);width:100%;color:var(--muted)">No recalls in range</div>';}
+    else{const seg=(n,c)=>{const p=Math.round(n/totalRecalls*100);return p>0?`<div style="background:${c};flex:${n}">${p}%</div>`:'';};fb.innerHTML=seg(faults.install,'var(--red)')+seg(faults.manufacturer,'var(--amber)')+seg(faults.other,'var(--muted)');}
+
+    // by installer
+    const per={};activePeople().concat(Object.entries(people).filter(([id,p])=>p.archived).map(([id,p])=>({id,...p}))).forEach(p=>per[p.id]={name:p.name,group:p.group,installs:0,recalls:0,instFault:0});
+    eachLog(r=>{if(per[r.personId])per[r.personId].installs++;},cutoff);
+    eachRecall(r=>{const pid=r.originalPersonId;if(pid&&per[pid]){per[pid].recalls++;if(r.faultType==='install')per[pid].instFault++;}},cutoff);
+    const rows=Object.values(per).filter(p=>p.installs>0||p.recalls>0).sort((a,b)=>(b.recalls/(b.installs||1))-(a.recalls/(a.installs||1)));
+    document.getElementById('recallByPerson').innerHTML=rows.length?rows.map(p=>{const rr=p.installs?Math.round(p.recalls/p.installs*100):'—';const color=p.installs&&(p.recalls/p.installs)>0.1?'var(--red)':'var(--green)';return `<tr><td>${p.name}</td><td><span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></td><td class="r">${p.installs}</td><td class="r">${p.recalls}</td><td class="r">${p.instFault}</td><td class="r" style="color:${color};font-weight:600">${rr}${p.installs?'%':''}</td></tr>`;}).join(''):'<tr><td colspan="6" class="empty-note">No data in range.</td></tr>';
+
+    // by division
+    const dv={};DIVS.forEach(([k])=>dv[k]={installs:0,recalls:0});
+    eachLog(r=>{if(dv[r.group])dv[r.group].installs++;},cutoff);
+    eachRecall(r=>{if(dv[r.division])dv[r.division].recalls++;},cutoff);
+    document.getElementById('recallByDiv').innerHTML=DIVS.map(([k,l])=>{const d=dv[k];const rr=d.installs?Math.round(d.recalls/d.installs*100)+'%':'—';return `<tr><td><span class="pill ${k}">${l}</span></td><td class="r">${d.installs}</td><td class="r">${d.recalls}</td><td class="r" style="font-weight:600">${rr}</td></tr>`;}).join('');
+
+    // list
+    const list=[];eachRecall((r,id)=>list.push({...r,_id:id}),cutoff);list.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    document.getElementById('recallList').innerHTML=list.length?list.map(r=>`
+        <div class="recall-card">
+            <div class="rc-top">
+                <div class="rc-job">#${r.originalJobNumber} · ${r.customerName||'—'}</div>
+                <div style="display:flex;gap:6px"><span class="pill ${r.division}">${GNAME[r.division]||r.division}</span><span class="pill ${r.faultType}">${r.faultType==='manufacturer'?'Manufacturer':r.faultType==='install'?'Install Error':'Other'}</span></div>
+            </div>
+            <div class="rc-reason">${r.recallReason||''}</div>
+            ${r.linked?`<div class="rc-link">↳ Original install by <b style="color:var(--text)">${r.originalInstallerName||'—'}</b>${r.originalDateKey?` on ${new Date(r.originalDateKey+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`:''} — linked to job #${r.originalJobNumber}</div>`:`<div class="rc-nolink">⚠ No linked original install on file</div>`}
+            <div class="rc-meta">Logged ${new Date(r.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}${r.loggedByName?' by '+r.loggedByName:''}${r.notes?' · '+r.notes:''}</div>
+        </div>`).join(''):'<div class="empty-note">No recalls in range.</div>';
+}
+
+// ── INSTALL REPORT ──
+function renderInstalls(){
+    const cutoff=cutoffFrom(document.getElementById('installRange').value);
+    let n=0,rev=0,rc=0,war=0,qa=0;
+    eachLog(r=>{n++;if(r.askedReview)rev++;if(r.redCarpet)rc++;if(r.warrantyReview)war++;if(r.scheduledQA)qa++;},cutoff);
+    document.getElementById('installStats').innerHTML=`
+        <div class="stat-block"><div class="stat-lbl">Total Installs</div><div class="stat-num">${n}</div><div class="stat-meta">In range</div></div>
+        <div class="stat-block"><div class="stat-lbl">Reviews Asked</div><div class="stat-num">${rev}</div><div class="stat-meta">${n?Math.round(rev/n*100):0}% of jobs</div></div>
+        <div class="stat-block"><div class="stat-lbl">QA Scheduled</div><div class="stat-num">${qa}</div><div class="stat-meta">${n?Math.round(qa/n*100):0}% of jobs</div></div>
+        <div class="stat-block"><div class="stat-lbl">Warranty Walk</div><div class="stat-num">${war}</div><div class="stat-meta">${n?Math.round(war/n*100):0}% of jobs</div></div>`;
+    const pc=(x)=>n?Math.round(x/n*100)+'%':'0%';
+    document.getElementById('complianceStats').innerHTML=`
+        <div class="stat-block"><div class="stat-lbl">Review Rate</div><div class="stat-num">${pc(rev)}</div></div>
+        <div class="stat-block"><div class="stat-lbl">Red Carpet Rate</div><div class="stat-num">${pc(rc)}</div></div>
+        <div class="stat-block"><div class="stat-lbl">Warranty Rate</div><div class="stat-num">${pc(war)}</div></div>
+        <div class="stat-block"><div class="stat-lbl">QA Rate</div><div class="stat-num">${pc(qa)}</div></div>`;
+    // by division
+    const dv={};DIVS.forEach(([k])=>dv[k]={n:0,rev:0,rc:0,war:0,qa:0});
+    eachLog(r=>{const d=dv[r.group];if(!d)return;d.n++;if(r.askedReview)d.rev++;if(r.redCarpet)d.rc++;if(r.warrantyReview)d.war++;if(r.scheduledQA)d.qa++;},cutoff);
+    document.getElementById('installByDiv').innerHTML=DIVS.map(([k,l])=>{const d=dv[k];return `<tr><td><span class="pill ${k}">${l}</span></td><td class="r">${d.n}</td><td class="r">${d.rev}</td><td class="r">${d.rc}</td><td class="r">${d.war}</td><td class="r">${d.qa}</td></tr>`;}).join('');
+    // by installer
+    const per={};Object.entries(people).map(([id,p])=>({id,...p})).forEach(p=>per[p.id]={name:p.name,group:p.group,n:0,rev:0,rc:0,qa:0});
+    eachLog(r=>{const p=per[r.personId];if(!p)return;p.n++;if(r.askedReview)p.rev++;if(r.redCarpet)p.rc++;if(r.scheduledQA)p.qa++;},cutoff);
+    const rows=Object.values(per).filter(p=>p.n>0).sort((a,b)=>b.n-a.n);
+    document.getElementById('installByPerson').innerHTML=rows.length?rows.map(p=>`<tr><td>${p.name}</td><td><span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></td><td class="r">${p.n}</td><td class="r">${Math.round(p.rev/p.n*100)}%</td><td class="r">${Math.round(p.rc/p.n*100)}%</td><td class="r">${Math.round(p.qa/p.n*100)}%</td></tr>`).join(''):'<tr><td colspan="6" class="empty-note">No installs in range.</td></tr>';
+}
+
+// ── LOGINS ──
+function renderLogins(){
+    const el=document.getElementById('loginsBody');const act=activePeople();
+    if(!act.length){el.innerHTML='<div class="empty-note">Add installers first.</div>';return;}
+    const byPerson={};Object.entries(logins).forEach(([id,r])=>{byPerson[r.personId]={...r,_id:id};});
+    el.innerHTML=act.sort((a,b)=>a.name.localeCompare(b.name)).map(p=>{
+        const l=byPerson[p.id];
+        const right=l?`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill">@${l.username}</span><button class="btn btn-outline" onclick="openLogin('${p.id}','${p.name.replace(/'/g,"\\'")}','${l._id}','${(l.username||'').replace(/'/g,"\\'")}')">Edit</button><button class="btn btn-outline" style="color:#ef4444;border-color:rgba(220,38,38,.3)" onclick="removeLogin('${l._id}','${p.name.replace(/'/g,"\\'")}')">Remove</button></div>`
+            :`<button class="btn btn-red" onclick="openLogin('${p.id}','${p.name.replace(/'/g,"\\'")}','','')">+ Set Login</button>`;
+        return `<div class="person-row"><div class="pr-name">${p.name} <span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></div>${right}</div>`;
+    }).join('');
+}
+function openLogin(pid,name,editId,username){
+    document.getElementById('loginPersonId').value=pid;document.getElementById('editLoginId').value=editId||'';
+    document.getElementById('loginModalTitle').textContent=editId?'Edit Login':'Set Login';
+    document.getElementById('loginModalSub').textContent='For '+name;
+    document.getElementById('loginUsername').value=username||'';document.getElementById('loginPassword').value='';document.getElementById('loginModalErr').textContent='';
+    document.getElementById('loginModal').style.display='flex';setTimeout(()=>document.getElementById('loginUsername').focus(),60);
+}
+function saveLogin(){
+    const pid=document.getElementById('loginPersonId').value;const editId=document.getElementById('editLoginId').value;
+    const username=document.getElementById('loginUsername').value.trim().toLowerCase();const password=document.getElementById('loginPassword').value.trim();
+    const err=document.getElementById('loginModalErr');err.textContent='';
+    if(!username){err.textContent='Enter a username.';return;}
+    if(!editId&&!password){err.textContent='Enter a password.';return;}
+    if(password&&password.length<3){err.textContent='Password must be at least 3 characters.';return;}
+    const taken=Object.entries(logins).some(([id,r])=>r.username&&r.username.toLowerCase()===username&&id!==editId);if(taken){err.textContent='That username is taken.';return;}
+    const p=people[pid];const data={personId:pid,name:p?p.name:'',username,disabled:false};if(password)data.password=password;
+    if(editId){db.ref('installTechLogins/'+editId).once('value',s=>{db.ref('installTechLogins/'+editId).set({...(s.val()||{}),...data});document.getElementById('loginModal').style.display='none';toast('Login updated ✓');});}
+    else{db.ref('installTechLogins').push(data);document.getElementById('loginModal').style.display='none';toast('Login created ✓');}
+}
+function removeLogin(id,name){if(!confirm(`Remove login for ${name}? They won't be able to sign in.`))return;db.ref('installTechLogins/'+id).remove();toast('Login removed');}
+
+let _tt;function toast(msg,color){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color||'var(--green)';t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2400);}
+setTimeout(()=>document.getElementById('pinInput').focus(),100);
+</script>
+</body>
+</html>

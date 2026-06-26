@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard — Action Install Tracker</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#666;--faint:#333;--text:#efefef;--green:#10b981;--gold:#fbbf24;--silver:#cbd5e1;--bronze:#d97706;}
+        html.light{--bg:#f4f4f4;--s1:#fff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,.08);--wire2:rgba(0,0,0,.14);--muted:#555;--faint:#999;--text:#111;--red3:#fde8e8;}
+        html.light body::after{display:none;}
+        html.light select{background:var(--s3);border-color:var(--wire2);color:var(--text);}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:999;}
+        .page{max-width:1100px;margin:0 auto;padding:24px 20px 80px;}
+        .back{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;}
+        .back:hover{color:var(--text);}
+        .eyebrow{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:.25em;color:var(--red);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-top:18px;}
+        .eyebrow::before{content:'';width:20px;height:2px;background:var(--red);}
+        h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,7vw,76px);line-height:.9;letter-spacing:2px;margin:2px 0 4px;}
+        h1 em{font-style:normal;color:var(--red);}
+        .sub{font-size:13px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:24px;}
+        .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px;}
+        .filters select{background:var(--s2);border:1px solid var(--wire2);color:var(--text);padding:10px 14px;font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;outline:none;cursor:pointer;}
+        .board-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+        @media(max-width:760px){.board-grid{grid-template-columns:1fr;}}
+        .board{background:var(--s1);border:1px solid var(--wire);border-top:2px solid var(--red);padding:22px 24px;}
+        .board-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+        .board-sub{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:18px;}
+        .lb-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--wire);}
+        .lb-row:last-child{border-bottom:none;}
+        .rank{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;width:30px;text-align:center;color:var(--faint);flex-shrink:0;}
+        .rank.r1{color:var(--gold);}.rank.r2{color:var(--silver);}.rank.r3{color:var(--bronze);}
+        .lb-name{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text);flex:1;}
+        .lb-name small{display:block;font-size:10px;letter-spacing:.12em;color:var(--faint);font-weight:500;}
+        .lb-val{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;color:var(--text);letter-spacing:1px;}
+        .lb-val small{font-family:'Oswald',sans-serif;font-size:11px;color:var(--muted);letter-spacing:.06em;margin-left:3px;}
+        .bar{height:5px;background:var(--s3);margin-top:5px;overflow:hidden;}
+        .bar>span{display:block;height:100%;background:var(--red);}
+        .empty-note{padding:22px 0;text-align:center;font-size:12px;color:var(--faint);}
+        .you{background:rgba(220,38,38,.06);margin:0 -24px;padding-left:24px;padding-right:24px;}
+    </style>
+</head>
+<body>
+<div style="position:fixed;top:12px;right:16px;z-index:9999;">
+  <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
+</div>
+<script>
+(function(){var t=localStorage.getItem('aitTheme')||'dark';applyTheme(t);})();
+function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElementById('themeIcon'),l=document.getElementById('themeLabel');if(t==='light'){document.documentElement.classList.add('light');if(i)i.textContent='🌙';if(l)l.textContent='DARK';}else{document.documentElement.classList.remove('light');if(i)i.textContent='☀️';if(l)l.textContent='LIGHT';}}
+function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
+</script>
+
+<div class="page">
+    <a href="install_index.html" class="back">← Dashboard</a>
+    <div class="eyebrow">Standings</div>
+    <h1>Install <em>Leaderboard</em></h1>
+    <div class="sub">Who's winning the customer — and keeping the recalls down</div>
+
+    <div class="filters">
+        <select id="divFilter">
+            <option value="all">All Divisions</option>
+            <option value="underground">Underground</option>
+            <option value="plumbing">Plumbing Install</option>
+            <option value="hvac">HVAC Install</option>
+            <option value="electrical">Electrical Install</option>
+        </select>
+        <select id="rangeFilter">
+            <option value="30">Last 30 Days</option>
+            <option value="month">This Month</option>
+            <option value="90">Last 90 Days</option>
+            <option value="all" selected>All Time</option>
+        </select>
+    </div>
+
+    <div class="board-grid" id="boards"></div>
+</div>
+
+<script>
+// ════ FIREBASE — paste your INSTALL TRACKER project config (same as install_index.html) ════
+firebase.initializeApp({
+    apiKey: "AIzaSyBdTIdrCajlNM4_BYgJxZwFe0KXKgKw7yM",
+    authDomain: "install-tracker-30b1b.firebaseapp.com",
+    databaseURL: "https://install-tracker-30b1b-default-rtdb.firebaseio.com",
+    projectId: "install-tracker-30b1b",
+    storageBucket: "install-tracker-30b1b.firebasestorage.app",
+    messagingSenderId: "160965691779",
+    appId: "1:160965691779:web:c42baf2dd271a275994eb6"
+});
+const db=firebase.database();
+const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing',hvac:'HVAC',electrical:'Electrical'};
+const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
+function getSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY));}catch{return null;}}
+const sess=getSession();
+if(!sess||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
+const myId=sess?sess.personId:null;
+
+let people={},logs={},recalls={};
+db.ref('installPeople').on('value',s=>{people=s.val()||{};render();});
+db.ref('installLogs').on('value',s=>{logs=s.val()||{};render();});
+db.ref('recalls').on('value',s=>{recalls=s.val()||{};render();});
+document.getElementById('divFilter').onchange=render;
+document.getElementById('rangeFilter').onchange=render;
+
+function rangeCutoff(){
+    const v=document.getElementById('rangeFilter').value;
+    if(v==='all')return 0;
+    if(v==='month'){const n=new Date();return new Date(n.getFullYear(),n.getMonth(),1).getTime();}
+    return Date.now()-parseInt(v)*24*3600*1000;
+}
+
+function buildStats(){
+    const cutoff=rangeCutoff();const divF=document.getElementById('divFilter').value;
+    const stats={}; // personId -> {name,group,installs,reviews,redCarpet,warranty,qa,recalls}
+    Object.entries(people).forEach(([id,p])=>{if(p.archived)return;if(divF!=='all'&&p.group!==divF)return;stats[id]={name:p.name,group:p.group,installs:0,reviews:0,redCarpet:0,warranty:0,qa:0,recalls:0};});
+    Object.values(logs).forEach(day=>Object.values(day).forEach(r=>{
+        if((r.ts||0)<cutoff)return;const s=stats[r.personId];if(!s)return;
+        s.installs++;if(r.askedReview)s.reviews++;if(r.redCarpet)s.redCarpet++;if(r.warrantyReview)s.warranty++;if(r.scheduledQA)s.qa++;
+    }));
+    Object.values(recalls).forEach(day=>Object.values(day).forEach(r=>{
+        if((r.ts||0)<cutoff)return;const s=stats[r.originalPersonId];if(!s)return;
+        // only install-fault & other count against the installer's quality; manufacturer is not their fault
+        if(r.faultType!=='manufacturer')s.recalls++;
+    }));
+    return stats;
+}
+
+function board(title,icon,subtitle,rows,fmt,opts={}){
+    const max=rows.length?Math.max(...rows.map(r=>r.sortVal||0),0.0001):1;
+    let html=`<div class="board"><div class="board-title">${icon} ${title}</div><div class="board-sub">${subtitle}</div>`;
+    if(!rows.length){html+='<div class="empty-note">No data for this filter yet.</div></div>';return html;}
+    rows.forEach((r,i)=>{
+        const rk=i+1;const rc=rk<=3?'r'+rk:'';
+        const pct=opts.noBar?0:Math.round((r.sortVal||0)/max*100);
+        html+=`<div class="lb-row ${r.id===myId?'you':''}">
+            <div class="rank ${rc}">${rk}</div>
+            <div style="flex:1">
+                <div class="lb-name">${r.name}${r.id===myId?' ⬅':''}<small>${GROUP_NAMES[r.group]||''}</small></div>
+                ${opts.noBar?'':`<div class="bar"><span style="width:${pct}%"></span></div>`}
+            </div>
+            <div class="lb-val">${fmt(r)}</div>
+        </div>`;
+    });
+    return html+'</div>';
+}
+
+function render(){
+    const stats=buildStats();
+    const arr=Object.entries(stats).map(([id,s])=>({id,...s}));
+    const active=arr.filter(s=>s.installs>0);
+
+    // Reviews (count)
+    const reviews=[...active].sort((a,b)=>b.reviews-a.reviews).map(s=>({...s,sortVal:s.reviews}));
+    // Red carpet rate
+    const rc=[...active].sort((a,b)=>(b.redCarpet/b.installs)-(a.redCarpet/a.installs)).map(s=>({...s,sortVal:s.redCarpet/s.installs}));
+    // QA scheduled rate
+    const qa=[...active].sort((a,b)=>(b.qa/b.installs)-(a.qa/a.installs)).map(s=>({...s,sortVal:s.qa/s.installs}));
+    // Lowest recall rate (best installs) — require >=3 installs to qualify, then ascending recall rate, tiebreak more installs
+    const elig=active.filter(s=>s.installs>=3);
+    const best=[...elig].sort((a,b)=>{const ra=a.recalls/a.installs,rb=b.recalls/b.installs;return ra-rb||b.installs-a.installs;}).map(s=>({...s,sortVal:1-(s.recalls/s.installs)}));
+    // Most installs (volume)
+    const vol=[...active].sort((a,b)=>b.installs-a.installs).map(s=>({...s,sortVal:s.installs}));
+
+    document.getElementById('boards').innerHTML=
+        board('Reviews Requested','⭐','Most review asks',reviews,r=>r.reviews)+
+        board('Red Carpet Rate','🟥','% of jobs done right',rc,r=>Math.round(r.sortVal*100)+'<small>%</small>')+
+        board('QA Scheduled','📅','% scheduling QA',qa,r=>Math.round(r.sortVal*100)+'<small>%</small>')+
+        board('Cleanest Installs','🏅','Lowest recall rate · min 3 installs',best,r=>Math.round((r.recalls/r.installs)*100)+'<small>% recall</small>')+
+        board('Most Installs','🔧','Total volume',vol,r=>r.installs);
+}
+</script>
+</body>
+</html>

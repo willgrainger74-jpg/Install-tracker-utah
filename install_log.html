@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Install — Action Install Tracker</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#666;--faint:#333;--text:#efefef;--green:#10b981;}
+        html.light{--bg:#f4f4f4;--s1:#fff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,.08);--wire2:rgba(0,0,0,.14);--muted:#555;--faint:#999;--text:#111;--red3:#fde8e8;}
+        html.light body::after{display:none;}
+        html.light input,html.light select,html.light textarea{background:var(--s3);border-color:var(--wire2);color:var(--text);}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:999;}
+        .page{max-width:840px;margin:0 auto;padding:24px 20px 80px;}
+        .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
+        .back{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;}
+        .back:hover{color:var(--text);}
+        .eyebrow{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:.25em;color:var(--red);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-top:18px;}
+        .eyebrow::before{content:'';width:20px;height:2px;background:var(--red);}
+        h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,7vw,72px);line-height:.9;letter-spacing:2px;margin:2px 0 4px;}
+        h1 em{font-style:normal;color:var(--red);}
+        .sub{font-size:13px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:28px;}
+        .installer-tag{display:inline-flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--wire2);border-left:3px solid var(--red);padding:8px 14px;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:24px;}
+        .installer-tag strong{color:var(--text);}
+        .card{background:var(--s1);border:1px solid var(--wire);border-top:2px solid var(--red);padding:28px 30px;margin-bottom:22px;}
+        .sec-lbl{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:4px 0 16px;}
+        .field{margin-bottom:18px;}
+        .field label{display:block;font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+        .field input,.field select,.field textarea{width:100%;background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:13px 14px;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .15s;}
+        .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--red);}
+        .field input::placeholder,.field textarea::placeholder{color:var(--faint);}
+        .field textarea{resize:vertical;min-height:80px;}
+        .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+        @media(max-width:560px){.row2{grid-template-columns:1fr;}}
+        .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        @media(max-width:560px){.check-grid{grid-template-columns:1fr;}}
+        .toggle{background:var(--s2);border:1px solid var(--wire);border-left:3px solid var(--faint);padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+        .toggle:hover{background:var(--s3);}
+        .toggle.on{border-left-color:var(--green);background:rgba(16,185,129,.08);}
+        .toggle .t-label{font-family:'Inter',sans-serif;font-size:13.5px;color:var(--text);line-height:1.35;}
+        .toggle .t-state{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex-shrink:0;}
+        .toggle.on .t-state{color:var(--green);}
+        .btn{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:16px 24px;border:none;cursor:pointer;transition:all .15s;}
+        .btn-primary{background:var(--red);color:#fff;width:100%;}
+        .btn-primary:hover{background:var(--red2);}
+        .btn-primary:active{transform:scale(.99);}
+        .recent-item{background:var(--s2);border:1px solid var(--wire);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+        .recent-item .ri-main{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em;color:var(--text);text-transform:uppercase;}
+        .recent-item .ri-meta{font-size:12px;color:var(--muted);}
+        .ri-badges{display:flex;gap:5px;flex-wrap:wrap;}
+        .ri-badge{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--wire2);color:var(--muted);}
+        .ri-badge.yes{color:var(--green);border-color:rgba(16,185,129,.4);}
+        #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;z-index:9999;transition:transform .3s;}
+        #toast.show{transform:translateX(-50%) translateY(0);}
+        .empty-note{padding:18px;text-align:center;font-size:13px;color:var(--faint);}
+    </style>
+</head>
+<body>
+<div style="position:fixed;top:12px;right:16px;z-index:9999;">
+  <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
+</div>
+<script>
+(function(){var t=localStorage.getItem('aitTheme')||'dark';applyTheme(t);})();
+function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElementById('themeIcon'),l=document.getElementById('themeLabel');if(t==='light'){document.documentElement.classList.add('light');if(i)i.textContent='🌙';if(l)l.textContent='DARK';}else{document.documentElement.classList.remove('light');if(i)i.textContent='☀️';if(l)l.textContent='LIGHT';}}
+function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
+</script>
+
+<div class="page">
+    <div class="top"><a href="install_index.html" class="back">← Dashboard</a></div>
+    <div class="eyebrow">Installation</div>
+    <h1>Log an <em>Install</em></h1>
+    <div class="sub">Record the job and the customer-experience checklist</div>
+    <div class="installer-tag">Installer: <strong id="installerName">—</strong> <span id="installerGroup" style="color:var(--faint)"></span></div>
+
+    <div class="card">
+        <div class="sec-lbl">Job Details</div>
+        <div class="row2">
+            <div class="field"><label>Customer Name</label><input id="customerName" type="text" placeholder="e.g. Sarah Johnson" /></div>
+            <div class="field"><label>Job Number</label><input id="jobNumber" type="text" placeholder="e.g. 48213" /></div>
+        </div>
+        <div class="row2">
+            <div class="field"><label>Sold By (Salesperson)</label><input id="soldBy" type="text" placeholder="Who sold the job" /></div>
+            <div class="field"><label>Install Date</label><input id="installDate" type="date" /></div>
+        </div>
+        <div class="field"><label>What Was Installed</label><textarea id="whatInstalled" placeholder="e.g. 50-gallon water heater, expansion tank, new shutoff…"></textarea></div>
+        <div class="field"><label>System / Model Installed</label><input id="systemInstalled" type="text" placeholder="e.g. Bradford White RG250T6N" /></div>
+        <div class="field"><label>Other Notes</label><textarea id="notes" placeholder="Anything else worth logging"></textarea></div>
+    </div>
+
+    <div class="card">
+        <div class="sec-lbl">Customer Experience Checklist</div>
+        <div class="check-grid">
+            <button type="button" class="toggle" data-k="askedReview"><span class="t-label">Asked for a review</span><span class="t-state">No</span></button>
+            <button type="button" class="toggle" data-k="redCarpet"><span class="t-label">Red carpet treatment (floor covers, clean job, customer happy)</span><span class="t-state">No</span></button>
+            <button type="button" class="toggle" data-k="warrantyReview"><span class="t-label">Walked over warranty &amp; annual maintenance</span><span class="t-state">No</span></button>
+            <button type="button" class="toggle" data-k="scheduledQA"><span class="t-label">Scheduled QA (Jake / Steve)</span><span class="t-state">No</span></button>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" id="saveBtn">🔧 Save Install</button>
+
+    <div style="margin-top:34px;">
+        <div class="sec-lbl">Recent Installs — This Installer</div>
+        <div id="recentList"><div class="empty-note">Loading…</div></div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════ FIREBASE — paste your INSTALL TRACKER project config (same as install_index.html) ════
+firebase.initializeApp({
+    apiKey: "AIzaSyBdTIdrCajlNM4_BYgJxZwFe0KXKgKw7yM",
+    authDomain: "install-tracker-30b1b.firebaseapp.com",
+    databaseURL: "https://install-tracker-30b1b-default-rtdb.firebaseio.com",
+    projectId: "install-tracker-30b1b",
+    storageBucket: "install-tracker-30b1b.firebasestorage.app",
+    messagingSenderId: "160965691779",
+    appId: "1:160965691779:web:c42baf2dd271a275994eb6"
+});
+const db=firebase.database();
+const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing Install',hvac:'HVAC Install',electrical:'Electrical Install'};
+
+const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
+function getSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY));}catch{return null;}}
+const sess=getSession();
+const selectedId=localStorage.getItem('installSelectedPerson');
+if(!sess||!selectedId||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
+
+let me=null, checks={askedReview:false,redCarpet:false,warrantyReview:false,scheduledQA:false};
+
+document.getElementById('installDate').value=new Date().toISOString().slice(0,10);
+
+db.ref('installPeople/'+selectedId).once('value',snap=>{
+    const p=snap.val();
+    if(!p){location.href='install_index.html';return;}
+    me={id:selectedId,name:p.name,group:p.group||'plumbing'};
+    document.getElementById('installerName').textContent=p.name;
+    document.getElementById('installerGroup').textContent='· '+(GROUP_NAMES[me.group]||me.group);
+    loadRecent();
+});
+
+document.querySelectorAll('.toggle').forEach(t=>{
+    t.onclick=()=>{const k=t.dataset.k;checks[k]=!checks[k];t.classList.toggle('on',checks[k]);t.querySelector('.t-state').textContent=checks[k]?'Yes':'No';};
+});
+
+function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+document.getElementById('saveBtn').onclick=()=>{
+    const customerName=document.getElementById('customerName').value.trim();
+    const jobNumber=document.getElementById('jobNumber').value.trim();
+    if(!customerName){toast('Enter the customer name','#dc2626');return;}
+    if(!jobNumber){toast('Enter the job number','#dc2626');return;}
+    const dateStr=document.getElementById('installDate').value||dkOf(new Date());
+    const d=new Date(dateStr+'T12:00:00');
+    const rec={
+        personId:me.id,installerName:me.name,group:me.group,
+        customerName,jobNumber,
+        soldBy:document.getElementById('soldBy').value.trim(),
+        whatInstalled:document.getElementById('whatInstalled').value.trim(),
+        systemInstalled:document.getElementById('systemInstalled').value.trim(),
+        notes:document.getElementById('notes').value.trim(),
+        askedReview:checks.askedReview,redCarpet:checks.redCarpet,
+        warrantyReview:checks.warrantyReview,scheduledQA:checks.scheduledQA,
+        date:dateStr,ts:d.getTime()
+    };
+    db.ref('installLogs/'+dkOf(d)).push(rec,err=>{
+        if(err){toast('Save failed — check connection','#dc2626');return;}
+        // reset
+        ['customerName','jobNumber','soldBy','whatInstalled','systemInstalled','notes'].forEach(id=>document.getElementById(id).value='');
+        Object.keys(checks).forEach(k=>checks[k]=false);
+        document.querySelectorAll('.toggle').forEach(t=>{t.classList.remove('on');t.querySelector('.t-state').textContent='No';});
+        toast('Install logged ✓');
+    });
+};
+
+function loadRecent(){
+    db.ref('installLogs').on('value',snap=>{
+        const all=snap.val()||{};const mine=[];
+        Object.entries(all).forEach(([dk,day])=>Object.entries(day).forEach(([id,r])=>{if(r.personId===me.id)mine.push(r);}));
+        mine.sort((a,b)=>(b.ts||0)-(a.ts||0));
+        const el=document.getElementById('recentList');
+        if(!mine.length){el.innerHTML='<div class="empty-note">No installs logged yet.</div>';return;}
+        el.innerHTML=mine.slice(0,12).map(r=>{
+            const badge=(on,lbl)=>`<span class="ri-badge ${on?'yes':''}">${on?'✓':'·'} ${lbl}</span>`;
+            return `<div class="recent-item">
+                <div>
+                    <div class="ri-main">#${r.jobNumber} · ${r.customerName}</div>
+                    <div class="ri-meta">${new Date(r.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}${r.soldBy?' · sold by '+r.soldBy:''}${r.whatInstalled?' · '+r.whatInstalled:''}</div>
+                </div>
+                <div class="ri-badges">${badge(r.askedReview,'Review')}${badge(r.redCarpet,'Red Carpet')}${badge(r.warrantyReview,'Warranty')}${badge(r.scheduledQA,'QA')}</div>
+            </div>`;
+        }).join('');
+    });
+}
+
+let _tt;
+function toast(msg,color){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color||'var(--green)';t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2600);}
+</script>
+</body>
+</html>
