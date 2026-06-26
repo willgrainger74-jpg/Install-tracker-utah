@@ -3,60 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Install — Action Install Tracker</title>
+    <title>Log Installs — Action Install Tracker</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#666;--faint:#333;--text:#efefef;--green:#10b981;}
-        html.light{--bg:#f4f4f4;--s1:#fff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,.08);--wire2:rgba(0,0,0,.14);--muted:#555;--faint:#999;--text:#111;--red3:#fde8e8;}
+        *, *::before, *::after { box-sizing:border-box;margin:0;padding:0; }
+        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#aaa;--faint:#666;--text:#efefef;--green:#10b981;--amber:#f59e0b;--blue:#3b82f6;--purple:#a855f7;}
+        html.light{--bg:#f4f4f4;--s1:#ffffff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,0.08);--wire2:rgba(0,0,0,0.14);--muted:#555555;--faint:#999999;--text:#111111;--red3:#fde8e8;}
         html.light body::after{display:none;}
         html.light input,html.light select,html.light textarea{background:var(--s3);border-color:var(--wire2);color:var(--text);}
-        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
-        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:999;}
-        .page{max-width:840px;margin:0 auto;padding:24px 20px 80px;}
-        .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
-        .back{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;}
-        .back:hover{color:var(--text);}
-        .eyebrow{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:.25em;color:var(--red);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-top:18px;}
-        .eyebrow::before{content:'';width:20px;height:2px;background:var(--red);}
-        h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,7vw,72px);line-height:.9;letter-spacing:2px;margin:2px 0 4px;}
-        h1 em{font-style:normal;color:var(--red);}
-        .sub{font-size:13px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:28px;}
-        .installer-tag{display:inline-flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--wire2);border-left:3px solid var(--red);padding:8px 14px;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:24px;}
-        .installer-tag strong{color:var(--text);}
-        .card{background:var(--s1);border:1px solid var(--wire);border-top:2px solid var(--red);padding:28px 30px;margin-bottom:22px;}
-        .sec-lbl{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:4px 0 16px;}
-        .field{margin-bottom:18px;}
-        .field label{display:block;font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
-        .field input,.field select,.field textarea{width:100%;background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:13px 14px;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .15s;}
-        .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--red);}
-        .field input::placeholder,.field textarea::placeholder{color:var(--faint);}
-        .field textarea{resize:vertical;min-height:80px;}
-        .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-        @media(max-width:560px){.row2{grid-template-columns:1fr;}}
-        .check-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-        @media(max-width:560px){.check-grid{grid-template-columns:1fr;}}
-        .toggle{background:var(--s2);border:1px solid var(--wire);border-left:3px solid var(--faint);padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;gap:10px;}
-        .toggle:hover{background:var(--s3);}
-        .toggle.on{border-left-color:var(--green);background:rgba(16,185,129,.08);}
-        .toggle .t-label{font-family:'Inter',sans-serif;font-size:13.5px;color:var(--text);line-height:1.35;}
-        .toggle .t-state{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex-shrink:0;}
-        .toggle.on .t-state{color:var(--green);}
-        .btn{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:16px 24px;border:none;cursor:pointer;transition:all .15s;}
-        .btn-primary{background:var(--red);color:#fff;width:100%;}
-        .btn-primary:hover{background:var(--red2);}
-        .btn-primary:active{transform:scale(.99);}
-        .recent-item{background:var(--s2);border:1px solid var(--wire);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-        .recent-item .ri-main{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em;color:var(--text);text-transform:uppercase;}
-        .recent-item .ri-meta{font-size:12px;color:var(--muted);}
-        .ri-badges{display:flex;gap:5px;flex-wrap:wrap;}
-        .ri-badge{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--wire2);color:var(--muted);}
-        .ri-badge.yes{color:var(--green);border-color:rgba(16,185,129,.4);}
-        #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;z-index:9999;transition:transform .3s;}
-        #toast.show{transform:translateX(-50%) translateY(0);}
-        .empty-note{padding:18px;text-align:center;font-size:13px;color:var(--faint);}
+        html.light input::placeholder,html.light textarea::placeholder{color:var(--faint);}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:999;}
+        .page{max-width:1400px;margin:0 auto;padding:24px 20px 80px;}
+        .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--wire);}
+        .page-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,72px);line-height:0.9;letter-spacing:2px;}
+        .page-title em{font-style:normal;color:var(--red);}
+        .page-sub{font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
+        .back-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);border:1px solid var(--wire2);padding:10px 18px;text-decoration:none;transition:all 0.15s;white-space:nowrap;margin-top:8px;display:inline-block;}
+        .back-btn:hover{color:var(--text);border-color:var(--muted);}
+        .card{background:var(--s1);border:1px solid var(--wire);padding:24px 28px;margin-bottom:20px;}
+        .card-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--text);margin-bottom:16px;}
+        .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+        .cal-nav-btn{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:var(--muted);background:var(--s2);border:1px solid var(--wire);padding:10px 20px;cursor:pointer;transition:all 0.15s;}
+        .cal-nav-btn:hover{color:var(--text);border-color:var(--red);}
+        .cal-range{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);}
+        .cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
+        .cal-day-label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);text-align:center;padding:6px 0;}
+        .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+        .cal-day{background:var(--s2);border:1px solid var(--wire);border-top:2px solid transparent;padding:14px 8px;cursor:pointer;transition:all 0.15s;text-align:left;width:100%;}
+        .cal-day:hover{border-top-color:var(--red);background:var(--s3);}
+        .cal-day.has-calls{border-top-color:var(--red);background:rgba(68,10,10,0.4);}
+        .cal-day.selected{border-color:rgba(220,38,38,0.5);border-top-color:var(--red);background:var(--red3);box-shadow:0 0 0 1px var(--red);}
+        .cal-day-num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--text);line-height:1;}
+        .cal-day-stat{font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.04em;color:var(--red);margin-top:4px;}
+        .cal-day-empty{font-size:13px;color:var(--muted);margin-top:4px;}
+        .calls-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+        .btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;padding:10px 20px;border:none;cursor:pointer;transition:all 0.15s;}
+        .btn-red{background:var(--red);color:#fff;}
+        .btn-red:hover{background:var(--red2);}
+        .btn-red:active{transform:scale(0.97);}
+        .call-card{background:var(--s2);border:1px solid var(--wire);border-left:3px solid var(--red);padding:20px;margin-bottom:12px;}
+        .call-card.continuing{border-left-color:var(--amber);}
+        .call-card.approved{border-left-color:var(--green);}
+        .lock-badge{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.4);padding:6px 12px;}
+        .lock-note{font-size:12px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);padding:8px 12px;margin-bottom:12px;letter-spacing:.03em;}
+        .call-card.approved input,.call-card.approved select,.call-card.approved textarea{opacity:.7;cursor:not-allowed;}
+        .call-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+        .call-label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+        .del-call{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);background:var(--red3);border:1px solid rgba(220,38,38,0.3);padding:6px 14px;cursor:pointer;transition:all 0.15s;}
+        .del-call:hover{background:var(--red);color:#fff;}
+        .field{margin-bottom:12px;}
+        .field label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px;}
+        input[type=text],input[type=number],input[type=tel],textarea,select{background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:10px 14px;width:100%;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color 0.15s;}
+        input::placeholder,textarea::placeholder{color:var(--muted);}
+        input:focus,textarea:focus,select:focus{border-color:var(--red);}
+        select option{background:var(--s3);color:var(--text);}
+        .check-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--s3);border:1px solid var(--wire);margin-bottom:6px;cursor:pointer;transition:border-color 0.15s;}
+        .check-row:hover{border-color:var(--wire2);}
+        .check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--red);flex-shrink:0;}
+        .check-row span{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);}
+        .check-row.cont{background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.35);}
+        .check-row.cont input[type=checkbox]{accent-color:var(--amber);}
+        .trade-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+        @media(max-width:560px){.trade-grid{grid-template-columns:1fr;}}
+        .divider{border:none;border-top:1px solid var(--wire);margin:16px 0;}
+        .section-label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+        .fab{position:fixed;bottom:28px;right:24px;z-index:1000;background:var(--red);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;padding:14px 24px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(220,38,38,0.5);transition:all 0.15s;display:none;align-items:center;gap:8px;}
+        .fab:hover{background:var(--red2);box-shadow:0 4px 28px rgba(220,38,38,0.7);}
+        .fab:active{transform:scale(0.97);}
+        .add-call-bottom{width:100%;background:transparent;border:2px dashed rgba(220,38,38,0.3);color:var(--red);font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;padding:16px;cursor:pointer;transition:all 0.15s;margin-top:8px;}
+        .add-call-bottom:hover{background:var(--red3);border-color:var(--red);}
     </style>
 </head>
 <body>
@@ -69,50 +87,42 @@ function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElem
 function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
 </script>
 
+<button class="fab" id="fabAdd">+ Add Install</button>
+
 <div class="page">
-    <div class="top"><a href="install_index.html" class="back">← Dashboard</a></div>
-    <div class="eyebrow">Installation</div>
-    <h1>Log an <em>Install</em></h1>
-    <div class="sub">Record the job and the customer-experience checklist</div>
-    <div class="installer-tag">Installer: <strong id="installerName">—</strong> <span id="installerGroup" style="color:var(--faint)"></span></div>
-
-    <div class="card">
-        <div class="sec-lbl">Job Details</div>
-        <div class="row2">
-            <div class="field"><label>Customer Name</label><input id="customerName" type="text" placeholder="e.g. Sarah Johnson" /></div>
-            <div class="field"><label>Job Number</label><input id="jobNumber" type="text" placeholder="e.g. 48213" /></div>
+    <div class="page-header">
+        <div>
+            <div class="page-title">Log <em>Installs</em></div>
+            <div id="personName" class="page-sub"></div>
         </div>
-        <div class="row2">
-            <div class="field"><label>Sold By (Salesperson)</label><input id="soldBy" type="text" placeholder="Who sold the job" /></div>
-            <div class="field"><label>Install Date</label><input id="installDate" type="date" /></div>
-        </div>
-        <div class="field"><label>What Was Installed</label><textarea id="whatInstalled" placeholder="e.g. 50-gallon water heater, expansion tank, new shutoff…"></textarea></div>
-        <div class="field"><label>System / Model Installed</label><input id="systemInstalled" type="text" placeholder="e.g. Bradford White RG250T6N" /></div>
-        <div class="field"><label>Other Notes</label><textarea id="notes" placeholder="Anything else worth logging"></textarea></div>
+        <a href="install_index.html" class="back-btn">← Dashboard</a>
     </div>
-
     <div class="card">
-        <div class="sec-lbl">Customer Experience Checklist</div>
-        <div class="check-grid">
-            <button type="button" class="toggle" data-k="askedReview"><span class="t-label">Asked for a review</span><span class="t-state">No</span></button>
-            <button type="button" class="toggle" data-k="redCarpet"><span class="t-label">Red carpet treatment (floor covers, clean job, customer happy)</span><span class="t-state">No</span></button>
-            <button type="button" class="toggle" data-k="warrantyReview"><span class="t-label">Walked over warranty &amp; annual maintenance</span><span class="t-state">No</span></button>
-            <button type="button" class="toggle" data-k="scheduledQA"><span class="t-label">Scheduled QA (Jake / Steve)</span><span class="t-state">No</span></button>
+        <div class="cal-nav">
+            <button class="cal-nav-btn" id="prevWeek">←</button>
+            <div id="weekRange" class="cal-range"></div>
+            <button class="cal-nav-btn" id="nextWeek">→</button>
         </div>
+        <div class="cal-days-header">
+            <div class="cal-day-label">Mon</div><div class="cal-day-label">Tue</div><div class="cal-day-label">Wed</div><div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div><div class="cal-day-label">Sat</div><div class="cal-day-label">Sun</div>
+        </div>
+        <div class="cal-grid" id="calendarDays"></div>
     </div>
-
-    <button class="btn btn-primary" id="saveBtn">🔧 Save Install</button>
-
-    <div style="margin-top:34px;">
-        <div class="sec-lbl">Recent Installs — This Installer</div>
-        <div id="recentList"><div class="empty-note">Loading…</div></div>
+    <div id="installsSection" style="display:none;">
+        <div class="card">
+            <div class="calls-header">
+                <div class="card-title" id="dayTitle">Installs</div>
+                <button class="btn btn-red" id="addTop">+ Add Install</button>
+            </div>
+            <div style="font-size:12px;color:var(--faint);margin:-8px 0 16px;letter-spacing:.04em;">Every field saves automatically as you type — no save button.</div>
+            <div id="installsList"></div>
+            <button class="add-call-bottom" id="addBottom" style="display:none;">+ Add Another Install</button>
+        </div>
     </div>
 </div>
 
-<div id="toast"></div>
-
 <script>
-// ════ FIREBASE — paste your INSTALL TRACKER project config (same as install_index.html) ════
+// ════ FIREBASE — Install Tracker project (same as the rest of the app) ════
 firebase.initializeApp({
     apiKey: "AIzaSyBdTIdrCajlNM4_BYgJxZwFe0KXKgKw7yM",
     authDomain: "install-tracker-30b1b.firebaseapp.com",
@@ -123,83 +133,119 @@ firebase.initializeApp({
     appId: "1:160965691779:web:c42baf2dd271a275994eb6"
 });
 const db=firebase.database();
+
 const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing Install',hvac:'HVAC Install',electrical:'Electrical Install'};
-
-const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
-function getSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY));}catch{return null;}}
-const sess=getSession();
-const selectedId=localStorage.getItem('installSelectedPerson');
-if(!sess||!selectedId||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
-
-let me=null, checks={askedReview:false,redCarpet:false,warrantyReview:false,scheduledQA:false};
-
-document.getElementById('installDate').value=new Date().toISOString().slice(0,10);
-
-db.ref('installPeople/'+selectedId).once('value',snap=>{
-    const p=snap.val();
-    if(!p){location.href='install_index.html';return;}
-    me={id:selectedId,name:p.name,group:p.group||'plumbing'};
-    document.getElementById('installerName').textContent=p.name;
-    document.getElementById('installerGroup').textContent='· '+(GROUP_NAMES[me.group]||me.group);
-    loadRecent();
-});
-
-document.querySelectorAll('.toggle').forEach(t=>{
-    t.onclick=()=>{const k=t.dataset.k;checks[k]=!checks[k];t.classList.toggle('on',checks[k]);t.querySelector('.t-state').textContent=checks[k]?'Yes':'No';};
-});
-
-function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-
-document.getElementById('saveBtn').onclick=()=>{
-    const customerName=document.getElementById('customerName').value.trim();
-    const jobNumber=document.getElementById('jobNumber').value.trim();
-    if(!customerName){toast('Enter the customer name','#dc2626');return;}
-    if(!jobNumber){toast('Enter the job number','#dc2626');return;}
-    const dateStr=document.getElementById('installDate').value||dkOf(new Date());
-    const d=new Date(dateStr+'T12:00:00');
-    const rec={
-        personId:me.id,installerName:me.name,group:me.group,
-        customerName,jobNumber,
-        soldBy:document.getElementById('soldBy').value.trim(),
-        whatInstalled:document.getElementById('whatInstalled').value.trim(),
-        systemInstalled:document.getElementById('systemInstalled').value.trim(),
-        notes:document.getElementById('notes').value.trim(),
-        askedReview:checks.askedReview,redCarpet:checks.redCarpet,
-        warrantyReview:checks.warrantyReview,scheduledQA:checks.scheduledQA,
-        date:dateStr,ts:d.getTime()
-    };
-    db.ref('installLogs/'+dkOf(d)).push(rec,err=>{
-        if(err){toast('Save failed — check connection','#dc2626');return;}
-        // reset
-        ['customerName','jobNumber','soldBy','whatInstalled','systemInstalled','notes'].forEach(id=>document.getElementById(id).value='');
-        Object.keys(checks).forEach(k=>checks[k]=false);
-        document.querySelectorAll('.toggle').forEach(t=>{t.classList.remove('on');t.querySelector('.t-state').textContent='No';});
-        toast('Install logged ✓');
-    });
+const TRADE_NAMES={underground:'Underground',plumbing:'Plumbing',hvac:'HVAC',electrical:'Electrical'};
+const TRADE_ITEMS={
+    underground:['Standard Dig','Non-Standard Dig','Standard Backfill','Non-Standard Backfill','Hand Dig','Liner Shot','uLiner Shot','Liner Shot Minimum'],
+    plumbing:['Water Heater / Water Softener','Water Repipe / Drain Repipe','Basement Breakup','Floor Drain / Sump Pump','Stack Replacement','Shower Valve / Toilet Flange','Sewage Pump System / Sump Pump System','Sewage Pump Swap / Sump Pump Swap','Main Valve & PRV / Halo Ion / Angle Stop / Disposal / Faucet / Toilet / Hose Bib'],
+    hvac:['Swap','Add','Full System','Water Heater'],
+    electrical:['Panel Install','Meter Install','Circuit Restore','Home Runs (More Than Two on Meter or Panel)','Panel Meter Combo','Basement Rough In','SER Pull over 40FT','Whole House Rewire 0–2500 sqft','Whole House Rewire 2500+ sqft']
 };
 
-function loadRecent(){
-    db.ref('installLogs').on('value',snap=>{
-        const all=snap.val()||{};const mine=[];
-        Object.entries(all).forEach(([dk,day])=>Object.entries(day).forEach(([id,r])=>{if(r.personId===me.id)mine.push(r);}));
-        mine.sort((a,b)=>(b.ts||0)-(a.ts||0));
-        const el=document.getElementById('recentList');
-        if(!mine.length){el.innerHTML='<div class="empty-note">No installs logged yet.</div>';return;}
-        el.innerHTML=mine.slice(0,12).map(r=>{
-            const badge=(on,lbl)=>`<span class="ri-badge ${on?'yes':''}">${on?'✓':'·'} ${lbl}</span>`;
-            return `<div class="recent-item">
-                <div>
-                    <div class="ri-main">#${r.jobNumber} · ${r.customerName}</div>
-                    <div class="ri-meta">${new Date(r.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}${r.soldBy?' · sold by '+r.soldBy:''}${r.whatInstalled?' · '+r.whatInstalled:''}</div>
-                </div>
-                <div class="ri-badges">${badge(r.askedReview,'Review')}${badge(r.redCarpet,'Red Carpet')}${badge(r.warrantyReview,'Warranty')}${badge(r.scheduledQA,'QA')}</div>
-            </div>`;
-        }).join('');
+const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
+let sess=null; try{sess=JSON.parse(localStorage.getItem(SESSION_KEY));}catch(e){}
+const selected=localStorage.getItem('installSelectedPerson');
+if(!sess||!selected||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
+
+let me=null, currentDate=new Date(), selectedDate=null, installsRef=null;
+
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function getWeek(date){const day=date.getDay(),diff=date.getDate()-day+(day===0?-6:1),mon=new Date(date);mon.setDate(diff);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
+
+db.ref('installPeople/'+selected).once('value',snap=>{
+    const p=snap.val();
+    if(!p){location.href='install_index.html';return;}
+    me={id:selected,name:p.name,group:p.group||'plumbing'};
+    document.getElementById('personName').textContent='Logging for: '+p.name+' · '+(GROUP_NAMES[me.group]||me.group);
+    renderCalendar();
+});
+
+function renderCalendar(){
+    const week=getWeek(currentDate);
+    document.getElementById('weekRange').textContent=`${week[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} — ${week[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`.toUpperCase();
+    const grid=document.getElementById('calendarDays');grid.innerHTML='';
+    week.forEach(()=>{const slot=document.createElement('button');slot.className='cal-day';slot.innerHTML='<div class="cal-day-num" style="opacity:.2">—</div>';grid.appendChild(slot);});
+    week.forEach((d,i)=>{
+        db.ref('installLogs/'+dk(d)).once('value',snap=>{
+            const all=snap.val();const arr=all?Object.values(all).filter(r=>r.personId===selected):[];
+            const n=arr.length, cont=arr.filter(r=>r.continuing).length;
+            const dateKey=dk(d),isSel=selectedDate===dateKey;
+            const btn=grid.children[i];
+            btn.className='cal-day'+(n>0?' has-calls':'')+(isSel?' selected':'');
+            btn.innerHTML=`<div class="cal-day-num">${d.getDate()}</div>${n>0?`<div class="cal-day-stat">${n} install${n>1?'s':''}${cont?` · ${cont}&#8635;`:''}</div>`:`<div class="cal-day-empty">—</div>`}`;
+            btn.onclick=()=>{selectedDate=isSel?null:dateKey;renderCalendar();if(selectedDate)renderInstalls(d);else hideExtras();};
+        });
     });
 }
 
-let _tt;
-function toast(msg,color){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color||'var(--green)';t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2600);}
+function renderInstalls(date){
+    document.getElementById('installsSection').style.display='block';
+    document.getElementById('fabAdd').style.display='flex';
+    document.getElementById('addBottom').style.display='block';
+    document.getElementById('dayTitle').textContent=date.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+' — Installs';
+    const path='installLogs/'+dk(date);
+    if(installsRef)installsRef.off();
+    installsRef=db.ref(path);
+    installsRef.on('value',snap=>{
+        const all=snap.val();
+        const arr=all?Object.keys(all).map(id=>({id,...all[id]})).filter(r=>r.personId===selected):[];
+        arr.sort((a,b)=>(a.ts||0)-(b.ts||0));
+        const c=document.getElementById('installsList');
+        if(!arr.length){c.innerHTML='<p style="color:var(--muted);text-align:center;padding:32px;font-family:Oswald,sans-serif;letter-spacing:0.1em;text-transform:uppercase;font-size:13px;">No installs logged for this day</p>';}
+        else{c.innerHTML=arr.map(cardHTML).join('');}
+        renderCalendar();
+    });
+    const blank=()=>({personId:selected,installerName:me.name,group:me.group,customerName:'',jobNumber:'',soldBy:'',whatInstalled:'',systemInstalled:'',notes:'',askedReview:false,redCarpet:false,warrantyReview:false,scheduledQA:false,trade:me.group,payType:'',hours:0,continuing:false,date:dk(date),ts:Date.now()});
+    const doAdd=()=>{db.ref(path).push().set(blank()).then(()=>{setTimeout(()=>{const cards=document.querySelectorAll('.call-card');if(cards.length)cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'center'});},200);});};
+    document.getElementById('addTop').onclick=doAdd;
+    document.getElementById('addBottom').onclick=doAdd;
+    document.getElementById('fabAdd').onclick=doAdd;
+}
+
+function cardHTML(c){
+    const locked=!!c.approved;
+    const dis=locked?' disabled':'';
+    const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${c.trade===t?' selected':''}>${TRADE_NAMES[t]}</option>`).join('');
+    const pieceBlock=c.payType==='piece'?`<div class="section-label" style="margin-top:6px;">${esc(TRADE_NAMES[c.trade]||'')} — Piece-Rate Work</div><div class="trade-grid">${(TRADE_ITEMS[c.trade]||[]).map((item,i)=>`<label class="check-row"><input type="checkbox" ${c.pieceItems&&c.pieceItems[i]?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked)"><span>${esc(item)}</span></label>`).join('')}</div>`:'';
+    const hoursBlock=c.payType==='hours'?`<div class="field"><label>Hours Worked</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateInstall('${c.id}','hours',parseFloat(this.value)||0)" placeholder="e.g. 6.5" /></div>`:'';
+    const headRight=locked?`<span class="lock-badge">🔒 Approved — locked</span>`:`<button class="del-call" onclick="deleteInstall('${c.id}')">Delete</button>`;
+    return `<div class="call-card${c.continuing?' continuing':''}${locked?' approved':''}">
+        <div class="call-card-header"><div class="call-label">Install${c.continuing?' · &#8635; Continuing':''}</div>${headRight}</div>
+        ${locked?'<div class="lock-note">A manager approved this turn-in. Ask a manager if it needs changing.</div>':''}
+        <div class="field"><label>Customer Name</label><input type="text" value="${esc(c.customerName)}"${dis} onchange="updateInstall('${c.id}','customerName',this.value)" placeholder="Customer Name" /></div>
+        <div class="field"><label>Job Number</label><input type="text" value="${esc(c.jobNumber)}"${dis} onchange="updateInstall('${c.id}','jobNumber',this.value)" placeholder="Job Number" /></div>
+        <div class="field"><label>Sold By</label><input type="text" value="${esc(c.soldBy)}"${dis} onchange="updateInstall('${c.id}','soldBy',this.value)" placeholder="Who sold the job" /></div>
+        <div class="field"><label>What Was Installed</label><textarea rows="2"${dis} onchange="updateInstall('${c.id}','whatInstalled',this.value)" placeholder="e.g. 50-gal water heater, expansion tank…">${esc(c.whatInstalled)}</textarea></div>
+        <div class="field"><label>System / Model</label><input type="text" value="${esc(c.systemInstalled)}"${dis} onchange="updateInstall('${c.id}','systemInstalled',this.value)" placeholder="e.g. Bradford White RG250T6N" /></div>
+        <div class="field"><label>Notes</label><textarea rows="2"${dis} onchange="updateInstall('${c.id}','notes',this.value)" placeholder="Anything else worth logging">${esc(c.notes)}</textarea></div>
+        <label class="check-row cont"><input type="checkbox" ${c.continuing?'checked':''}${dis} onchange="updateInstall('${c.id}','continuing',this.checked)"><span>&#8635; Continuing install — carries into the next day (counts as one)</span></label>
+        <hr class="divider"><div class="section-label">Customer Experience</div>
+        <div class="trade-grid">
+            <label class="check-row"><input type="checkbox" ${c.askedReview?'checked':''}${dis} onchange="updateInstall('${c.id}','askedReview',this.checked)"><span>✅ Asked for Review</span></label>
+            <label class="check-row"><input type="checkbox" ${c.redCarpet?'checked':''}${dis} onchange="updateInstall('${c.id}','redCarpet',this.checked)"><span>🟥 Red Carpet</span></label>
+            <label class="check-row"><input type="checkbox" ${c.warrantyReview?'checked':''}${dis} onchange="updateInstall('${c.id}','warrantyReview',this.checked)"><span>📑 Warranty &amp; Maint.</span></label>
+            <label class="check-row"><input type="checkbox" ${c.scheduledQA?'checked':''}${dis} onchange="updateInstall('${c.id}','scheduledQA',this.checked)"><span>🔍 Scheduled QA</span></label>
+        </div>
+        <hr class="divider"><div class="section-label">Pay / Turn-In</div>
+        <div class="field"><label>Trade</label><select${dis} onchange="changeTrade('${c.id}',this.value)">${tradeSel}</select></div>
+        <div class="field"><label>Pay Type</label><select${dis} onchange="changePayType('${c.id}',this.value)"><option value=""${!c.payType?' selected':''}>Select…</option><option value="hours"${c.payType==='hours'?' selected':''}>Hours</option><option value="piece"${c.payType==='piece'?' selected':''}>Piece Rate</option></select></div>
+        ${hoursBlock}${pieceBlock}
+    </div>`;
+}
+
+function curPath(){return 'installLogs/'+selectedDate;}
+function updateInstall(id,field,value){db.ref(`${curPath()}/${id}/${field}`).set(value);}
+function changeTrade(id,val){db.ref(`${curPath()}/${id}/trade`).set(val);db.ref(`${curPath()}/${id}/pieceItems`).remove();}
+function changePayType(id,val){const u={payType:val};if(val!=='piece')u.pieceItems=null;if(val!=='hours')u.hours=0;db.ref(`${curPath()}/${id}`).update(u);}
+function togglePiece(id,i,checked){db.ref(`${curPath()}/${id}/pieceItems/${i}`).set(checked?true:null);}
+function deleteInstall(id){if(confirm('Delete this install?'))db.ref(`${curPath()}/${id}`).remove();}
+
+function hideExtras(){document.getElementById('installsSection').style.display='none';document.getElementById('fabAdd').style.display='none';document.getElementById('addBottom').style.display='none';if(installsRef){installsRef.off();installsRef=null;}}
+
+document.getElementById('prevWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()-7*864e5);selectedDate=null;hideExtras();renderCalendar();};
+document.getElementById('nextWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()+7*864e5);selectedDate=null;hideExtras();renderCalendar();};
 </script>
 </body>
 </html>

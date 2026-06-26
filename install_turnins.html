@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Turn-In — Action Install Tracker</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#aaa;--faint:#666;--text:#efefef;--green:#10b981;--amber:#f59e0b;--blue:#3b82f6;--purple:#a855f7;}
+        html.light{--bg:#f4f4f4;--s1:#fff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,0.08);--wire2:rgba(0,0,0,0.14);--muted:#555;--faint:#999;--text:#111;--red3:#fde8e8;}
+        html.light body::after{display:none;}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:999;}
+        .page{max-width:1200px;margin:0 auto;padding:24px 20px 80px;}
+        .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--wire);}
+        .page-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,64px);line-height:.9;letter-spacing:2px;}
+        .page-title em{font-style:normal;color:var(--red);}
+        .page-sub{font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
+        .back-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);border:1px solid var(--wire2);padding:10px 18px;text-decoration:none;transition:all .15s;white-space:nowrap;margin-top:8px;display:inline-block;}
+        .back-btn:hover{color:var(--text);border-color:var(--muted);}
+        .card{background:var(--s1);border:1px solid var(--wire);padding:22px 26px;margin-bottom:20px;}
+        .cal-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+        .cal-nav-btn{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:var(--muted);background:var(--s2);border:1px solid var(--wire);padding:8px 18px;cursor:pointer;transition:all .15s;}
+        .cal-nav-btn:hover{color:var(--text);border-color:var(--red);}
+        .cal-range{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text);}
+        .btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;padding:11px 20px;border:none;cursor:pointer;transition:all .15s;}
+        .btn-print{background:var(--s2);color:var(--text);border:1px solid var(--wire2);display:flex;align-items:center;gap:8px;}
+        .btn-print:hover{border-color:var(--red);color:var(--red);}
+        .summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--wire);margin-bottom:18px;}
+        @media(max-width:560px){.summary-bar{grid-template-columns:repeat(2,1fr);}}
+        .summary-stat{background:var(--s1);padding:16px 18px;}
+        .summary-stat-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);}
+        .summary-stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;line-height:1.1;}
+        .summary-stat-val.red{color:var(--red);}
+        .turnin-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--wire);}
+        .turnin-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;}
+        .turnin-meta{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+        .ti-table-wrap{overflow-x:auto;}
+        table.ti{width:100%;border-collapse:collapse;min-width:820px;}
+        table.ti th{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:10px 10px;text-align:left;border-bottom:2px solid var(--red);background:var(--s2);white-space:nowrap;}
+        table.ti td{padding:11px 10px;border-bottom:1px solid var(--wire);font-size:13.5px;color:var(--text);vertical-align:top;}
+        table.ti td.r,table.ti th.r{text-align:right;}
+        table.ti td.c,table.ti th.c{text-align:center;}
+        .jobnum{font-family:'Oswald',sans-serif;letter-spacing:.04em;}
+        .pill{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--wire2);color:var(--muted);white-space:nowrap;}
+        .pill.underground{color:var(--amber);border-color:rgba(245,158,11,.4);}
+        .pill.plumbing{color:var(--blue);border-color:rgba(59,130,246,.4);}
+        .pill.hvac{color:var(--green);border-color:rgba(16,185,129,.4);}
+        .pill.electrical{color:var(--purple);border-color:rgba(168,85,247,.4);}
+        .stat-approved{color:var(--green);font-weight:600;}
+        .stat-pending{color:var(--amber);}
+        .cont-tag{color:var(--amber);font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.06em;}
+        tr.totals td{background:var(--s2);border-top:2px solid var(--red);font-family:'Oswald',sans-serif;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px;}
+        .work-list{margin:0;padding-left:0;list-style:none;}
+        .work-list li{font-size:12.5px;color:var(--text);line-height:1.4;}
+        .work-note{font-size:12.5px;color:var(--muted);}
+        .sign-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:34px;}
+        @media(max-width:560px){.sign-row{grid-template-columns:1fr;gap:24px;}}
+        .sign-line{border-top:1px solid var(--wire2);padding-top:6px;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+        .empty-state{text-align:center;padding:48px 20px;color:var(--muted);}
+        .empty-state .icon{font-size:40px;margin-bottom:10px;}
+        .print-header{display:none;}
+        @media print{
+            @page{margin:14mm;}
+            body{background:#fff !important;}
+            body::after{display:none !important;}
+            .no-print{display:none !important;}
+            .page{max-width:none;padding:0;}
+            .card{border:none;padding:0;margin:0;background:#fff !important;}
+            .print-header{display:flex !important;align-items:flex-start;justify-content:space-between;margin-bottom:14px;border-bottom:2px solid #000;padding-bottom:10px;}
+            .turnin-title,.turnin-meta,table.ti td,.work-list li,.work-note,.sign-line{color:#000 !important;}
+            table.ti th{background:#222 !important;color:#fff !important;font-size:10px;padding:7px 8px;}
+            table.ti td{border-bottom:1px solid #ccc !important;font-size:11px;padding:7px 8px;}
+            tr.totals td{background:#f2f2f2 !important;border-top:2px solid #000 !important;color:#000 !important;}
+            .pill{border-color:#888 !important;color:#000 !important;}
+            tr.blank td{height:30px;border-bottom:1px solid #ccc !important;}
+        }
+    </style>
+</head>
+<body>
+<div class="no-print" style="position:fixed;top:12px;right:16px;z-index:9999;">
+  <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
+</div>
+<script>
+(function(){var t=localStorage.getItem('aitTheme')||'dark';applyTheme(t);})();
+function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElementById('themeIcon'),l=document.getElementById('themeLabel');if(t==='light'){document.documentElement.classList.add('light');if(i)i.textContent='🌙';if(l)l.textContent='DARK';}else{document.documentElement.classList.remove('light');if(i)i.textContent='☀️';if(l)l.textContent='LIGHT';}}
+function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
+</script>
+
+<div class="page">
+    <div class="page-header no-print">
+        <div>
+            <div class="page-title">Weekly <em>Turn-In</em></div>
+            <div id="personName" class="page-sub"></div>
+        </div>
+        <a href="install_index.html" class="back-btn">← Dashboard</a>
+    </div>
+
+    <div class="card no-print">
+        <div class="cal-nav">
+            <button class="cal-nav-btn" id="prevWeek">←</button>
+            <div id="weekRange" class="cal-range"></div>
+            <button class="cal-nav-btn" id="nextWeek">→</button>
+            <button class="btn btn-print" onclick="window.print()">🖨️ Print Week</button>
+        </div>
+    </div>
+
+    <div class="card" id="sheet">
+        <div class="print-header">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#000;">ACTION INSTALL — WEEKLY TURN-IN</div>
+            <div style="text-align:right;font-family:'Oswald',sans-serif;font-size:12px;color:#000;">
+                <div id="printName" style="font-weight:bold;"></div>
+                <div id="printRange"></div>
+            </div>
+        </div>
+
+        <div class="turnin-header">
+            <div>
+                <div class="turnin-title" id="sheetTitle">WEEKLY TURN-IN</div>
+                <div class="turnin-meta" id="sheetMeta"></div>
+            </div>
+        </div>
+
+        <div class="summary-bar no-print">
+            <div class="summary-stat"><div class="summary-stat-label">Installs</div><div class="summary-stat-val red" id="statInstalls">0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label">Total Hours</div><div class="summary-stat-val" id="statHours">0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label">Piece Items</div><div class="summary-stat-val" id="statPiece">0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label">Approved</div><div class="summary-stat-val" id="statApproved">0/0</div></div>
+        </div>
+
+        <div class="ti-table-wrap">
+            <table class="ti">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Customer</th>
+                        <th>Job #</th>
+                        <th>Trade</th>
+                        <th>Work Done</th>
+                        <th class="r">Hours</th>
+                        <th class="c">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="ticBody"></tbody>
+            </table>
+        </div>
+
+        <div class="sign-row">
+            <div class="sign-line">Installer Signature</div>
+            <div class="sign-line">Manager Signature</div>
+        </div>
+    </div>
+</div>
+
+<script>
+firebase.initializeApp({
+    apiKey: "AIzaSyBdTIdrCajlNM4_BYgJxZwFe0KXKgKw7yM",
+    authDomain: "install-tracker-30b1b.firebaseapp.com",
+    databaseURL: "https://install-tracker-30b1b-default-rtdb.firebaseio.com",
+    projectId: "install-tracker-30b1b",
+    storageBucket: "install-tracker-30b1b.firebasestorage.app",
+    messagingSenderId: "160965691779",
+    appId: "1:160965691779:web:c42baf2dd271a275994eb6"
+});
+const db=firebase.database();
+
+const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing Install',hvac:'HVAC Install',electrical:'Electrical Install'};
+const TRADE_NAMES={underground:'Underground',plumbing:'Plumbing',hvac:'HVAC',electrical:'Electrical'};
+const TRADE_ITEMS={
+    underground:['Standard Dig','Non-Standard Dig','Standard Backfill','Non-Standard Backfill','Hand Dig','Liner Shot','uLiner Shot','Liner Shot Minimum'],
+    plumbing:['Water Heater / Water Softener','Water Repipe / Drain Repipe','Basement Breakup','Floor Drain / Sump Pump','Stack Replacement','Shower Valve / Toilet Flange','Sewage Pump System / Sump Pump System','Sewage Pump Swap / Sump Pump Swap','Main Valve & PRV / Halo Ion / Angle Stop / Disposal / Faucet / Toilet / Hose Bib'],
+    hvac:['Swap','Add','Full System','Water Heater'],
+    electrical:['Panel Install','Meter Install','Circuit Restore','Home Runs (More Than Two on Meter or Panel)','Panel Meter Combo','Basement Rough In','SER Pull over 40FT','Whole House Rewire 0–2500 sqft','Whole House Rewire 2500+ sqft']
+};
+
+const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
+let sess=null;try{sess=JSON.parse(localStorage.getItem(SESSION_KEY));}catch(e){}
+const selected=localStorage.getItem('installSelectedPerson');
+if(!sess||!selected||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
+
+let me=null,currentDate=new Date();
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function getWeek(date){const day=date.getDay(),diff=date.getDate()-day+(day===0?-6:1),mon=new Date(date);mon.setDate(diff);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
+function pieceNames(r){if(!r.pieceItems)return [];return (TRADE_ITEMS[r.trade]||[]).filter((_,i)=>r.pieceItems[i]);}
+
+db.ref('installPeople/'+selected).once('value',snap=>{
+    const p=snap.val();
+    if(!p){location.href='install_index.html';return;}
+    me={id:selected,name:p.name,group:p.group||'plumbing'};
+    document.getElementById('personName').textContent='Turn-In for: '+p.name+' · '+(GROUP_NAMES[me.group]||me.group);
+    document.getElementById('printName').textContent=p.name+' — '+(GROUP_NAMES[me.group]||me.group);
+    renderWeek();
+});
+
+function renderWeek(){
+    const week=getWeek(currentDate);
+    const rangeTxt=`${week[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} — ${week[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`.toUpperCase();
+    document.getElementById('weekRange').textContent=rangeTxt;
+    document.getElementById('sheetTitle').textContent='WEEK OF '+rangeTxt;
+    document.getElementById('sheetMeta').textContent=(me?me.name:'')+' · '+rangeTxt;
+    document.getElementById('printRange').textContent=rangeTxt;
+
+    Promise.all(week.map(d=>db.ref('installLogs/'+dk(d)).once('value').then(s=>({d,all:s.val()})))).then(results=>{
+        const rows=[];
+        results.forEach(({d,all})=>{
+            if(!all)return;
+            Object.values(all).forEach(r=>{ if(r.personId===selected) rows.push({...r,_d:d}); });
+        });
+        rows.sort((a,b)=>(a.ts||0)-(b.ts||0));
+
+        let totHours=0,totPiece=0,nApproved=0;
+        const body=rows.map(r=>{
+            const hours=(r.payType==='hours')?(parseFloat(r.hours)||0):0;
+            const pcs=pieceNames(r);
+            totHours+=hours;totPiece+=pcs.length;if(r.approved)nApproved++;
+            const dateTxt=r._d.toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});
+            let work='';
+            if(r.whatInstalled)work+=`<div class="work-note">${esc(r.whatInstalled)}</div>`;
+            if(pcs.length)work+=`<ul class="work-list">${pcs.map(p=>`<li>• ${esc(p)}</li>`).join('')}</ul>`;
+            if(!work)work='<span class="work-note">—</span>';
+            return `<tr>
+                <td style="white-space:nowrap">${dateTxt}${r.continuing?'<div class="cont-tag">&#8635; cont.</div>':''}</td>
+                <td>${esc(r.customerName)||'—'}</td>
+                <td class="jobnum">${esc(r.jobNumber)||'—'}</td>
+                <td><span class="pill ${r.trade}">${TRADE_NAMES[r.trade]||r.trade||'—'}</span></td>
+                <td>${work}</td>
+                <td class="r">${hours?hours:(r.payType==='piece'?'Piece':'—')}</td>
+                <td class="c">${r.approved?'<span class="stat-approved">✓</span>':'<span class="stat-pending">—</span>'}</td>
+            </tr>`;
+        }).join('');
+
+        const blanks=Array(3).fill('<tr class="blank"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
+        const totals=`<tr class="totals"><td colspan="4">Totals — ${rows.length} install${rows.length!==1?'s':''}</td><td>${totPiece} piece item${totPiece!==1?'s':''}</td><td class="r">${Math.round(totHours*100)/100}</td><td class="c">${nApproved}/${rows.length}</td></tr>`;
+
+        const tbody=document.getElementById('ticBody');
+        if(!rows.length){
+            tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="icon">📋</div><div>No installs logged this week</div></div></td></tr>`+blanks;
+        }else{
+            tbody.innerHTML=body+blanks+totals;
+        }
+        document.getElementById('statInstalls').textContent=rows.length;
+        document.getElementById('statHours').textContent=Math.round(totHours*100)/100;
+        document.getElementById('statPiece').textContent=totPiece;
+        document.getElementById('statApproved').textContent=nApproved+'/'+rows.length;
+    });
+}
+
+document.getElementById('prevWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()-7*864e5);renderWeek();};
+document.getElementById('nextWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()+7*864e5);renderWeek();};
+</script>
+</body>
+</html>
