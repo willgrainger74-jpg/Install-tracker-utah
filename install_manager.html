@@ -102,10 +102,37 @@
         .ti-row .check-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s3);border:1px solid var(--wire);cursor:pointer;}
         .ti-row .check-row input{width:15px;height:15px;accent-color:var(--red);}
         .ti-row .check-row span{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--text);}
+        .scorecard{background:var(--s1);border:1px solid var(--wire);border-top:3px solid var(--red);padding:24px 26px;margin-bottom:18px;}
+        .sc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--wire);}
+        .sc-name{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;line-height:1;}
+        .sc-sub{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+        .sc-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--red);white-space:nowrap;}
+        .spark{display:flex;gap:2px;align-items:flex-end;height:28px;}
+        @media (max-width:640px){
+            .page{padding-left:12px;padding-right:12px;}
+            input,select,textarea{font-size:16px;min-height:50px;}
+            .tab-btn{font-size:13px;padding:13px 15px;}
+            .btn,.btn-red,.btn-outline,.pin-btn{min-height:52px;}
+            .pin-input{min-height:58px;font-size:18px;}
+            .ti-row .check-row{min-height:52px;}
+            .ti-row .check-row input{width:22px;height:22px;}
+        }
+        @media print{
+            @page{margin:14mm;}
+            body{background:#fff !important;}
+            body::after{display:none !important;}
+            .no-print,.hero,.tab-strip{display:none !important;}
+            .page{padding:0 !important;}
+            .scorecard{border:1px solid #999 !important;border-top:3px solid #000 !important;page-break-inside:avoid;padding:18px 0;}
+            .scorecard + .scorecard{page-break-before:always;}
+            .sc-name,.sc-sub,.stat-num,.stat-lbl,.stat-meta{color:#000 !important;}
+            .sc-logo{color:#000 !important;}
+            .stat-block{background:#fff !important;border:1px solid #ccc !important;}
+        }
     </style>
 </head>
 <body>
-<div style="position:fixed;top:12px;right:16px;z-index:9999;">
+<div class="no-print" style="position:fixed;top:12px;right:16px;z-index:9999;">
   <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
 </div>
 <script>
@@ -149,6 +176,8 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
         <button class="tab-btn" id="tab-recalls" onclick="showTab('recalls')">↩️ Recall Report</button>
         <button class="tab-btn" id="tab-installs" onclick="showTab('installs')">🔧 Install Report</button>
         <button class="tab-btn" id="tab-turnins" onclick="showTab('turnins')">⏱️ Turn-Ins</button>
+        <button class="tab-btn" id="tab-trends" onclick="showTab('trends')">📈 Trends</button>
+        <button class="tab-btn" id="tab-scorecards" onclick="showTab('scorecards')">📋 Scorecards</button>
         <button class="tab-btn" id="tab-logins" onclick="showTab('logins')">🔑 Logins</button>
         <button class="tab-btn" id="tab-archived" onclick="showTab('archived')">🗄️ Archived</button>
     </div>
@@ -216,6 +245,31 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
         <div class="sec-label">Detail — Approve &amp; Edit</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">Approving locks the turn-in so the tech can no longer edit it. You can still edit or unapprove here.</div>
         <div id="turninDetail"></div>
+    </div>
+
+    <!-- TRENDS -->
+    <div id="tab-trends-content" class="hidden">
+        <div class="sec-title">Recall-Rate &amp; Volume Trends</div>
+        <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6">Last 6 months. Recall rate = recalls logged that month ÷ installs logged that month. Watch the direction, not just the number — a climbing line is an early warning.</div>
+        <div class="sec-label">Overall — Installs vs Recalls by Month</div>
+        <div class="card" id="trendOverall"></div>
+        <div class="sec-label">Recall Rate by Month</div>
+        <div class="card" id="trendRate"></div>
+        <div class="sec-label">Recall Rate by Trade (last 6 mo)</div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Trade</th><th class="r">Installs</th><th class="r">Recalls</th><th class="r">Rate</th><th>6-Month Trend</th></tr></thead><tbody id="trendByTrade"></tbody></table></div>
+    </div>
+
+    <!-- SCORECARDS -->
+    <div id="tab-scorecards-content" class="hidden">
+        <div class="no-print" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+            <div class="sec-title">Installer Scorecards</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select id="scoreWho" onchange="renderScorecards()"><option value="all">All Installers</option></select>
+                <select id="scoreRange" onchange="renderScorecards()"><option value="30">Last 30 Days</option><option value="90" selected>Last 90 Days</option><option value="month">This Month</option><option value="all">All Time</option></select>
+                <button class="btn btn-print" onclick="window.print()">🖨️ Print</button>
+            </div>
+        </div>
+        <div id="scorecardWrap"></div>
     </div>
 
     <!-- LOGINS -->
@@ -306,7 +360,7 @@ function showTab(name){
     document.getElementById('tab-'+name).classList.add('active');
     currentTab=name;renderCurrent();
 }
-function renderCurrent(){({roster:renderRoster,recalls:renderRecalls,installs:renderInstalls,turnins:renderTurnins,logins:renderLogins,archived:renderArchived}[currentTab]||(()=>{}))();}
+function renderCurrent(){({roster:renderRoster,recalls:renderRecalls,installs:renderInstalls,turnins:renderTurnins,trends:renderTrends,scorecards:renderScorecards,logins:renderLogins,archived:renderArchived}[currentTab]||(()=>{}))();}
 
 function activePeople(){return Object.entries(people).filter(([id,p])=>!p.archived).map(([id,p])=>({id,...p}));}
 function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -502,6 +556,77 @@ function approveAllFiltered(){
     updates.forEach(u=>db.ref(`installLogs/${u.dk}/${u.id}`).update({approved:true,approvedTs:Date.now(),approvedBy:'manager'}));
     toast(`Approved ${updates.length} ✓`);
 }
+// ── TRENDS ──
+function lastMonths(n){const out=[];const now=new Date();for(let i=n-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);out.push({key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,label:d.toLocaleDateString('en-US',{month:'short'})});}return out;}
+function monthKeyOf(ts){const d=new Date(ts||Date.now());return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function spark(rates){const max=Math.max(10,...rates);return `<div class="spark">${rates.map(v=>{const col=v>10?'var(--red)':v>0?'var(--amber)':'var(--faint)';return `<div title="${Math.round(v)}%" style="width:7px;background:${col};height:${Math.max(2,Math.round((v/max)*28))}px"></div>`;}).join('')}</div>`;}
+
+function renderTrends(){
+    const months=lastMonths(6);const idx={};months.forEach((mo,i)=>idx[mo.key]=i);
+    const inst=months.map(()=>0),rec=months.map(()=>0);
+    const trd={};DIVS.forEach(([k])=>trd[k]={inst:months.map(()=>0),rec:months.map(()=>0)});
+    Object.values(logs).forEach(day=>Object.values(day).forEach(r=>{const k=monthKeyOf(r.ts);if(k in idx){inst[idx[k]]++;const t=r.trade||r.group;if(trd[t])trd[t].inst[idx[k]]++;}}));
+    Object.values(recalls).forEach(day=>Object.values(day).forEach(r=>{const k=monthKeyOf(r.ts);if(k in idx){rec[idx[k]]++;if(trd[r.division])trd[r.division].rec[idx[k]]++;}}));
+    // overall installs vs recalls
+    const maxIR=Math.max(1,...inst,...rec);
+    document.getElementById('trendOverall').innerHTML=`
+        <div style="display:flex;gap:8px;align-items:flex-end">${months.map((mo,i)=>`
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="display:flex;gap:3px;align-items:flex-end;height:150px;width:100%;justify-content:center">
+                    <div title="Installs: ${inst[i]}" style="width:38%;background:var(--blue);height:${Math.round(inst[i]/maxIR*100)}%;min-height:${inst[i]?'3px':'0'}"></div>
+                    <div title="Recalls: ${rec[i]}" style="width:38%;background:var(--red);height:${Math.round(rec[i]/maxIR*100)}%;min-height:${rec[i]?'3px':'0'}"></div>
+                </div>
+                <div style="font-family:Oswald,sans-serif;font-size:12px;color:var(--text)">${inst[i]}<span style="color:var(--muted)">/</span><span style="color:var(--red)">${rec[i]}</span></div>
+                <div style="font-family:Oswald,sans-serif;font-size:11px;color:var(--muted);letter-spacing:.06em">${mo.label}</div>
+            </div>`).join('')}</div>
+        <div style="display:flex;gap:18px;margin-top:14px;justify-content:center;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.06em;color:var(--muted)"><span><span style="display:inline-block;width:10px;height:10px;background:var(--blue);margin-right:5px"></span>Installs</span><span><span style="display:inline-block;width:10px;height:10px;background:var(--red);margin-right:5px"></span>Recalls</span></div>`;
+    // rate by month
+    const rate=months.map((_,i)=>inst[i]?rec[i]/inst[i]*100:0);
+    const maxR=Math.max(10,...rate);
+    document.getElementById('trendRate').innerHTML=`<div style="display:flex;gap:8px;align-items:flex-end">${months.map((mo,i)=>{const v=rate[i];const col=v>10?'var(--red)':v>0?'var(--amber)':'var(--green)';return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="font-family:Oswald,sans-serif;font-size:12px;color:var(--text)">${inst[i]?Math.round(v)+'%':'—'}</div><div style="display:flex;align-items:flex-end;height:120px;width:100%;justify-content:center"><div style="width:46%;background:${col};height:${Math.round(v/maxR*100)}%;min-height:${v?'3px':'0'}"></div></div><div style="font-family:Oswald,sans-serif;font-size:11px;color:var(--muted);letter-spacing:.06em">${mo.label}</div></div>`;}).join('')}</div>`;
+    // by trade
+    document.getElementById('trendByTrade').innerHTML=DIVS.map(([k,l])=>{const t=trd[k];const ti=t.inst.reduce((a,b)=>a+b,0),tr=t.rec.reduce((a,b)=>a+b,0);const rr=ti?Math.round(tr/ti*100):0;const rates=months.map((_,i)=>t.inst[i]?t.rec[i]/t.inst[i]*100:0);return `<tr><td><span class="pill ${k}">${l}</span></td><td class="r">${ti}</td><td class="r">${tr}</td><td class="r" style="font-weight:600;color:${ti&&rr>10?'var(--red)':'var(--green)'}">${ti?rr+'%':'—'}</td><td>${spark(rates)}</td></tr>`;}).join('');
+}
+
+// ── SCORECARDS ──
+function fillScoreWho(){const sel=document.getElementById('scoreWho');const cur=sel.value;sel.innerHTML='<option value="all">All Installers</option>'+activePeople().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');if([...sel.options].some(o=>o.value===cur))sel.value=cur;}
+function personMetrics(id,cutoff){
+    let inst=0,rev=0,rc=0,qa=0,wr=0,hours=0,piece=0,rcl=0;
+    Object.values(logs).forEach(day=>Object.values(day).forEach(r=>{if(r.personId===id&&(r.ts||0)>=cutoff){inst++;if(r.askedReview)rev++;if(r.redCarpet)rc++;if(r.scheduledQA)qa++;if(r.warrantyReview)wr++;if(r.payType==='hours')hours+=parseFloat(r.hours)||0;if(r.payType==='piece'&&r.pieceItems)piece+=Object.keys(r.pieceItems).length;}}));
+    Object.values(recalls).forEach(day=>Object.values(day).forEach(r=>{if(r.originalPersonId===id&&(r.ts||0)>=cutoff)rcl++;}));
+    return {inst,rev,rc,qa,wr,hours,piece,rcl};
+}
+function renderScorecards(){
+    fillScoreWho();
+    const cutoff=cutoffFrom(document.getElementById('scoreRange').value);
+    const rangeLabel=document.getElementById('scoreRange').selectedOptions[0].textContent;
+    const who=document.getElementById('scoreWho').value;
+    const list=who==='all'?activePeople().sort((a,b)=>a.name.localeCompare(b.name)):(people[who]?[{id:who,...people[who]}]:[]);
+    const pct=(n,d)=>d?Math.round(n/d*100)+'%':'—';
+    const wrap=document.getElementById('scorecardWrap');
+    if(!list.length){wrap.innerHTML='<div class="empty-note">No installers to show.</div>';return;}
+    wrap.innerHTML=list.map(p=>{
+        const m=personMetrics(p.id,cutoff);
+        const rr=m.inst?Math.round(m.rcl/m.inst*100):0;
+        const rrColor=m.inst&&rr>10?'var(--red)':'var(--green)';
+        return `<div class="scorecard">
+            <div class="sc-head"><div><div class="sc-name">${esc(p.name)}</div><div class="sc-sub">${GNAME[p.group]||p.group} · ${esc(rangeLabel)}</div></div><div class="sc-logo">ACTION INSTALL</div></div>
+            <div class="g4">
+                <div class="stat-block"><div class="stat-lbl">Installs</div><div class="stat-num">${m.inst}</div><div class="stat-meta">Completed</div></div>
+                <div class="stat-block"><div class="stat-lbl">Recall Rate</div><div class="stat-num" style="color:${rrColor}">${m.inst?rr+'%':'—'}</div><div class="stat-meta">${m.rcl} recall${m.rcl!==1?'s':''}</div></div>
+                <div class="stat-block"><div class="stat-lbl">Review Asked</div><div class="stat-num">${pct(m.rev,m.inst)}</div><div class="stat-meta">${m.rev}/${m.inst}</div></div>
+                <div class="stat-block"><div class="stat-lbl">QA Scheduled</div><div class="stat-num">${pct(m.qa,m.inst)}</div><div class="stat-meta">${m.qa}/${m.inst}</div></div>
+            </div>
+            <div class="g4" style="margin-top:8px">
+                <div class="stat-block"><div class="stat-lbl">Red Carpet</div><div class="stat-num">${pct(m.rc,m.inst)}</div><div class="stat-meta">${m.rc}/${m.inst}</div></div>
+                <div class="stat-block"><div class="stat-lbl">Warranty Review</div><div class="stat-num">${pct(m.wr,m.inst)}</div><div class="stat-meta">${m.wr}/${m.inst}</div></div>
+                <div class="stat-block"><div class="stat-lbl">Hours Logged</div><div class="stat-num">${Math.round(m.hours*100)/100}</div><div class="stat-meta">Hourly jobs</div></div>
+                <div class="stat-block"><div class="stat-lbl">Piece Items</div><div class="stat-num">${m.piece}</div><div class="stat-meta">Tasks</div></div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
 // ── LOGINS ──
 function renderLogins(){
     const el=document.getElementById('loginsBody');const act=activePeople();

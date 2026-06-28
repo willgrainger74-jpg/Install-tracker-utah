@@ -114,6 +114,15 @@
         .select-prompt{border:1px solid var(--wire);border-left:3px solid var(--red);padding:20px 28px;font-family:'Oswald',sans-serif;font-size:15px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
         .fade-up{animation:fadeUp .4s ease both;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+        @media (max-width:640px){
+            input,select{font-size:16px;min-height:54px;}
+            .nav-card{padding:22px 18px;}
+            .nav-card-title{font-size:19px;}
+            .nav-card-desc{font-size:13.5px;}
+            .div-card{padding:20px 16px;min-height:84px;}
+            .person-btn{min-height:58px;padding:16px 18px;font-size:15px;}
+            .btn-primary{min-height:56px;font-size:15px;padding:16px 22px;}
+        }
     </style>
 </head>
 <body>

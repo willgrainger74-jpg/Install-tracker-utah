@@ -75,6 +75,25 @@
         .fab:active{transform:scale(0.97);}
         .add-call-bottom{width:100%;background:transparent;border:2px dashed rgba(220,38,38,0.3);color:var(--red);font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;padding:16px;cursor:pointer;transition:all 0.15s;margin-top:8px;}
         .add-call-bottom:hover{background:var(--red3);border-color:var(--red);}
+        @media (max-width:640px){
+            .page{padding:18px 12px 90px;}
+            input[type=text],input[type=number],input[type=tel],textarea,select{font-size:16px;min-height:54px;padding:14px 16px;}
+            textarea{min-height:84px;}
+            .field label{font-size:14px;}
+            .btn,.btn-red{min-height:56px;font-size:14px;padding:16px 22px;}
+            .check-row{min-height:60px;padding:16px;}
+            .check-row input[type=checkbox]{width:26px;height:26px;}
+            .check-row span{font-size:14px;}
+            .del-call{min-height:46px;padding:10px 18px;font-size:14px;}
+            .add-call-bottom{padding:20px;font-size:14px;}
+            .cal-grid{gap:3px;}
+            .cal-day{padding:12px 4px;min-height:78px;}
+            .cal-day-num{font-size:30px;}
+            .cal-day-label{font-size:12px;}
+            .fab{bottom:20px;right:16px;padding:16px 22px;font-size:14px;}
+            .call-card{padding:18px 16px;}
+            .cal-nav-btn{padding:14px 22px;font-size:20px;}
+        }
     </style>
 </head>
 <body>

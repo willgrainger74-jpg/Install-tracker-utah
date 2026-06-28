@@ -58,6 +58,15 @@
         .btn-primary:hover{background:var(--red2);}
         #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;z-index:9999;transition:transform .3s;}
         #toast.show{transform:translateX(-50%) translateY(0);}
+        @media (max-width:640px){
+            .page{padding-left:14px;padding-right:14px;}
+            input[type=text],input[type=number],textarea,select{font-size:16px;min-height:54px;padding:14px 16px;}
+            textarea{min-height:84px;}
+            .btn,.btn-primary{min-height:56px;font-size:15px;padding:16px 22px;}
+            .toggle{min-height:58px;padding:15px 16px;}
+            .fault{min-height:64px;padding:16px;}
+            .fault-grid{grid-template-columns:1fr;}
+        }
     </style>
 </head>
 <body>
