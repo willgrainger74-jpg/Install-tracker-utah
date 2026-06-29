@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Lookup — Action Install Tracker</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#aaa;--faint:#666;--text:#efefef;--green:#10b981;--amber:#f59e0b;--blue:#3b82f6;--purple:#a855f7;}
+        html.light{--bg:#f4f4f4;--s1:#fff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,0.08);--wire2:rgba(0,0,0,0.14);--muted:#555;--faint:#999;--text:#111;--red3:#fde8e8;}
+        html.light body::after{display:none;}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:999;}
+        .page{max-width:900px;margin:0 auto;padding:24px 20px 80px;}
+        .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--wire);}
+        .page-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,64px);line-height:.9;letter-spacing:2px;}
+        .page-title em{font-style:normal;color:var(--red);}
+        .page-sub{font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
+        .back-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);border:1px solid var(--wire2);padding:10px 18px;text-decoration:none;transition:all .15s;white-space:nowrap;margin-top:8px;display:inline-block;}
+        .back-btn:hover{color:var(--text);border-color:var(--muted);}
+        .search-wrap{position:relative;margin-bottom:8px;}
+        .search-wrap input{width:100%;background:var(--s2);border:1px solid var(--wire2);border-left:3px solid var(--red);color:var(--text);padding:18px 18px 18px 50px;font-family:'Inter',sans-serif;font-size:18px;outline:none;transition:border-color .15s;}
+        .search-wrap input:focus{border-color:var(--red);}
+        .search-wrap input::placeholder{color:var(--faint);}
+        .search-ico{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:20px;opacity:.6;}
+        .hint{font-size:12px;color:var(--faint);margin-bottom:22px;letter-spacing:.03em;}
+        .res-card{background:var(--s1);border:1px solid var(--wire);border-top:2px solid var(--red);padding:20px 22px;margin-bottom:16px;}
+        .res-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+        .res-job{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;}
+        .res-job small{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase;}
+        .pill{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--wire2);color:var(--muted);white-space:nowrap;}
+        .pill.underground{color:var(--amber);border-color:rgba(245,158,11,.4);}
+        .pill.plumbing{color:var(--blue);border-color:rgba(59,130,246,.4);}
+        .pill.hvac{color:var(--green);border-color:rgba(16,185,129,.4);}
+        .pill.electrical{color:var(--purple);border-color:rgba(168,85,247,.4);}
+        .res-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-bottom:6px;}
+        @media(max-width:560px){.res-grid{grid-template-columns:1fr;}}
+        .res-field{font-size:13.5px;}
+        .res-field .l{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+        .res-field .v{color:var(--text);line-height:1.4;}
+        .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+        .badge{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;border:1px solid var(--wire2);color:var(--faint);}
+        .badge.on{color:var(--green);border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.08);}
+        .recall-sec{margin-top:14px;padding-top:14px;border-top:1px solid var(--wire);}
+        .recall-sec .rs-lbl{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+        .recall-item{background:var(--s2);border:1px solid var(--wire);border-left:3px solid var(--red);padding:10px 14px;margin-bottom:6px;font-size:13px;}
+        .recall-item .ri-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:'Oswald',sans-serif;letter-spacing:.04em;text-transform:uppercase;font-size:12px;color:var(--text);}
+        .fault{font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border:1px solid var(--wire2);}
+        .fault.install{color:var(--red);border-color:rgba(220,38,38,.4);}
+        .fault.manufacturer{color:var(--amber);border-color:rgba(245,158,11,.4);}
+        .fault.other{color:var(--muted);}
+        .no-recall{color:var(--green);font-size:12.5px;font-family:'Oswald',sans-serif;letter-spacing:.06em;text-transform:uppercase;}
+        .empty{text-align:center;padding:46px 20px;color:var(--muted);}
+        .empty .icon{font-size:42px;margin-bottom:10px;opacity:.7;}
+        .pay-tag{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--green);}
+        @media(max-width:640px){.page{padding:18px 12px 80px;}.search-wrap input{font-size:16px;padding:16px 16px 16px 46px;}}
+    </style>
+</head>
+<body>
+<div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
+  <button onclick="toggleLang()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;">🌐 <span id="langLabel">EN</span></button>
+  <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
+</div>
+<script>
+(function(){var t=localStorage.getItem('aitTheme')||'dark';applyTheme(t);})();
+function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElementById('themeIcon'),l=document.getElementById('themeLabel');if(t==='light'){document.documentElement.classList.add('light');if(i)i.textContent='🌙';if(l)l.textContent='DARK';}else{document.documentElement.classList.remove('light');if(i)i.textContent='☀️';if(l)l.textContent='LIGHT';}}
+function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
+</script>
+
+<script>
+const I18N={
+ h1a:{en:'Job ',es:'Buscar '},
+ h1b:{en:'Lookup',es:'Trabajo'},
+ sub:{en:'Search any job number or customer — see the install and every recall',es:'Busca cualquier número de trabajo o cliente — ve la instalación y cada rellamada'},
+ back:{en:'← Dashboard',es:'← Tablero'},
+ ph_q:{en:'Job number or customer name…',es:'Número de trabajo o nombre de cliente…'},
+ hint:{en:'Type at least 2 characters. Matches job numbers and customer names.',es:'Escribe al menos 2 caracteres. Busca por número de trabajo y nombre de cliente.'},
+ start:{en:'Start typing a job number or customer name.',es:'Empieza a escribir un número de trabajo o nombre de cliente.'},
+ recent:{en:'Recent installs — search above to narrow down.',es:'Instalaciones recientes — busca arriba para filtrar.'},
+ nomatch:{en:'No installs match',es:'Ninguna instalación coincide con'},
+ l_installedby:{en:'Installed By',es:'Instalado Por'},
+ l_date:{en:'Date',es:'Fecha'},
+ l_soldby:{en:'Sold By',es:'Vendido Por'},
+ l_system:{en:'System / Model',es:'Sistema / Modelo'},
+ l_work:{en:'Work Done',es:'Trabajo Realizado'},
+ l_notes:{en:'Notes',es:'Notas'},
+ b_review:{en:'Review',es:'Reseña'},
+ b_rc:{en:'Red Carpet',es:'Alfombra Roja'},
+ b_warranty:{en:'Warranty',es:'Garantía'},
+ b_qa:{en:'QA',es:'QA'},
+ b_approved:{en:'🔒 Approved',es:'🔒 Aprobado'},
+ recalls_on:{en:'Recalls on this job',es:'Rellamadas en este trabajo'},
+ no_recalls:{en:'✓ No recalls on file',es:'✓ Sin rellamadas registradas'},
+ logged_by:{en:'Logged by',es:'Registrado por'},
+ noname:{en:'no name',es:'sin nombre'},
+ continuing:{en:'continuing',es:'continuo'},
+ ftag_install:{en:'install fault',es:'falla de instalación'},
+ ftag_manufacturer:{en:'manufacturer fault',es:'falla de fabricante'},
+ ftag_other:{en:'other fault',es:'otra falla'},
+ g_underground:{en:'Underground',es:'Subterráneo'},
+ g_plumbing:{en:'Plumbing',es:'Plomería'},
+ g_hvac:{en:'HVAC',es:'HVAC'},
+ g_electrical:{en:'Electrical',es:'Eléctrica'}
+};
+let LANG=localStorage.getItem('aitLang')||'en';
+function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
+function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('aitLang',LANG);location.reload();}
+function applyStaticLang(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});const ll=document.getElementById('langLabel');if(ll)ll.textContent=LANG==='en'?'EN':'ES';}
+document.addEventListener('DOMContentLoaded',applyStaticLang);
+</script>
+
+<div class="page">
+    <div class="page-header">
+        <div>
+            <div class="page-title"><span data-i18n="h1a">Job </span><em data-i18n="h1b">Lookup</em></div>
+            <div class="page-sub" data-i18n="sub">Search any job number or customer — see the install and every recall</div>
+        </div>
+        <a href="install_index.html" class="back-btn" data-i18n="back">← Dashboard</a>
+    </div>
+
+    <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input id="q" type="text" data-i18n-ph="ph_q" placeholder="Job number or customer name…" autocomplete="off" />
+    </div>
+    <div class="hint" data-i18n="hint">Type at least 2 characters. Matches job numbers and customer names.</div>
+
+    <div id="results"></div>
+</div>
+
+<script>
+firebase.initializeApp({
+    apiKey: "AIzaSyBdTIdrCajlNM4_BYgJxZwFe0KXKgKw7yM",
+    authDomain: "install-tracker-30b1b.firebaseapp.com",
+    databaseURL: "https://install-tracker-30b1b-default-rtdb.firebaseio.com",
+    projectId: "install-tracker-30b1b",
+    storageBucket: "install-tracker-30b1b.firebasestorage.app",
+    messagingSenderId: "160965691779",
+    appId: "1:160965691779:web:c42baf2dd271a275994eb6"
+});
+const db=firebase.database();
+
+const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing',hvac:'HVAC',electrical:'Electrical'};
+const TRADE_ITEMS={
+    underground:['Standard Dig','Non-Standard Dig','Standard Backfill','Non-Standard Backfill','Hand Dig','Liner Shot','uLiner Shot','Liner Shot Minimum'],
+    plumbing:['Water Heater / Water Softener','Water Repipe / Drain Repipe','Basement Breakup','Floor Drain / Sump Pump','Stack Replacement','Shower Valve / Toilet Flange','Sewage Pump System / Sump Pump System','Sewage Pump Swap / Sump Pump Swap','Main Valve & PRV / Halo Ion / Angle Stop / Disposal / Faucet / Toilet / Hose Bib'],
+    hvac:['Swap','Add','Full System','Water Heater'],
+    electrical:['Panel Install','Meter Install','Circuit Restore','Home Runs (More Than Two on Meter or Panel)','Panel Meter Combo','Basement Rough In','SER Pull over 40FT','Whole House Rewire 0–2500 sqft','Whole House Rewire 2500+ sqft']
+};
+
+const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
+let sess=null;try{sess=JSON.parse(localStorage.getItem(SESSION_KEY));}catch(e){}
+if(!sess||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
+
+let LOGS={},RECALLS={};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function jobPay(r){let p=0;if(r.payType==='piece'&&r.pieceItems){Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i])p+=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;});}if(r.payType==='hours')p+=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return p;}
+function pieceNames(r){if(!r.pieceItems)return [];return (TRADE_ITEMS[r.trade]||[]).filter((_,i)=>r.pieceItems[i]);}
+
+db.ref('installLogs').on('value',s=>{LOGS=s.val()||{};doSearch();});
+db.ref('recalls').on('value',s=>{RECALLS=s.val()||{};doSearch();});
+
+let _t;
+document.getElementById('q').addEventListener('input',()=>{clearTimeout(_t);_t=setTimeout(doSearch,180);});
+
+function allInstalls(){const out=[];Object.entries(LOGS).forEach(([dk,day])=>Object.entries(day).forEach(([id,r])=>out.push({...r,_dk:dk,_id:id})));return out;}
+function recallsFor(jobNumber){const j=(jobNumber||'').trim().toLowerCase();if(!j)return [];const out=[];Object.values(RECALLS).forEach(day=>Object.values(day).forEach(r=>{if((r.originalJobNumber||'').trim().toLowerCase()===j)out.push(r);}));return out.sort((a,b)=>(b.ts||0)-(a.ts||0));}
+
+function doSearch(){
+    const q=(document.getElementById('q').value||'').trim().toLowerCase();
+    const res=document.getElementById('results');
+    let list=allInstalls();
+    if(q.length>=2){
+        list=list.filter(r=>(r.jobNumber||'').toLowerCase().includes(q)||(r.customerName||'').toLowerCase().includes(q));
+    }else{
+        // show most recent installs as a starting point
+        list=list.sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,12);
+        if(!list.length){res.innerHTML='<div class="empty"><div class="icon">🔍</div><div>'+t('start')+'</div></div>';return;}
+        res.innerHTML='<div class="hint" style="margin-bottom:14px">'+t('recent')+'</div>'+list.map(card).join('');
+        return;
+    }
+    list.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    if(!list.length){res.innerHTML='<div class="empty"><div class="icon">🗂️</div><div>'+t('nomatch')+' “'+esc(q)+'”.</div></div>';return;}
+    res.innerHTML=list.map(card).join('');
+}
+
+function card(r){
+    const dateTxt=r.ts?new Date(r.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):(r.date||'—');
+    const pcs=pieceNames(r);
+    const pay=jobPay(r);
+    const recalls=recallsFor(r.jobNumber);
+    const badge=(on,label)=>`<span class="badge${on?' on':''}">${on?'✓':'·'} ${label}</span>`;
+    let workVal=esc(r.whatInstalled||'')||'—';
+    if(pcs.length)workVal=(r.whatInstalled?esc(r.whatInstalled)+' — ':'')+pcs.map(esc).join(', ');
+    return `<div class="res-card">
+        <div class="res-top">
+            <div class="res-job">#${esc(r.jobNumber)||'—'} <small>· ${esc(r.customerName)||t('noname')}</small></div>
+            <div style="display:flex;gap:8px;align-items:center">${pay?`<span class="pay-tag">${fmt$(pay)}</span>`:''}<span class="pill ${r.trade||r.group}">${t('g_'+(r.trade||r.group))||r.trade||r.group||'—'}</span></div>
+        </div>
+        <div class="res-grid">
+            <div class="res-field"><div class="l">${t('l_installedby')}</div><div class="v">${esc(r.installerName)||'—'}</div></div>
+            <div class="res-field"><div class="l">${t('l_date')}</div><div class="v">${dateTxt}${r.continuing?' · ↻ '+t('continuing'):''}</div></div>
+            <div class="res-field"><div class="l">${t('l_soldby')}</div><div class="v">${esc(r.soldBy)||'—'}</div></div>
+            <div class="res-field"><div class="l">${t('l_system')}</div><div class="v">${esc(r.systemInstalled)||'—'}</div></div>
+            <div class="res-field" style="grid-column:1/-1"><div class="l">${t('l_work')}</div><div class="v">${workVal}</div></div>
+            ${r.notes?`<div class="res-field" style="grid-column:1/-1"><div class="l">${t('l_notes')}</div><div class="v">${esc(r.notes)}</div></div>`:''}
+        </div>
+        <div class="badges">
+            ${badge(r.askedReview,t('b_review'))}${badge(r.redCarpet,t('b_rc'))}${badge(r.warrantyReview,t('b_warranty'))}${badge(r.scheduledQA,t('b_qa'))}${r.approved?`<span class="badge on">${t('b_approved')}</span>`:''}
+        </div>
+        <div class="recall-sec">
+            <div class="rs-lbl">${t('recalls_on')} ${recalls.length?`(${recalls.length})`:''}</div>
+            ${recalls.length?recalls.map(rc=>`<div class="recall-item"><div class="ri-top"><span>${rc.ts?new Date(rc.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'} · ${esc(rc.recallReason)||'recall'}</span><span class="fault ${rc.faultType||'other'}">${t('ftag_'+(rc.faultType||'other'))}</span></div>${rc.notes?`<div style="color:var(--muted);margin-top:4px">${esc(rc.notes)}</div>`:''}${rc.loggedByName?`<div style="color:var(--faint);margin-top:3px;font-size:11px">${t('logged_by')} ${esc(rc.loggedByName)}</div>`:''}</div>`).join(''):`<div class="no-recall">${t('no_recalls')}</div>`}
+        </div>
+    </div>`;
+}
+</script>
+</body>
+</html>

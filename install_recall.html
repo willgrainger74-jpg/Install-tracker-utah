@@ -70,7 +70,8 @@
     </style>
 </head>
 <body>
-<div style="position:fixed;top:12px;right:16px;z-index:9999;">
+<div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
+  <button onclick="toggleLang()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;">🌐 <span id="langLabel">EN</span></button>
   <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
 </div>
 <script>
@@ -79,46 +80,93 @@ function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElem
 function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
 </script>
 
+<script>
+const I18N={
+ back:{en:'← Dashboard',es:'← Tablero'},
+ eyebrow:{en:'Callback',es:'Rellamada'},
+ h1a:{en:'Log a ',es:'Registrar una '},
+ h1b:{en:'Recall',es:'Rellamada'},
+ sub:{en:'Link it to the original job and tag what went wrong',es:'Vincúlala al trabajo original y marca qué salió mal'},
+ sec_orig:{en:'Original Job',es:'Trabajo Original'},
+ lbl_origjob:{en:'Original Job Number',es:'Número de Trabajo Original'},
+ ph_origjob:{en:'Type the job # to auto-link the original install',es:'Escribe el # de trabajo para vincular la instalación original'},
+ sec_details:{en:'Recall Details',es:'Detalles de la Rellamada'},
+ lbl_customer:{en:'Customer Name',es:'Nombre del Cliente'},
+ ph_customer:{en:'Customer on the original job',es:'Cliente del trabajo original'},
+ lbl_division:{en:'Division',es:'División'},
+ opt_underground:{en:'Underground',es:'Subterráneo'},
+ opt_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
+ opt_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
+ opt_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'},
+ lbl_reason:{en:'What Was the Recall For?',es:'¿Para Qué Fue la Rellamada?'},
+ ph_reason:{en:'e.g. Water heater leaking at the cold inlet fitting',es:'ej. Calentador goteando en la conexión de entrada fría'},
+ lbl_date:{en:'Recall Date',es:'Fecha de Rellamada'},
+ sec_fault:{en:'Fault Type',es:'Tipo de Falla'},
+ fi_name:{en:'Install Error',es:'Error de Instalación'},
+ fi_desc:{en:'Workmanship / how it was installed',es:'Mano de obra / cómo se instaló'},
+ fm_name:{en:'Manufacturer',es:'Fabricante'},
+ fm_desc:{en:'Defective part or equipment',es:'Parte o equipo defectuoso'},
+ fo_name:{en:'Other',es:'Otro'},
+ fo_desc:{en:'Customer-caused, unrelated, etc.',es:'Causado por el cliente, no relacionado, etc.'},
+ lbl_notes:{en:'Notes',es:'Notas'},
+ ph_notes:{en:'Anything else about the callback',es:'Cualquier otra cosa sobre la rellamada'},
+ btn_save:{en:'↩️ Save Recall',es:'↩️ Guardar Rellamada'},
+ m_found:{en:'✓ Original install found',es:'✓ Instalación original encontrada'},
+ m_installedby:{en:'Installed by',es:'Instalado por'},
+ m_none_title:{en:'No matching install on file',es:'No se encontró instalación coincidente'},
+ m_none_body:{en:'This recall will be saved without a linked original job. Double-check the job number, or continue if the original predates the tracker.',es:'Esta rellamada se guardará sin un trabajo original vinculado. Verifica el número de trabajo, o continúa si el original es anterior al rastreador.'},
+ t_needjob:{en:'Enter the original job number',es:'Ingresa el número de trabajo original'},
+ t_needreason:{en:'Describe what the recall was for',es:'Describe para qué fue la rellamada'},
+ t_saved:{en:'Recall logged ✓',es:'Rellamada registrada ✓'},
+ t_failed:{en:'Save failed — check connection',es:'Error al guardar — revisa la conexión'}
+};
+let LANG=localStorage.getItem('aitLang')||'en';
+function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
+function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('aitLang',LANG);location.reload();}
+function applyStaticLang(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});const ll=document.getElementById('langLabel');if(ll)ll.textContent=LANG==='en'?'EN':'ES';}
+document.addEventListener('DOMContentLoaded',applyStaticLang);
+</script>
+
 <div class="page">
-    <div class="top"><a href="install_index.html" class="back">← Dashboard</a></div>
-    <div class="eyebrow">Callback</div>
-    <h1>Log a <em>Recall</em></h1>
-    <div class="sub">Link it to the original job and tag what went wrong</div>
+    <div class="top"><a href="install_index.html" class="back" data-i18n="back">← Dashboard</a></div>
+    <div class="eyebrow" data-i18n="eyebrow">Callback</div>
+    <h1><span data-i18n="h1a">Log a </span><em data-i18n="h1b">Recall</em></h1>
+    <div class="sub" data-i18n="sub">Link it to the original job and tag what went wrong</div>
 
     <div class="card">
-        <div class="sec-lbl">Original Job</div>
-        <div class="field"><label>Original Job Number</label><input id="origJob" type="text" placeholder="Type the job # to auto-link the original install" /></div>
+        <div class="sec-lbl" data-i18n="sec_orig">Original Job</div>
+        <div class="field"><label data-i18n="lbl_origjob">Original Job Number</label><input id="origJob" type="text" data-i18n-ph="ph_origjob" placeholder="Type the job # to auto-link the original install" /></div>
         <div class="match" id="matchPanel" style="display:none;"></div>
     </div>
 
     <div class="card">
-        <div class="sec-lbl">Recall Details</div>
+        <div class="sec-lbl" data-i18n="sec_details">Recall Details</div>
         <div class="row2">
-            <div class="field"><label>Customer Name</label><input id="customerName" type="text" placeholder="Customer on the original job" /></div>
-            <div class="field"><label>Division</label>
+            <div class="field"><label data-i18n="lbl_customer">Customer Name</label><input id="customerName" type="text" data-i18n-ph="ph_customer" placeholder="Customer on the original job" /></div>
+            <div class="field"><label data-i18n="lbl_division">Division</label>
                 <select id="division">
-                    <option value="underground">Underground</option>
-                    <option value="plumbing">Plumbing Install</option>
-                    <option value="hvac">HVAC Install</option>
-                    <option value="electrical">Electrical Install</option>
+                    <option value="underground" data-i18n="opt_underground">Underground</option>
+                    <option value="plumbing" data-i18n="opt_plumbing">Plumbing Install</option>
+                    <option value="hvac" data-i18n="opt_hvac">HVAC Install</option>
+                    <option value="electrical" data-i18n="opt_electrical">Electrical Install</option>
                 </select>
             </div>
         </div>
-        <div class="field"><label>What Was the Recall For?</label><textarea id="reason" placeholder="e.g. Water heater leaking at the cold inlet fitting"></textarea></div>
-        <div class="field"><label>Recall Date</label><input id="recallDate" type="date" /></div>
+        <div class="field"><label data-i18n="lbl_reason">What Was the Recall For?</label><textarea id="reason" data-i18n-ph="ph_reason" placeholder="e.g. Water heater leaking at the cold inlet fitting"></textarea></div>
+        <div class="field"><label data-i18n="lbl_date">Recall Date</label><input id="recallDate" type="date" /></div>
     </div>
 
     <div class="card">
-        <div class="sec-lbl">Fault Type</div>
+        <div class="sec-lbl" data-i18n="sec_fault">Fault Type</div>
         <div class="fault-grid">
-            <div class="fault" data-f="install"><span class="f-icon">🛠️</span><div class="f-name">Install Error</div><div class="f-desc">Workmanship / how it was installed</div></div>
-            <div class="fault" data-f="manufacturer"><span class="f-icon">🏭</span><div class="f-name">Manufacturer</div><div class="f-desc">Defective part or equipment</div></div>
-            <div class="fault" data-f="other"><span class="f-icon">❔</span><div class="f-name">Other</div><div class="f-desc">Customer-caused, unrelated, etc.</div></div>
+            <div class="fault" data-f="install"><span class="f-icon">🛠️</span><div class="f-name" data-i18n="fi_name">Install Error</div><div class="f-desc" data-i18n="fi_desc">Workmanship / how it was installed</div></div>
+            <div class="fault" data-f="manufacturer"><span class="f-icon">🏭</span><div class="f-name" data-i18n="fm_name">Manufacturer</div><div class="f-desc" data-i18n="fm_desc">Defective part or equipment</div></div>
+            <div class="fault" data-f="other"><span class="f-icon">❔</span><div class="f-name" data-i18n="fo_name">Other</div><div class="f-desc" data-i18n="fo_desc">Customer-caused, unrelated, etc.</div></div>
         </div>
-        <div class="field" style="margin-top:18px;"><label>Notes</label><textarea id="notes" placeholder="Anything else about the callback"></textarea></div>
+        <div class="field" style="margin-top:18px;"><label data-i18n="lbl_notes">Notes</label><textarea id="notes" data-i18n-ph="ph_notes" placeholder="Anything else about the callback"></textarea></div>
     </div>
 
-    <button class="btn btn-primary" id="saveBtn">↩️ Save Recall</button>
+    <button class="btn btn-primary" id="saveBtn" data-i18n="btn_save">↩️ Save Recall</button>
 </div>
 <div id="toast"></div>
 
@@ -172,9 +220,9 @@ function tryMatch(){
     if(hit){
         matchedJob=hit;
         panel.className='match found';
-        panel.innerHTML=`<div class="m-title">✓ Original install found</div>
+        panel.innerHTML=`<div class="m-title">${t('m_found')}</div>
             <div class="m-row"><b>${hit.customerName||'—'}</b> <span>· Job #${hit.jobNumber}</span></div>
-            <div class="m-row"><span>Installed by</span> <b>${hit.installerName||'—'}</b> <span>· ${GROUP_NAMES[hit.group]||hit.group} · ${new Date(hit.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span></div>
+            <div class="m-row"><span>${t('m_installedby')}</span> <b>${hit.installerName||'—'}</b> <span>· ${GROUP_NAMES[hit.group]||hit.group} · ${new Date(hit.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span></div>
             ${hit.whatInstalled?`<div class="m-row"><span>${hit.whatInstalled}</span></div>`:''}`;
         // auto-fill
         if(hit.customerName&&!document.getElementById('customerName').value)document.getElementById('customerName').value=hit.customerName;
@@ -182,8 +230,8 @@ function tryMatch(){
     }else{
         matchedJob=null;
         panel.className='match none';
-        panel.innerHTML=`<div class="m-title">No matching install on file</div>
-            <div class="m-row"><span>This recall will be saved without a linked original job. Double-check the job number, or continue if the original predates the tracker.</span></div>`;
+        panel.innerHTML=`<div class="m-title">${t('m_none_title')}</div>
+            <div class="m-row"><span>${t('m_none_body')}</span></div>`;
     }
 }
 
@@ -193,8 +241,8 @@ document.getElementById('saveBtn').onclick=()=>{
     const origJob=document.getElementById('origJob').value.trim();
     const customerName=document.getElementById('customerName').value.trim();
     const reason=document.getElementById('reason').value.trim();
-    if(!origJob){toast('Enter the original job number','#dc2626');return;}
-    if(!reason){toast('Describe what the recall was for','#dc2626');return;}
+    if(!origJob){toast(t('t_needjob'),'#dc2626');return;}
+    if(!reason){toast(t('t_needreason'),'#dc2626');return;}
     const dateStr=document.getElementById('recallDate').value||dkOf(new Date());
     const d=new Date(dateStr+'T12:00:00');
     const rec={
@@ -214,8 +262,8 @@ document.getElementById('saveBtn').onclick=()=>{
         date:dateStr,ts:d.getTime()
     };
     db.ref('recalls/'+dkOf(d)).push(rec,err=>{
-        if(err){toast('Save failed — check connection','#dc2626');return;}
-        toast('Recall logged ✓');
+        if(err){toast(t('t_failed'),'#dc2626');return;}
+        toast(t('t_saved'));
         setTimeout(()=>location.href='install_index.html',900);
     });
 };

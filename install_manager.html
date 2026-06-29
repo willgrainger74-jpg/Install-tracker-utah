@@ -135,7 +135,8 @@
     </style>
 </head>
 <body>
-<div class="no-print" style="position:fixed;top:12px;right:16px;z-index:9999;">
+<div class="no-print" style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
+  <button onclick="toggleLang()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;">🌐 <span id="langLabel">EN</span></button>
   <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
 </div>
 <script>
@@ -144,24 +145,108 @@ function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElem
 function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
 </script>
 
+<script>
+const I18N={
+ pin_title:{en:'Manager',es:'Gerente'},
+ pin_sub:{en:'Enter PIN to continue',es:'Ingresa el PIN para continuar'},
+ pin_err:{en:'Incorrect PIN — try again',es:'PIN incorrecto — intenta de nuevo'},
+ changepin:{en:'Change PIN',es:'Cambiar PIN'},
+ ph_curpin:{en:'Current PIN',es:'PIN Actual'},
+ ph_newpin:{en:'New PIN',es:'Nuevo PIN'},
+ ph_confpin:{en:'Confirm new PIN',es:'Confirmar nuevo PIN'},
+ updatepin:{en:'Update PIN',es:'Actualizar PIN'},
+ pin_updated:{en:'PIN updated ✓',es:'PIN actualizado ✓'},
+ back:{en:'← Dashboard',es:'← Tablero'},
+ h1a:{en:'Manager ',es:'Portal de '},
+ h1b:{en:'Portal',es:'Gerente'},
+ tab_roster:{en:'Roster & Divisions',es:'Personal y Divisiones'},
+ tab_recalls:{en:'↩️ Recall Report',es:'↩️ Reporte de Rellamadas'},
+ tab_installs:{en:'🔧 Install Report',es:'🔧 Reporte de Instalaciones'},
+ tab_turnins:{en:'⏱️ Turn-Ins',es:'⏱️ Reportes'},
+ tab_trends:{en:'📈 Trends',es:'📈 Tendencias'},
+ tab_scorecards:{en:'📋 Scorecards',es:'📋 Tarjetas'},
+ tab_rates:{en:'💲 Rates',es:'💲 Tarifas'},
+ tab_logins:{en:'🔑 Logins',es:'🔑 Accesos'},
+ tab_archived:{en:'🗄️ Archived',es:'🗄️ Archivados'},
+ st_roster:{en:'Installer Roster',es:'Personal de Instaladores'},
+ st_recall:{en:'Recall Report',es:'Reporte de Rellamadas'},
+ st_install:{en:'Install Report',es:'Reporte de Instalaciones'},
+ st_turnins:{en:'Hours / Piece Rate Turn-Ins',es:'Reportes de Horas / Por Pieza'},
+ st_trends:{en:'Recall-Rate & Volume Trends',es:'Tendencias de Rellamadas y Volumen'},
+ st_scorecards:{en:'Installer Scorecards',es:'Tarjetas de Instaladores'},
+ st_rates:{en:'Pay Rates',es:'Tarifas de Pago'},
+ st_logins:{en:'Installer Logins',es:'Accesos de Instaladores'},
+ st_archived:{en:'Archived Installers',es:'Instaladores Archivados'},
+ sl_fault:{en:'Fault Breakdown',es:'Desglose de Fallas'},
+ sl_rrinst:{en:'Recall Rate by Installer',es:'Tasa de Rellamadas por Instalador'},
+ sl_rrdiv:{en:'Recall Rate by Division',es:'Tasa de Rellamadas por División'},
+ sl_everyrecall:{en:'Every Recall — Original Job → Callback',es:'Cada Rellamada — Trabajo Original → Rellamada'},
+ sl_compliance:{en:'Customer-Experience Compliance',es:'Cumplimiento de Experiencia del Cliente'},
+ sl_instdiv:{en:'Installs by Division',es:'Instalaciones por División'},
+ sl_instinst:{en:'Installs by Installer',es:'Instalaciones por Instalador'},
+ sl_byinst:{en:'By Installer',es:'Por Instalador'},
+ sl_bytrade:{en:'By Trade',es:'Por Oficio'},
+ sl_detail:{en:'Detail — Approve & Edit',es:'Detalle — Aprobar y Editar'},
+ ph_newname:{en:'Installer name',es:'Nombre del instalador'},
+ add_installer:{en:'+ Add Installer',es:'+ Agregar Instalador'},
+ approve_all:{en:'✓ Approve All Shown',es:'✓ Aprobar Todos los Mostrados'},
+ rates_intro:{en:'Set the dollar amount per piece-rate item and the default hourly rate. These pre-fill on the turn-in when a tech logs work — they can still adjust the amount per job. Changing a rate here only affects new entries, not pay already logged.',es:'Define el monto en dólares por cada pieza y la tarifa por hora predeterminada. Estos se rellenan automáticamente en el reporte cuando un técnico registra trabajo — aún pueden ajustar el monto por trabajo. Cambiar una tarifa aquí solo afecta entradas nuevas, no el pago ya registrado.'},
+ default_hourly:{en:'Default Hourly Rate',es:'Tarifa por Hora Predeterminada'},
+ archived_note:{en:"Archived installers are hidden from active views and can't sign in, but all their install and recall history is preserved and still counts in reports.",es:'Los instaladores archivados se ocultan de las vistas activas y no pueden iniciar sesión, pero todo su historial de instalaciones y rellamadas se conserva y sigue contando en los reportes.'},
+ lbl_username:{en:'Username',es:'Usuario'},
+ lbl_password:{en:'Password',es:'Contraseña'},
+ btn_save:{en:'Save',es:'Guardar'},
+ th_installer:{en:'Installer',es:'Instalador'},
+ th_division:{en:'Division',es:'División'},
+ th_installs:{en:'Installs',es:'Instalaciones'},
+ th_hours:{en:'Hours',es:'Horas'},
+ th_piece:{en:'Piece Items',es:'Piezas'},
+ th_pay:{en:'Pay',es:'Pago'},
+ th_approved:{en:'Approved',es:'Aprobado'},
+ stat_totalpay:{en:'Total Pay',es:'Pago Total'},
+ stat_totalhours:{en:'Total Hours',es:'Horas Totales'},
+ stat_pieceitems:{en:'Piece Items',es:'Piezas'},
+ stat_approved:{en:'Approved',es:'Aprobado'},
+ meta_inrange:{en:'In range',es:'En el rango'},
+ meta_hourly:{en:'Hourly jobs',es:'Trabajos por hora'},
+ meta_tasks:{en:'Tasks logged',es:'Tareas registradas'},
+ meta_pending:{en:'pending',es:'pendientes'},
+ piece_rates:{en:'Piece Rates',es:'Tarifas por Pieza'},
+ reactivate:{en:'Reactivate',es:'Reactivar'},
+ g_underground:{en:'Underground',es:'Subterráneo'},
+ g_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
+ g_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
+ g_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'},
+ ts_underground:{en:'Underground',es:'Subterráneo'},
+ ts_plumbing:{en:'Plumbing',es:'Plomería'},
+ ts_hvac:{en:'HVAC',es:'HVAC'},
+ ts_electrical:{en:'Electrical',es:'Eléctrica'}
+};
+let LANG=localStorage.getItem('aitLang')||'en';
+function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
+function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('aitLang',LANG);location.reload();}
+function applyStaticLang(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});const ll=document.getElementById('langLabel');if(ll)ll.textContent=LANG==='en'?'EN':'ES';}
+document.addEventListener('DOMContentLoaded',applyStaticLang);
+</script>
+
 <!-- PIN -->
 <div id="pinScreen">
     <div class="pin-box">
         <div class="pin-icon">🔐</div>
-        <div class="pin-title">Manager</div>
-        <div class="pin-sub">Enter PIN to continue</div>
+        <div class="pin-title" data-i18n="pin_title">Manager</div>
+        <div class="pin-sub" data-i18n="pin_sub">Enter PIN to continue</div>
         <input id="pinInput" type="password" class="pin-input" maxlength="10" placeholder="····" />
         <button class="pin-btn" onclick="checkPin()">Unlock</button>
-        <p id="pinError" class="pin-err hidden">Incorrect PIN — try again</p>
+        <p id="pinError" class="pin-err hidden" data-i18n="pin_err">Incorrect PIN — try again</p>
         <a href="install_index.html" class="pin-back">← Back to dashboard</a>
         <div class="change-pin-section">
-            <div class="change-pin-lbl">Change PIN</div>
-            <input id="currentPinInput" type="password" placeholder="Current PIN" />
-            <input id="newPinInput" type="password" placeholder="New PIN" />
-            <input id="confirmPinInput" type="password" placeholder="Confirm new PIN" />
-            <button class="btn btn-outline" style="width:100%;margin-top:6px" onclick="changePin()">Update PIN</button>
+            <div class="change-pin-lbl" data-i18n="changepin">Change PIN</div>
+            <input id="currentPinInput" type="password" data-i18n-ph="ph_curpin" placeholder="Current PIN" />
+            <input id="newPinInput" type="password" data-i18n-ph="ph_newpin" placeholder="New PIN" />
+            <input id="confirmPinInput" type="password" data-i18n-ph="ph_confpin" placeholder="Confirm new PIN" />
+            <button class="btn btn-outline" style="width:100%;margin-top:6px" onclick="changePin()" data-i18n="updatepin">Update PIN</button>
             <p id="pinChangeError" class="pin-err hidden" style="margin-top:8px"></p>
-            <p id="pinChangeMsg" class="hidden" style="color:var(--green);font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em;margin-top:8px">PIN updated ✓</p>
+            <p id="pinChangeMsg" class="hidden" style="color:var(--green);font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em;margin-top:8px" data-i18n="pin_updated">PIN updated ✓</p>
         </div>
     </div>
 </div>
@@ -169,31 +254,31 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
 <!-- PORTAL -->
 <div id="managerPortal" class="hidden"><div class="page">
     <div class="hero">
-        <a href="install_index.html" class="back">← Dashboard</a>
+        <a href="install_index.html" class="back" data-i18n="back">← Dashboard</a>
         <div class="eyebrow" style="margin-top:14px">Install Manager</div>
-        <h1>Manager <em>Portal</em></h1>
+        <h1><span data-i18n="h1a">Manager </span><em data-i18n="h1b">Portal</em></h1>
     </div>
 
     <div class="tab-strip">
-        <button class="tab-btn active" id="tab-roster" onclick="showTab('roster')">Roster &amp; Divisions</button>
-        <button class="tab-btn" id="tab-recalls" onclick="showTab('recalls')">↩️ Recall Report</button>
-        <button class="tab-btn" id="tab-installs" onclick="showTab('installs')">🔧 Install Report</button>
-        <button class="tab-btn" id="tab-turnins" onclick="showTab('turnins')">⏱️ Turn-Ins</button>
-        <button class="tab-btn" id="tab-trends" onclick="showTab('trends')">📈 Trends</button>
-        <button class="tab-btn" id="tab-scorecards" onclick="showTab('scorecards')">📋 Scorecards</button>
-        <button class="tab-btn" id="tab-rates" onclick="showTab('rates')">💲 Rates</button>
-        <button class="tab-btn" id="tab-logins" onclick="showTab('logins')">🔑 Logins</button>
-        <button class="tab-btn" id="tab-archived" onclick="showTab('archived')">🗄️ Archived</button>
+        <button class="tab-btn active" id="tab-roster" onclick="showTab('roster')" data-i18n="tab_roster">Roster &amp; Divisions</button>
+        <button class="tab-btn" id="tab-recalls" onclick="showTab('recalls')" data-i18n="tab_recalls">↩️ Recall Report</button>
+        <button class="tab-btn" id="tab-installs" onclick="showTab('installs')" data-i18n="tab_installs">🔧 Install Report</button>
+        <button class="tab-btn" id="tab-turnins" onclick="showTab('turnins')" data-i18n="tab_turnins">⏱️ Turn-Ins</button>
+        <button class="tab-btn" id="tab-trends" onclick="showTab('trends')" data-i18n="tab_trends">📈 Trends</button>
+        <button class="tab-btn" id="tab-scorecards" onclick="showTab('scorecards')" data-i18n="tab_scorecards">📋 Scorecards</button>
+        <button class="tab-btn" id="tab-rates" onclick="showTab('rates')" data-i18n="tab_rates">💲 Rates</button>
+        <button class="tab-btn" id="tab-logins" onclick="showTab('logins')" data-i18n="tab_logins">🔑 Logins</button>
+        <button class="tab-btn" id="tab-archived" onclick="showTab('archived')" data-i18n="tab_archived">🗄️ Archived</button>
     </div>
 
     <!-- ROSTER -->
     <div id="tab-roster-content">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-            <div class="sec-title">Installer Roster</div>
+            <div class="sec-title" data-i18n="st_roster">Installer Roster</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <input id="newName" type="text" placeholder="Installer name" style="min-width:180px" />
+                <input id="newName" type="text" data-i18n-ph="ph_newname" placeholder="Installer name" style="min-width:180px" />
                 <select id="newGroup"><option value="underground">Underground</option><option value="plumbing">Plumbing Install</option><option value="hvac">HVAC Install</option><option value="electrical">Electrical Install</option></select>
-                <button class="btn btn-red" onclick="addPerson()">+ Add Installer</button>
+                <button class="btn btn-red" onclick="addPerson()" data-i18n="add_installer">+ Add Installer</button>
             </div>
         </div>
         <div id="rosterBody"></div>
@@ -202,58 +287,58 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
     <!-- RECALL REPORT -->
     <div id="tab-recalls-content" class="hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-            <div class="sec-title">Recall Report</div>
+            <div class="sec-title" data-i18n="st_recall">Recall Report</div>
             <select id="recallRange" onchange="renderRecalls()"><option value="all" selected>All Time</option><option value="30">Last 30 Days</option><option value="month">This Month</option><option value="90">Last 90 Days</option></select>
         </div>
         <div class="g4" id="recallStats" style="margin-bottom:8px"></div>
-        <div class="sec-label">Fault Breakdown</div>
+        <div class="sec-label" data-i18n="sl_fault">Fault Breakdown</div>
         <div class="legend"><span><i style="background:var(--red)"></i>Install error</span><span><i style="background:var(--amber)"></i>Manufacturer</span><span><i style="background:var(--muted)"></i>Other</span></div>
         <div class="splitbar" id="faultBar"></div>
-        <div class="sec-label">Recall Rate by Installer</div>
+        <div class="sec-label" data-i18n="sl_rrinst">Recall Rate by Installer</div>
         <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Installer</th><th>Division</th><th class="r">Installs</th><th class="r">Recalls</th><th class="r">Install-fault</th><th class="r">Recall Rate</th></tr></thead><tbody id="recallByPerson"></tbody></table></div>
-        <div class="sec-label">Recall Rate by Division</div>
+        <div class="sec-label" data-i18n="sl_rrdiv">Recall Rate by Division</div>
         <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Division</th><th class="r">Installs</th><th class="r">Recalls</th><th class="r">Recall Rate</th></tr></thead><tbody id="recallByDiv"></tbody></table></div>
-        <div class="sec-label">Every Recall — Original Job → Callback</div>
+        <div class="sec-label" data-i18n="sl_everyrecall">Every Recall — Original Job → Callback</div>
         <div id="recallList"></div>
     </div>
 
     <!-- INSTALL REPORT -->
     <div id="tab-installs-content" class="hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-            <div class="sec-title">Install Report</div>
+            <div class="sec-title" data-i18n="st_install">Install Report</div>
             <select id="installRange" onchange="renderInstalls()"><option value="all" selected>All Time</option><option value="30">Last 30 Days</option><option value="month">This Month</option><option value="90">Last 90 Days</option></select>
         </div>
         <div class="g4" id="installStats" style="margin-bottom:8px"></div>
-        <div class="sec-label">Customer-Experience Compliance</div>
+        <div class="sec-label" data-i18n="sl_compliance">Customer-Experience Compliance</div>
         <div class="g4" id="complianceStats"></div>
-        <div class="sec-label">Installs by Division</div>
+        <div class="sec-label" data-i18n="sl_instdiv">Installs by Division</div>
         <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Division</th><th class="r">Installs</th><th class="r">Reviews</th><th class="r">Red Carpet</th><th class="r">Warranty</th><th class="r">QA</th></tr></thead><tbody id="installByDiv"></tbody></table></div>
-        <div class="sec-label">Installs by Installer</div>
+        <div class="sec-label" data-i18n="sl_instinst">Installs by Installer</div>
         <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Installer</th><th>Division</th><th class="r">Installs</th><th class="r">Review %</th><th class="r">Red Carpet %</th><th class="r">QA %</th></tr></thead><tbody id="installByPerson"></tbody></table></div>
     </div>
 
     <!-- TURN-INS -->
     <div id="tab-turnins-content" class="hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-            <div class="sec-title">Hours / Piece Rate Turn-Ins</div>
+            <div class="sec-title" data-i18n="st_turnins">Hours / Piece Rate Turn-Ins</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <select id="turninRange" onchange="renderTurnins()"><option value="7" selected>This Week (7d)</option><option value="14">Last 14 Days</option><option value="30">Last 30 Days</option><option value="month">This Month</option><option value="all">All Time</option></select>
-                <button class="btn btn-red" onclick="approveAllFiltered()">✓ Approve All Shown</button>
+                <button class="btn btn-red" onclick="approveAllFiltered()" data-i18n="approve_all">✓ Approve All Shown</button>
             </div>
         </div>
         <div class="g4" id="turninStats" style="margin-bottom:8px"></div>
-        <div class="sec-label">By Installer</div>
-        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Installer</th><th>Division</th><th class="r">Installs</th><th class="r">Hours</th><th class="r">Piece Items</th><th class="r">Pay</th><th class="r">Approved</th></tr></thead><tbody id="turninByPerson"></tbody></table></div>
-        <div class="sec-label">By Trade</div>
+        <div class="sec-label" data-i18n="sl_byinst">By Installer</div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th data-i18n="th_installer">Installer</th><th data-i18n="th_division">Division</th><th class="r" data-i18n="th_installs">Installs</th><th class="r" data-i18n="th_hours">Hours</th><th class="r" data-i18n="th_piece">Piece Items</th><th class="r" data-i18n="th_pay">Pay</th><th class="r" data-i18n="th_approved">Approved</th></tr></thead><tbody id="turninByPerson"></tbody></table></div>
+        <div class="sec-label" data-i18n="sl_bytrade">By Trade</div>
         <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Trade</th><th class="r">Installs</th><th class="r">Hours</th><th class="r">Piece Items</th><th class="r">Pay</th></tr></thead><tbody id="turninByTrade"></tbody></table></div>
-        <div class="sec-label">Detail — Approve &amp; Edit</div>
+        <div class="sec-label" data-i18n="sl_detail">Detail — Approve &amp; Edit</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">Approving locks the turn-in so the tech can no longer edit it. You can still edit or unapprove here.</div>
         <div id="turninDetail"></div>
     </div>
 
     <!-- TRENDS -->
     <div id="tab-trends-content" class="hidden">
-        <div class="sec-title">Recall-Rate &amp; Volume Trends</div>
+        <div class="sec-title" data-i18n="st_trends">Recall-Rate &amp; Volume Trends</div>
         <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6">Last 6 months. Recall rate = recalls logged that month ÷ installs logged that month. Watch the direction, not just the number — a climbing line is an early warning.</div>
         <div class="sec-label">Overall — Installs vs Recalls by Month</div>
         <div class="card" id="trendOverall"></div>
@@ -266,7 +351,7 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
     <!-- SCORECARDS -->
     <div id="tab-scorecards-content" class="hidden">
         <div class="no-print" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-            <div class="sec-title">Installer Scorecards</div>
+            <div class="sec-title" data-i18n="st_scorecards">Installer Scorecards</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <select id="scoreWho" onchange="renderScorecards()"><option value="all">All Installers</option></select>
                 <select id="scoreRange" onchange="renderScorecards()"><option value="30">Last 30 Days</option><option value="90" selected>Last 90 Days</option><option value="month">This Month</option><option value="all">All Time</option></select>
@@ -278,10 +363,10 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
 
     <!-- RATES -->
     <div id="tab-rates-content" class="hidden">
-        <div class="sec-title">Pay Rates</div>
-        <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6">Set the dollar amount per piece-rate item and the default hourly rate. These pre-fill on the turn-in when a tech logs work — they can still adjust the amount per job. Changing a rate here only affects new entries, not pay already logged.</div>
+        <div class="sec-title" data-i18n="st_rates">Pay Rates</div>
+        <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6" data-i18n="rates_intro">Set the dollar amount per piece-rate item and the default hourly rate. These pre-fill on the turn-in when a tech logs work — they can still adjust the amount per job. Changing a rate here only affects new entries, not pay already logged.</div>
         <div class="card" style="max-width:420px;margin-bottom:18px">
-            <div class="sec-label" style="margin-top:0">Default Hourly Rate</div>
+            <div class="sec-label" style="margin-top:0" data-i18n="default_hourly">Default Hourly Rate</div>
             <div style="display:flex;align-items:center;gap:8px"><span style="font-family:Oswald,sans-serif;color:var(--green);font-size:18px">$</span><input type="number" step="0.01" min="0" id="rateHourly" onchange="saveHourly(this.value)" placeholder="0.00" style="max-width:160px"> <span style="color:var(--muted);font-size:13px">/ hr</span></div>
         </div>
         <div id="rateEditor"></div>
@@ -290,7 +375,7 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
     <!-- LOGINS -->
     <div id="tab-logins-content" class="hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px">
-            <div class="sec-title">Installer Logins</div>
+            <div class="sec-title" data-i18n="st_logins">Installer Logins</div>
         </div>
         <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6">Each active installer needs a username and password to sign in. Sessions auto-expire after 30 minutes of inactivity.</p>
         <div id="loginsBody"></div>
@@ -298,8 +383,8 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
 
     <!-- ARCHIVED -->
     <div id="tab-archived-content" class="hidden">
-        <div class="sec-title">Archived Installers</div>
-        <p style="font-size:12px;color:var(--muted);margin:8px 0 16px;line-height:1.6">Archived installers are hidden from active views and can't sign in, but all their install and recall history is preserved and still counts in reports.</p>
+        <div class="sec-title" data-i18n="st_archived">Archived Installers</div>
+        <p style="font-size:12px;color:var(--muted);margin:8px 0 16px;line-height:1.6" data-i18n="archived_note">Archived installers are hidden from active views and can't sign in, but all their install and recall history is preserved and still counts in reports.</p>
         <div id="archivedBody"></div>
     </div>
 </div></div>
@@ -310,11 +395,11 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
         <div class="m-title" id="loginModalTitle">Set Login</div>
         <div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px" id="loginModalSub"></div>
         <input type="hidden" id="editLoginId" /><input type="hidden" id="loginPersonId" />
-        <label>Username</label><input id="loginUsername" type="text" placeholder="username" />
-        <label>Password</label><input id="loginPassword" type="text" placeholder="password" />
+        <label data-i18n="lbl_username">Username</label><input id="loginUsername" type="text" placeholder="username" />
+        <label data-i18n="lbl_password">Password</label><input id="loginPassword" type="text" placeholder="password" />
         <p id="loginModalErr" style="color:#ef4444;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.06em;min-height:16px;margin-top:8px"></p>
         <div style="display:flex;gap:8px;margin-top:10px">
-            <button class="btn btn-red" style="flex:1" onclick="saveLogin()">Save</button>
+            <button class="btn btn-red" style="flex:1" onclick="saveLogin()" data-i18n="btn_save">Save</button>
             <button class="btn btn-outline" onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
         </div>
     </div>
@@ -334,9 +419,9 @@ firebase.initializeApp({
 });
 const db=firebase.database();
 const DEFAULT_PIN='1234';
-const DIVS=[['underground','Underground'],['plumbing','Plumbing Install'],['hvac','HVAC Install'],['electrical','Electrical Install']];
+const DIVS=[['underground',t('g_underground')],['plumbing',t('g_plumbing')],['hvac',t('g_hvac')],['electrical',t('g_electrical')]];
 const GNAME=Object.fromEntries(DIVS);
-const TRADE_NAMES={underground:'Underground',plumbing:'Plumbing',hvac:'HVAC',electrical:'Electrical'};
+const TRADE_NAMES={underground:t('ts_underground'),plumbing:t('ts_plumbing'),hvac:t('ts_hvac'),electrical:t('ts_electrical')};
 const TRADE_ITEMS={
     underground:['Standard Dig','Non-Standard Dig','Standard Backfill','Non-Standard Backfill','Hand Dig','Liner Shot','uLiner Shot','Liner Shot Minimum'],
     plumbing:['Water Heater / Water Softener','Water Repipe / Drain Repipe','Basement Breakup','Floor Drain / Sump Pump','Stack Replacement','Shower Valve / Toilet Flange','Sewage Pump System / Sump Pump System','Sewage Pump Swap / Sump Pump Swap','Main Valve & PRV / Halo Ion / Angle Stop / Disposal / Faucet / Toilet / Hose Bib'],
@@ -416,7 +501,7 @@ function renderArchived(){
     const el=document.getElementById('archivedBody');
     const arch=Object.entries(people).filter(([id,p])=>p.archived).map(([id,p])=>({id,...p}));
     if(!arch.length){el.innerHTML='<div class="empty-note">No archived installers.</div>';return;}
-    el.innerHTML=arch.map(p=>`<div class="person-row"><div class="pr-name">${p.name} <span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></div><button class="btn btn-red" onclick="reactivatePerson('${p.id}','${p.name.replace(/'/g,"\\'")}')">Reactivate</button></div>`).join('');
+    el.innerHTML=arch.map(p=>`<div class="person-row"><div class="pr-name">${p.name} <span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></div><button class="btn btn-red" onclick="reactivatePerson('${p.id}','${p.name.replace(/'/g,"\\'")}')">${t('reactivate')}</button></div>`).join('');
 }
 
 // ── RANGE HELPERS ──
@@ -518,10 +603,10 @@ function renderTurnins(){
         const t=tr[r.trade];if(t){t.n++;t.hours+=h;t.piece+=pcs;t.pay+=pay;}
     },cutoff);
     document.getElementById('turninStats').innerHTML=`
-        <div class="stat-block"><div class="stat-lbl">Total Pay</div><div class="stat-num" style="color:var(--green)">${fmt$(totPay)}</div><div class="stat-meta">In range</div></div>
-        <div class="stat-block"><div class="stat-lbl">Total Hours</div><div class="stat-num">${Math.round(totHours*100)/100}</div><div class="stat-meta">Hourly jobs</div></div>
-        <div class="stat-block"><div class="stat-lbl">Piece Items</div><div class="stat-num">${totPiece}</div><div class="stat-meta">Tasks logged</div></div>
-        <div class="stat-block"><div class="stat-lbl">Approved</div><div class="stat-num">${nApproved}/${nInstalls}</div><div class="stat-meta">${nPending} pending</div></div>`;
+        <div class="stat-block"><div class="stat-lbl">${t('stat_totalpay')}</div><div class="stat-num" style="color:var(--green)">${fmt$(totPay)}</div><div class="stat-meta">${t('meta_inrange')}</div></div>
+        <div class="stat-block"><div class="stat-lbl">${t('stat_totalhours')}</div><div class="stat-num">${Math.round(totHours*100)/100}</div><div class="stat-meta">${t('meta_hourly')}</div></div>
+        <div class="stat-block"><div class="stat-lbl">${t('stat_pieceitems')}</div><div class="stat-num">${totPiece}</div><div class="stat-meta">${t('meta_tasks')}</div></div>
+        <div class="stat-block"><div class="stat-lbl">${t('stat_approved')}</div><div class="stat-num">${nApproved}/${nInstalls}</div><div class="stat-meta">${nPending} ${t('meta_pending')}</div></div>`;
     const pr=Object.values(per).sort((a,b)=>b.pay-a.pay);
     document.getElementById('turninByPerson').innerHTML=pr.length?pr.map(p=>`<tr><td>${esc(p.name)}</td><td><span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></td><td class="r">${p.n}</td><td class="r">${Math.round(p.hours*100)/100}</td><td class="r">${p.piece}</td><td class="r" style="color:var(--green);font-weight:600">${fmt$(p.pay)}</td><td class="r">${p.approved}/${p.n}</td></tr>`).join(''):'<tr><td colspan="7" class="empty-note">No turn-ins in range.</td></tr>';
     document.getElementById('turninByTrade').innerHTML=DIVS.map(([k,l])=>{const t=tr[k];return `<tr><td><span class="pill ${k}">${TRADE_NAMES[k]}</span></td><td class="r">${t.n}</td><td class="r">${Math.round(t.hours*100)/100}</td><td class="r">${t.piece}</td><td class="r" style="color:var(--green);font-weight:600">${fmt$(t.pay)}</td></tr>`;}).join('');
@@ -653,7 +738,7 @@ function renderRates(){
     const h=document.getElementById('rateHourly');if(document.activeElement!==h)h.value=RATES.hourly||'';
     const wrap=document.getElementById('rateEditor');
     wrap.innerHTML=DIVS.map(([k,l])=>`
-        <div class="sec-label">${l} — Piece Rates</div>
+        <div class="sec-label">${l} — ${t('piece_rates')}</div>
         <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Item</th><th class="r" style="width:160px">Rate ($)</th></tr></thead><tbody>
         ${(TRADE_ITEMS[k]||[]).map((item,i)=>{const v=(RATES.items[k]&&RATES.items[k][i]!=null)?RATES.items[k][i]:'';return `<tr><td>${esc(item)}</td><td class="r"><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end"><span style="color:var(--green)">$</span><input type="number" step="0.01" min="0" value="${v}" onchange="saveItemRate('${k}',${i},this.value)" style="max-width:120px;text-align:right" placeholder="0.00"></div></td></tr>`;}).join('')}
         </tbody></table></div>`).join('');

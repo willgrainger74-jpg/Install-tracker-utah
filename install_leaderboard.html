@@ -51,7 +51,8 @@
     </style>
 </head>
 <body>
-<div style="position:fixed;top:12px;right:16px;z-index:9999;">
+<div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
+  <button onclick="toggleLang()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;">🌐 <span id="langLabel">EN</span></button>
   <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
 </div>
 <script>
@@ -60,25 +61,65 @@ function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElem
 function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
 </script>
 
+<script>
+const I18N={
+ back:{en:'← Dashboard',es:'← Tablero'},
+ eyebrow:{en:'Standings',es:'Clasificación'},
+ h1a:{en:'Install ',es:'Tabla de '},
+ h1b:{en:'Leaderboard',es:'Líderes'},
+ sub:{en:"Who's winning the customer — and keeping the recalls down",es:'Quién gana al cliente — y mantiene bajas las rellamadas'},
+ opt_all:{en:'All Divisions',es:'Todas las Divisiones'},
+ opt_underground:{en:'Underground',es:'Subterráneo'},
+ opt_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
+ opt_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
+ opt_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'},
+ r_30:{en:'Last 30 Days',es:'Últimos 30 Días'},
+ r_month:{en:'This Month',es:'Este Mes'},
+ r_90:{en:'Last 90 Days',es:'Últimos 90 Días'},
+ r_all:{en:'All Time',es:'Todo el Tiempo'},
+ lb_reviews_t:{en:'Reviews Requested',es:'Reseñas Solicitadas'},
+ lb_reviews_s:{en:'Most review asks',es:'Más solicitudes de reseña'},
+ lb_rc_t:{en:'Red Carpet Rate',es:'Tasa de Alfombra Roja'},
+ lb_rc_s:{en:'% of jobs done right',es:'% de trabajos bien hechos'},
+ lb_qa_t:{en:'QA Scheduled',es:'QA Programado'},
+ lb_qa_s:{en:'% scheduling QA',es:'% programando QA'},
+ lb_clean_t:{en:'Cleanest Installs',es:'Instalaciones Más Limpias'},
+ lb_clean_s:{en:'Lowest recall rate · min 3 installs',es:'Menor tasa de rellamadas · mín 3 instalaciones'},
+ lb_vol_t:{en:'Most Installs',es:'Más Instalaciones'},
+ lb_vol_s:{en:'Total volume',es:'Volumen total'},
+ lb_empty:{en:'No data for this filter yet.',es:'Aún no hay datos para este filtro.'},
+ u_recall:{en:'% recall',es:'% rellamada'},
+ gs_underground:{en:'Underground',es:'Subterráneo'},
+ gs_plumbing:{en:'Plumbing',es:'Plomería'},
+ gs_hvac:{en:'HVAC',es:'HVAC'},
+ gs_electrical:{en:'Electrical',es:'Eléctrica'}
+};
+let LANG=localStorage.getItem('aitLang')||'en';
+function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
+function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('aitLang',LANG);location.reload();}
+function applyStaticLang(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});const ll=document.getElementById('langLabel');if(ll)ll.textContent=LANG==='en'?'EN':'ES';}
+document.addEventListener('DOMContentLoaded',applyStaticLang);
+</script>
+
 <div class="page">
-    <a href="install_index.html" class="back">← Dashboard</a>
-    <div class="eyebrow">Standings</div>
-    <h1>Install <em>Leaderboard</em></h1>
-    <div class="sub">Who's winning the customer — and keeping the recalls down</div>
+    <a href="install_index.html" class="back" data-i18n="back">← Dashboard</a>
+    <div class="eyebrow" data-i18n="eyebrow">Standings</div>
+    <h1><span data-i18n="h1a">Install </span><em data-i18n="h1b">Leaderboard</em></h1>
+    <div class="sub" data-i18n="sub">Who's winning the customer — and keeping the recalls down</div>
 
     <div class="filters">
         <select id="divFilter">
-            <option value="all">All Divisions</option>
-            <option value="underground">Underground</option>
-            <option value="plumbing">Plumbing Install</option>
-            <option value="hvac">HVAC Install</option>
-            <option value="electrical">Electrical Install</option>
+            <option value="all" data-i18n="opt_all">All Divisions</option>
+            <option value="underground" data-i18n="opt_underground">Underground</option>
+            <option value="plumbing" data-i18n="opt_plumbing">Plumbing Install</option>
+            <option value="hvac" data-i18n="opt_hvac">HVAC Install</option>
+            <option value="electrical" data-i18n="opt_electrical">Electrical Install</option>
         </select>
         <select id="rangeFilter">
-            <option value="30">Last 30 Days</option>
-            <option value="month">This Month</option>
-            <option value="90">Last 90 Days</option>
-            <option value="all" selected>All Time</option>
+            <option value="30" data-i18n="r_30">Last 30 Days</option>
+            <option value="month" data-i18n="r_month">This Month</option>
+            <option value="90" data-i18n="r_90">Last 90 Days</option>
+            <option value="all" selected data-i18n="r_all">All Time</option>
         </select>
     </div>
 
@@ -137,14 +178,14 @@ function buildStats(){
 function board(title,icon,subtitle,rows,fmt,opts={}){
     const max=rows.length?Math.max(...rows.map(r=>r.sortVal||0),0.0001):1;
     let html=`<div class="board"><div class="board-title">${icon} ${title}</div><div class="board-sub">${subtitle}</div>`;
-    if(!rows.length){html+='<div class="empty-note">No data for this filter yet.</div></div>';return html;}
+    if(!rows.length){html+='<div class="empty-note">'+t('lb_empty')+'</div></div>';return html;}
     rows.forEach((r,i)=>{
         const rk=i+1;const rc=rk<=3?'r'+rk:'';
         const pct=opts.noBar?0:Math.round((r.sortVal||0)/max*100);
         html+=`<div class="lb-row ${r.id===myId?'you':''}">
             <div class="rank ${rc}">${rk}</div>
             <div style="flex:1">
-                <div class="lb-name">${r.name}${r.id===myId?' ⬅':''}<small>${GROUP_NAMES[r.group]||''}</small></div>
+                <div class="lb-name">${r.name}${r.id===myId?' ⬅':''}<small>${t('gs_'+r.group)}</small></div>
                 ${opts.noBar?'':`<div class="bar"><span style="width:${pct}%"></span></div>`}
             </div>
             <div class="lb-val">${fmt(r)}</div>
@@ -171,11 +212,11 @@ function render(){
     const vol=[...active].sort((a,b)=>b.installs-a.installs).map(s=>({...s,sortVal:s.installs}));
 
     document.getElementById('boards').innerHTML=
-        board('Reviews Requested','⭐','Most review asks',reviews,r=>r.reviews)+
-        board('Red Carpet Rate','🟥','% of jobs done right',rc,r=>Math.round(r.sortVal*100)+'<small>%</small>')+
-        board('QA Scheduled','📅','% scheduling QA',qa,r=>Math.round(r.sortVal*100)+'<small>%</small>')+
-        board('Cleanest Installs','🏅','Lowest recall rate · min 3 installs',best,r=>Math.round((r.recalls/r.installs)*100)+'<small>% recall</small>')+
-        board('Most Installs','🔧','Total volume',vol,r=>r.installs);
+        board(t('lb_reviews_t'),'⭐',t('lb_reviews_s'),reviews,r=>r.reviews)+
+        board(t('lb_rc_t'),'🟥',t('lb_rc_s'),rc,r=>Math.round(r.sortVal*100)+'<small>%</small>')+
+        board(t('lb_qa_t'),'📅',t('lb_qa_s'),qa,r=>Math.round(r.sortVal*100)+'<small>%</small>')+
+        board(t('lb_clean_t'),'🏅',t('lb_clean_s'),best,r=>Math.round((r.recalls/r.installs)*100)+'<small>'+t('u_recall')+'</small>')+
+        board(t('lb_vol_t'),'🔧',t('lb_vol_s'),vol,r=>r.installs);
 }
 </script>
 </body>

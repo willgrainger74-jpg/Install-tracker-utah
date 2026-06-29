@@ -106,7 +106,8 @@
     </style>
 </head>
 <body>
-<div style="position:fixed;top:12px;right:16px;z-index:9999;">
+<div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
+  <button onclick="toggleLang()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;">🌐 <span id="langLabel">EN</span></button>
   <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
 </div>
 <script>
@@ -115,15 +116,81 @@ function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElem
 function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
 </script>
 
-<button class="fab" id="fabAdd">+ Add Install</button>
+<script>
+const I18N={
+ h1a:{en:'Log ',es:'Registrar '},
+ h1b:{en:'Installs',es:'Instalaciones'},
+ back:{en:'← Dashboard',es:'← Tablero'},
+ fab_add:{en:'+ Add Install',es:'+ Agregar Instalación'},
+ add_top:{en:'+ Add Install',es:'+ Agregar Instalación'},
+ autosave:{en:'Every field saves automatically as you type — no save button.',es:'Cada campo se guarda automáticamente al escribir — sin botón de guardar.'},
+ d_mon:{en:'Mon',es:'Lun'},d_tue:{en:'Tue',es:'Mar'},d_wed:{en:'Wed',es:'Mié'},d_thu:{en:'Thu',es:'Jue'},d_fri:{en:'Fri',es:'Vie'},d_sat:{en:'Sat',es:'Sáb'},d_sun:{en:'Sun',es:'Dom'},
+ day_installs:{en:'Installs',es:'Instalaciones'},
+ logging_for:{en:'Logging for:',es:'Registrando para:'},
+ install_word:{en:'install',es:'instalación'},
+ installs_word:{en:'installs',es:'instalaciones'},
+ none_day:{en:'No installs logged for this day',es:'No hay instalaciones registradas para este día'},
+ lbl_customer:{en:'Customer Name',es:'Nombre del Cliente'},
+ ph_customer:{en:'Customer Name',es:'Nombre del Cliente'},
+ lbl_job:{en:'Job Number',es:'Número de Trabajo'},
+ ph_job:{en:'Job Number',es:'Número de Trabajo'},
+ lbl_sold:{en:'Sold By',es:'Vendido Por'},
+ ph_sold:{en:'Who sold the job',es:'Quién vendió el trabajo'},
+ lbl_what:{en:'What Was Installed',es:'Qué Se Instaló'},
+ ph_what:{en:'e.g. 50-gal water heater, expansion tank…',es:'ej. calentador de 50 gal, tanque de expansión…'},
+ lbl_system:{en:'System / Model',es:'Sistema / Modelo'},
+ ph_system:{en:'e.g. Bradford White RG250T6N',es:'ej. Bradford White RG250T6N'},
+ lbl_notes:{en:'Notes',es:'Notas'},
+ ph_notes:{en:'Anything else worth logging',es:'Cualquier otra cosa que valga la pena anotar'},
+ cont_label:{en:'↻ Continuing install — carries into the next day (counts as one)',es:'↻ Instalación continua — sigue al día siguiente (cuenta como una)'},
+ cust_exp:{en:'Customer Experience',es:'Experiencia del Cliente'},
+ ce_review:{en:'✅ Asked for Review',es:'✅ Pidió Reseña'},
+ ce_rc:{en:'🟥 Red Carpet',es:'🟥 Alfombra Roja'},
+ ce_warranty:{en:'📑 Warranty & Maint.',es:'📑 Garantía y Mant.'},
+ ce_qa:{en:'🔍 Scheduled QA',es:'🔍 QA Programado'},
+ pay_turnin:{en:'Pay / Turn-In',es:'Pago / Reporte'},
+ lbl_trade:{en:'Trade',es:'Oficio'},
+ lbl_paytype:{en:'Pay Type',es:'Tipo de Pago'},
+ opt_select:{en:'Select…',es:'Seleccionar…'},
+ opt_hours:{en:'Hours',es:'Horas'},
+ opt_piece:{en:'Piece Rate',es:'Por Pieza'},
+ lbl_hoursworked:{en:'Hours Worked',es:'Horas Trabajadas'},
+ ph_hours:{en:'e.g. 6.5',es:'ej. 6.5'},
+ lbl_rate:{en:'Rate ($/hr)',es:'Tarifa ($/hr)'},
+ piecerate_work:{en:'Piece-Rate Work',es:'Trabajo Por Pieza'},
+ job_pay:{en:'Job Pay',es:'Pago del Trabajo'},
+ install_label:{en:'Install',es:'Instalación'},
+ continuing_tag:{en:'Continuing',es:'Continua'},
+ locked_badge:{en:'🔒 Approved — locked',es:'🔒 Aprobado — bloqueado'},
+ lock_note:{en:'A manager approved this turn-in. Ask a manager if it needs changing.',es:'Un gerente aprobó este reporte. Pide a un gerente si necesita cambios.'},
+ del:{en:'Delete',es:'Eliminar'},
+ confirm_del:{en:'Delete this install?',es:'¿Eliminar esta instalación?'},
+ tn_underground:{en:'Underground',es:'Subterráneo'},
+ tn_plumbing:{en:'Plumbing',es:'Plomería'},
+ tn_hvac:{en:'HVAC',es:'HVAC'},
+ tn_electrical:{en:'Electrical',es:'Eléctrica'},
+ g_underground:{en:'Underground',es:'Subterráneo'},
+ g_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
+ g_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
+ g_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'}
+};
+let LANG=localStorage.getItem('aitLang')||'en';
+function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
+function tradeName(k){return t('tn_'+k)||k;}
+function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('aitLang',LANG);location.reload();}
+function applyStaticLang(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});const ll=document.getElementById('langLabel');if(ll)ll.textContent=LANG==='en'?'EN':'ES';}
+document.addEventListener('DOMContentLoaded',applyStaticLang);
+</script>
+
+<button class="fab" id="fabAdd" data-i18n="fab_add">+ Add Install</button>
 
 <div class="page">
     <div class="page-header">
         <div>
-            <div class="page-title">Log <em>Installs</em></div>
+            <div class="page-title"><span data-i18n="h1a">Log </span><em data-i18n="h1b">Installs</em></div>
             <div id="personName" class="page-sub"></div>
         </div>
-        <a href="install_index.html" class="back-btn">← Dashboard</a>
+        <a href="install_index.html" class="back-btn" data-i18n="back">← Dashboard</a>
     </div>
     <div class="card">
         <div class="cal-nav">
@@ -132,17 +199,17 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
             <button class="cal-nav-btn" id="nextWeek">→</button>
         </div>
         <div class="cal-days-header">
-            <div class="cal-day-label">Mon</div><div class="cal-day-label">Tue</div><div class="cal-day-label">Wed</div><div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div><div class="cal-day-label">Sat</div><div class="cal-day-label">Sun</div>
+            <div class="cal-day-label" data-i18n="d_mon">Mon</div><div class="cal-day-label" data-i18n="d_tue">Tue</div><div class="cal-day-label" data-i18n="d_wed">Wed</div><div class="cal-day-label" data-i18n="d_thu">Thu</div><div class="cal-day-label" data-i18n="d_fri">Fri</div><div class="cal-day-label" data-i18n="d_sat">Sat</div><div class="cal-day-label" data-i18n="d_sun">Sun</div>
         </div>
         <div class="cal-grid" id="calendarDays"></div>
     </div>
     <div id="installsSection" style="display:none;">
         <div class="card">
             <div class="calls-header">
-                <div class="card-title" id="dayTitle">Installs</div>
-                <button class="btn btn-red" id="addTop">+ Add Install</button>
+                <div class="card-title" id="dayTitle" data-i18n="day_installs">Installs</div>
+                <button class="btn btn-red" id="addTop" data-i18n="add_top">+ Add Install</button>
             </div>
-            <div style="font-size:12px;color:var(--faint);margin:-8px 0 16px;letter-spacing:.04em;">Every field saves automatically as you type — no save button.</div>
+            <div style="font-size:12px;color:var(--faint);margin:-8px 0 16px;letter-spacing:.04em;" data-i18n="autosave">Every field saves automatically as you type — no save button.</div>
             <div id="installsList"></div>
             <button class="add-call-bottom" id="addBottom" style="display:none;">+ Add Another Install</button>
         </div>
@@ -192,7 +259,7 @@ db.ref('installPeople/'+selected).once('value',snap=>{
     const p=snap.val();
     if(!p){location.href='install_index.html';return;}
     me={id:selected,name:p.name,group:p.group||'plumbing'};
-    document.getElementById('personName').textContent='Logging for: '+p.name+' · '+(GROUP_NAMES[me.group]||me.group);
+    document.getElementById('personName').textContent=t('logging_for')+' '+p.name+' · '+(t('g_'+me.group)||me.group);
     renderCalendar();
 });
 
@@ -208,7 +275,7 @@ function renderCalendar(){
             const dateKey=dk(d),isSel=selectedDate===dateKey;
             const btn=grid.children[i];
             btn.className='cal-day'+(n>0?' has-calls':'')+(isSel?' selected':'');
-            btn.innerHTML=`<div class="cal-day-num">${d.getDate()}</div>${n>0?`<div class="cal-day-stat">${n} install${n>1?'s':''}${cont?` · ${cont}&#8635;`:''}</div>`:`<div class="cal-day-empty">—</div>`}`;
+            btn.innerHTML=`<div class="cal-day-num">${d.getDate()}</div>${n>0?`<div class="cal-day-stat">${n} ${n>1?t('installs_word'):t('install_word')}${cont?` · ${cont}&#8635;`:''}</div>`:`<div class="cal-day-empty">—</div>`}`;
             btn.onclick=()=>{selectedDate=isSel?null:dateKey;renderCalendar();if(selectedDate)renderInstalls(d);else hideExtras();};
         });
     });
@@ -218,7 +285,7 @@ function renderInstalls(date){
     document.getElementById('installsSection').style.display='block';
     document.getElementById('fabAdd').style.display='flex';
     document.getElementById('addBottom').style.display='block';
-    document.getElementById('dayTitle').textContent=date.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})+' — Installs';
+    document.getElementById('dayTitle').textContent=date.toLocaleDateString(LANG==='es'?'es-ES':'en-US',{weekday:'long',month:'short',day:'numeric'})+' — '+t('day_installs');
     const path='installLogs/'+dk(date);
     if(installsRef)installsRef.off();
     installsRef=db.ref(path);
@@ -227,7 +294,7 @@ function renderInstalls(date){
         const arr=all?Object.keys(all).map(id=>({id,...all[id]})).filter(r=>r.personId===selected):[];
         arr.sort((a,b)=>(a.ts||0)-(b.ts||0));
         const c=document.getElementById('installsList');
-        if(!arr.length){c.innerHTML='<p style="color:var(--muted);text-align:center;padding:32px;font-family:Oswald,sans-serif;letter-spacing:0.1em;text-transform:uppercase;font-size:13px;">No installs logged for this day</p>';}
+        if(!arr.length){c.innerHTML='<p style="color:var(--muted);text-align:center;padding:32px;font-family:Oswald,sans-serif;letter-spacing:0.1em;text-transform:uppercase;font-size:13px;">'+t('none_day')+'</p>';}
         else{c.innerHTML=arr.map(cardHTML).join('');}
         renderCalendar();
     });
@@ -241,32 +308,32 @@ function renderInstalls(date){
 function cardHTML(c){
     const locked=!!c.approved;
     const dis=locked?' disabled':'';
-    const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${c.trade===t?' selected':''}>${TRADE_NAMES[t]}</option>`).join('');
-    const pieceBlock=c.payType==='piece'?`<div class="section-label" style="margin-top:6px;">${esc(TRADE_NAMES[c.trade]||'')} — Piece-Rate Work</div><div class="piece-list">${(TRADE_ITEMS[c.trade]||[]).map((item,i)=>{const on=c.pieceItems&&c.pieceItems[i];const amt=(c.pieceAmounts&&c.pieceAmounts[i]!=null)?c.pieceAmounts[i]:'';return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked,'${c.trade}')"><span class="pr-label">${esc(item)}</span>${on?`<span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}"${dis} onchange="setPieceAmount('${c.id}',${i},this.value)" placeholder="0.00"></span>`:''}</div>`;}).join('')}</div>`:'';
-    const hoursBlock=c.payType==='hours'?`<div class="row2"><div class="field"><label>Hours Worked</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateInstall('${c.id}','hours',parseFloat(this.value)||0)" placeholder="e.g. 6.5" /></div><div class="field"><label>Rate ($/hr)</label><input type="number" step="0.01" min="0" value="${c.hourlyRate!=null&&c.hourlyRate!==''?esc(c.hourlyRate):''}"${dis} onchange="updateInstall('${c.id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${RATES.hourly?RATES.hourly:'0.00'}" /></div></div>`:'';
+    const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${c.trade===t?' selected':''}>${tradeName(t)}</option>`).join('');
+    const pieceBlock=c.payType==='piece'?`<div class="section-label" style="margin-top:6px;">${esc(tradeName(c.trade))} — ${t('piecerate_work')}</div><div class="piece-list">${(TRADE_ITEMS[c.trade]||[]).map((item,i)=>{const on=c.pieceItems&&c.pieceItems[i];const amt=(c.pieceAmounts&&c.pieceAmounts[i]!=null)?c.pieceAmounts[i]:'';return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked,'${c.trade}')"><span class="pr-label">${esc(item)}</span>${on?`<span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}"${dis} onchange="setPieceAmount('${c.id}',${i},this.value)" placeholder="0.00"></span>`:''}</div>`;}).join('')}</div>`:'';
+    const hoursBlock=c.payType==='hours'?`<div class="row2"><div class="field"><label>${t('lbl_hoursworked')}</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateInstall('${c.id}','hours',parseFloat(this.value)||0)" placeholder="${t('ph_hours')}" /></div><div class="field"><label>${t('lbl_rate')}</label><input type="number" step="0.01" min="0" value="${c.hourlyRate!=null&&c.hourlyRate!==''?esc(c.hourlyRate):''}"${dis} onchange="updateInstall('${c.id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${RATES.hourly?RATES.hourly:'0.00'}" /></div></div>`:'';
     const pay=jobPay(c);
-    const payLine=(c.payType==='hours'||c.payType==='piece')?`<div class="job-pay">Job Pay <span>${fmt$(pay)}</span></div>`:'';
-    const headRight=locked?`<span class="lock-badge">🔒 Approved — locked</span>`:`<button class="del-call" onclick="deleteInstall('${c.id}')">Delete</button>`;
+    const payLine=(c.payType==='hours'||c.payType==='piece')?`<div class="job-pay">${t('job_pay')} <span>${fmt$(pay)}</span></div>`:'';
+    const headRight=locked?`<span class="lock-badge">${t('locked_badge')}</span>`:`<button class="del-call" onclick="deleteInstall('${c.id}')">${t('del')}</button>`;
     return `<div class="call-card${c.continuing?' continuing':''}${locked?' approved':''}">
-        <div class="call-card-header"><div class="call-label">Install${c.continuing?' · &#8635; Continuing':''}</div>${headRight}</div>
-        ${locked?'<div class="lock-note">A manager approved this turn-in. Ask a manager if it needs changing.</div>':''}
-        <div class="field"><label>Customer Name</label><input type="text" value="${esc(c.customerName)}"${dis} onchange="updateInstall('${c.id}','customerName',this.value)" placeholder="Customer Name" /></div>
-        <div class="field"><label>Job Number</label><input type="text" value="${esc(c.jobNumber)}"${dis} onchange="updateInstall('${c.id}','jobNumber',this.value)" placeholder="Job Number" /></div>
-        <div class="field"><label>Sold By</label><input type="text" value="${esc(c.soldBy)}"${dis} onchange="updateInstall('${c.id}','soldBy',this.value)" placeholder="Who sold the job" /></div>
-        <div class="field"><label>What Was Installed</label><textarea rows="2"${dis} onchange="updateInstall('${c.id}','whatInstalled',this.value)" placeholder="e.g. 50-gal water heater, expansion tank…">${esc(c.whatInstalled)}</textarea></div>
-        <div class="field"><label>System / Model</label><input type="text" value="${esc(c.systemInstalled)}"${dis} onchange="updateInstall('${c.id}','systemInstalled',this.value)" placeholder="e.g. Bradford White RG250T6N" /></div>
-        <div class="field"><label>Notes</label><textarea rows="2"${dis} onchange="updateInstall('${c.id}','notes',this.value)" placeholder="Anything else worth logging">${esc(c.notes)}</textarea></div>
-        <label class="check-row cont"><input type="checkbox" ${c.continuing?'checked':''}${dis} onchange="updateInstall('${c.id}','continuing',this.checked)"><span>&#8635; Continuing install — carries into the next day (counts as one)</span></label>
-        <hr class="divider"><div class="section-label">Customer Experience</div>
+        <div class="call-card-header"><div class="call-label">${t('install_label')}${c.continuing?' · &#8635; '+t('continuing_tag'):''}</div>${headRight}</div>
+        ${locked?`<div class="lock-note">${t('lock_note')}</div>`:''}
+        <div class="field"><label>${t('lbl_customer')}</label><input type="text" value="${esc(c.customerName)}"${dis} onchange="updateInstall('${c.id}','customerName',this.value)" placeholder="${t('ph_customer')}" /></div>
+        <div class="field"><label>${t('lbl_job')}</label><input type="text" value="${esc(c.jobNumber)}"${dis} onchange="updateInstall('${c.id}','jobNumber',this.value)" placeholder="${t('ph_job')}" /></div>
+        <div class="field"><label>${t('lbl_sold')}</label><input type="text" value="${esc(c.soldBy)}"${dis} onchange="updateInstall('${c.id}','soldBy',this.value)" placeholder="${t('ph_sold')}" /></div>
+        <div class="field"><label>${t('lbl_what')}</label><textarea rows="2"${dis} onchange="updateInstall('${c.id}','whatInstalled',this.value)" placeholder="${t('ph_what')}">${esc(c.whatInstalled)}</textarea></div>
+        <div class="field"><label>${t('lbl_system')}</label><input type="text" value="${esc(c.systemInstalled)}"${dis} onchange="updateInstall('${c.id}','systemInstalled',this.value)" placeholder="${t('ph_system')}" /></div>
+        <div class="field"><label>${t('lbl_notes')}</label><textarea rows="2"${dis} onchange="updateInstall('${c.id}','notes',this.value)" placeholder="${t('ph_notes')}">${esc(c.notes)}</textarea></div>
+        <label class="check-row cont"><input type="checkbox" ${c.continuing?'checked':''}${dis} onchange="updateInstall('${c.id}','continuing',this.checked)"><span>&#8635; ${t('cont_label').replace('↻ ','')}</span></label>
+        <hr class="divider"><div class="section-label">${t('cust_exp')}</div>
         <div class="trade-grid">
-            <label class="check-row"><input type="checkbox" ${c.askedReview?'checked':''}${dis} onchange="updateInstall('${c.id}','askedReview',this.checked)"><span>✅ Asked for Review</span></label>
-            <label class="check-row"><input type="checkbox" ${c.redCarpet?'checked':''}${dis} onchange="updateInstall('${c.id}','redCarpet',this.checked)"><span>🟥 Red Carpet</span></label>
-            <label class="check-row"><input type="checkbox" ${c.warrantyReview?'checked':''}${dis} onchange="updateInstall('${c.id}','warrantyReview',this.checked)"><span>📑 Warranty &amp; Maint.</span></label>
-            <label class="check-row"><input type="checkbox" ${c.scheduledQA?'checked':''}${dis} onchange="updateInstall('${c.id}','scheduledQA',this.checked)"><span>🔍 Scheduled QA</span></label>
+            <label class="check-row"><input type="checkbox" ${c.askedReview?'checked':''}${dis} onchange="updateInstall('${c.id}','askedReview',this.checked)"><span>${t('ce_review')}</span></label>
+            <label class="check-row"><input type="checkbox" ${c.redCarpet?'checked':''}${dis} onchange="updateInstall('${c.id}','redCarpet',this.checked)"><span>${t('ce_rc')}</span></label>
+            <label class="check-row"><input type="checkbox" ${c.warrantyReview?'checked':''}${dis} onchange="updateInstall('${c.id}','warrantyReview',this.checked)"><span>${t('ce_warranty')}</span></label>
+            <label class="check-row"><input type="checkbox" ${c.scheduledQA?'checked':''}${dis} onchange="updateInstall('${c.id}','scheduledQA',this.checked)"><span>${t('ce_qa')}</span></label>
         </div>
-        <hr class="divider"><div class="section-label">Pay / Turn-In</div>
-        <div class="field"><label>Trade</label><select${dis} onchange="changeTrade('${c.id}',this.value)">${tradeSel}</select></div>
-        <div class="field"><label>Pay Type</label><select${dis} onchange="changePayType('${c.id}',this.value)"><option value=""${!c.payType?' selected':''}>Select…</option><option value="hours"${c.payType==='hours'?' selected':''}>Hours</option><option value="piece"${c.payType==='piece'?' selected':''}>Piece Rate</option></select></div>
+        <hr class="divider"><div class="section-label">${t('pay_turnin')}</div>
+        <div class="field"><label>${t('lbl_trade')}</label><select${dis} onchange="changeTrade('${c.id}',this.value)">${tradeSel}</select></div>
+        <div class="field"><label>${t('lbl_paytype')}</label><select${dis} onchange="changePayType('${c.id}',this.value)"><option value=""${!c.payType?' selected':''}>${t('opt_select')}</option><option value="hours"${c.payType==='hours'?' selected':''}>${t('opt_hours')}</option><option value="piece"${c.payType==='piece'?' selected':''}>${t('opt_piece')}</option></select></div>
         ${hoursBlock}${pieceBlock}${payLine}
     </div>`;
 }
@@ -277,7 +344,7 @@ function changeTrade(id,val){db.ref(`${curPath()}/${id}/trade`).set(val);db.ref(
 function changePayType(id,val){const u={payType:val};if(val!=='piece'){u.pieceItems=null;u.pieceAmounts=null;}if(val!=='hours')u.hours=0;db.ref(`${curPath()}/${id}`).update(u);if(val==='hours'){db.ref(`${curPath()}/${id}/hourlyRate`).once('value',s=>{if(s.val()==null&&RATES.hourly)db.ref(`${curPath()}/${id}/hourlyRate`).set(RATES.hourly);});}}
 function togglePiece(id,i,checked,trade){const base=`${curPath()}/${id}`;db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const r=rateFor(trade,i);if(r!=null)db.ref(`${base}/pieceAmounts/${i}`).set(r);}else{db.ref(`${base}/pieceAmounts/${i}`).remove();}}
 function setPieceAmount(id,i,val){db.ref(`${curPath()}/${id}/pieceAmounts/${i}`).set(parseFloat(val)||0);}
-function deleteInstall(id){if(confirm('Delete this install?'))db.ref(`${curPath()}/${id}`).remove();}
+function deleteInstall(id){if(confirm(t('confirm_del')))db.ref(`${curPath()}/${id}`).remove();}
 
 function hideExtras(){document.getElementById('installsSection').style.display='none';document.getElementById('fabAdd').style.display='none';document.getElementById('addBottom').style.display='none';if(installsRef){installsRef.off();installsRef=null;}}
 

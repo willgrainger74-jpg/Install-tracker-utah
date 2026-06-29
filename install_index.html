@@ -126,7 +126,8 @@
     </style>
 </head>
 <body>
-<div id="themeToggleWrap" style="position:fixed;top:12px;right:16px;z-index:9999;">
+<div id="themeToggleWrap" style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
+  <button id="langToggleBtn" onclick="toggleLang()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;">🌐 <span id="langLabel">EN</span></button>
   <button id="themeToggleBtn" onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;">
     <span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span>
   </button>
@@ -135,6 +136,54 @@
 (function(){var t=localStorage.getItem('aitTheme')||'dark';applyTheme(t);})();
 function applyTheme(t){localStorage.setItem('aitTheme',t);if(t==='light'){document.documentElement.classList.add('light');var i=document.getElementById('themeIcon'),l=document.getElementById('themeLabel');if(i)i.textContent='🌙';if(l)l.textContent='DARK';}else{document.documentElement.classList.remove('light');var i=document.getElementById('themeIcon'),l=document.getElementById('themeLabel');if(i)i.textContent='☀️';if(l)l.textContent='LIGHT';}}
 function toggleTheme(){var cur=localStorage.getItem('aitTheme')||'dark';applyTheme(cur==='dark'?'light':'dark');}
+// ── i18n ──
+const I18N={
+  hero_sub:{en:'Installation Performance Tracker',es:'Rastreador de Rendimiento de Instalación'},
+  today:{en:'Today',es:'Hoy'},
+  stat_today:{en:"Today's Installs",es:'Instalaciones de Hoy'},
+  stat_alldiv:{en:'All divisions',es:'Todas las divisiones'},
+  stat_open_recalls:{en:'Open Recalls',es:'Rellamadas Abiertas'},
+  stat_last30:{en:'Last 30 days',es:'Últimos 30 días'},
+  stat_recall_rate:{en:'Recall Rate',es:'Tasa de Rellamadas'},
+  stat_recall_div:{en:'Recalls ÷ installs',es:'Rellamadas ÷ instalaciones'},
+  pick_division:{en:'Choose Your Division',es:'Elige Tu División'},
+  pick_name:{en:'Choose Your Name',es:'Elige Tu Nombre'},
+  roster_empty:{en:'No installers assigned to this division yet. Add them in the Manager portal.',es:'Aún no hay instaladores asignados a esta división. Agrégalos en el portal de Gerente.'},
+  select_prompt:{en:'↑ Pick a division, then choose your name to continue',es:'↑ Elige una división, luego elige tu nombre para continuar'},
+  nav_log_t:{en:'Log Install',es:'Registrar Instalación'},
+  nav_log_d:{en:'Record a completed installation and the customer-experience checklist',es:'Registra una instalación completada y la lista de experiencia del cliente'},
+  nav_recall_t:{en:'Log Recall',es:'Registrar Rellamada'},
+  nav_recall_d:{en:'Log a callback, auto-link it to the original job, and tag the fault',es:'Registra una rellamada, vincúlala al trabajo original y marca la falla'},
+  nav_turnin_t:{en:'Weekly Turn-In',es:'Reporte Semanal'},
+  nav_turnin_d:{en:'Printable weekly sheet of every install you did — jobs, hours, and piece-rate work',es:'Hoja semanal imprimible de cada instalación — trabajos, horas y trabajo por pieza'},
+  nav_lookup_t:{en:'Job Lookup',es:'Buscar Trabajo'},
+  nav_lookup_d:{en:'Search any job number or customer to pull the install and any recalls — fast warranty lookups',es:'Busca cualquier número de trabajo o cliente para ver la instalación y rellamadas — búsquedas rápidas de garantía'},
+  nav_lb_t:{en:'Leaderboard',es:'Tabla de Líderes'},
+  nav_lb_d:{en:'Reviews, red-carpet rate, QA scheduling, and lowest recall rate',es:'Reseñas, alfombra roja, programación de QA y menor tasa de rellamadas'},
+  nav_mgr_t:{en:'Manager',es:'Gerente'},
+  nav_mgr_d:{en:'PIN-protected — roster, divisions, logins, and recall reports',es:'Protegido con PIN — personal, divisiones, accesos y reportes de rellamadas'},
+  div_underground:{en:'Underground',es:'Subterráneo'},
+  div_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
+  div_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
+  div_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'},
+  login_title:{en:'Tech Login',es:'Acceso de Técnico'},
+  login_sub:{en:'Enter your username and password',es:'Ingresa tu usuario y contraseña'},
+  login_user:{en:'Username',es:'Usuario'},
+  login_pass:{en:'Password',es:'Contraseña'},
+  login_btn:{en:'Sign In',es:'Entrar'},
+  login_err:{en:'Wrong username or password',es:'Usuario o contraseña incorrectos'},
+  signed_in_as:{en:'Signed in as',es:'Conectado como'},
+  logout:{en:'Log out',es:'Cerrar sesión'},
+  active:{en:'✓ Active',es:'✓ Activo'}
+};
+let LANG=localStorage.getItem('aitLang')||'en';
+function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
+function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('aitLang',LANG);location.reload();}
+function applyStaticLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});
+  const ll=document.getElementById('langLabel');if(ll)ll.textContent=LANG==='en'?'EN':'ES';
+}
 </script>
 
 <div class="page">
@@ -144,19 +193,19 @@ function toggleTheme(){var cur=localStorage.getItem('aitTheme')||'dark';applyThe
             <div class="hero-left">
                 <div class="hero-eyebrow"><span class="live-dot">Live</span></div>
                 <div class="hero-title">Action<br><em>Install</em></div>
-                <div class="hero-sub">Installation Performance Tracker</div>
+                <div class="hero-sub" data-i18n="hero_sub">Installation Performance Tracker</div>
             </div>
             <div class="hero-date">
-                <div class="d-label">Today</div>
+                <div class="d-label" data-i18n="today">Today</div>
                 <div id="currentDate" class="d-value"></div>
             </div>
         </div>
     </div>
 
     <div class="stat-strip">
-        <div class="stat-block"><div class="stat-label">Today's Installs</div><div id="todayInstalls" class="stat-num">0</div><div class="stat-meta">All divisions</div></div>
-        <div class="stat-block"><div class="stat-label">Open Recalls</div><div id="openRecalls" class="stat-num">0</div><div class="stat-meta">Last 30 days</div></div>
-        <div class="stat-block"><div class="stat-label">Recall Rate</div><div id="recallRate" class="stat-num">0%</div><div class="stat-meta">Recalls ÷ installs</div></div>
+        <div class="stat-block"><div class="stat-label" data-i18n="stat_today">Today's Installs</div><div id="todayInstalls" class="stat-num">0</div><div class="stat-meta" data-i18n="stat_alldiv">All divisions</div></div>
+        <div class="stat-block"><div class="stat-label" data-i18n="stat_open_recalls">Open Recalls</div><div id="openRecalls" class="stat-num">0</div><div class="stat-meta" data-i18n="stat_last30">Last 30 days</div></div>
+        <div class="stat-block"><div class="stat-label" data-i18n="stat_recall_rate">Recall Rate</div><div id="recallRate" class="stat-num">0%</div><div class="stat-meta" data-i18n="stat_recall_div">Recalls ÷ installs</div></div>
     </div>
 
     <!-- DIVISIONS -->
@@ -170,7 +219,7 @@ function toggleTheme(){var cur=localStorage.getItem('aitTheme')||'dark';applyThe
             <button class="btn btn-outline" id="clearDivBtn">← All Divisions</button>
         </div>
         <div class="people-grid" id="peopleList"></div>
-        <div class="empty-note" id="rosterEmpty" style="display:none;">No installers assigned to this division yet. Add them in the Manager portal.</div>
+        <div class="empty-note" id="rosterEmpty" data-i18n="roster_empty" style="display:none;">No installers assigned to this division yet. Add them in the Manager portal.</div>
     </div>
 
     <!-- ACTIONS (after picking person) -->
@@ -179,38 +228,44 @@ function toggleTheme(){var cur=localStorage.getItem('aitTheme')||'dark';applyThe
         <div class="nav-grid">
             <a href="install_log.html" class="nav-card fade-up">
                 <span class="nav-card-icon">🔧</span>
-                <div class="nav-card-title">Log Install</div>
-                <div class="nav-card-desc">Record a completed installation and the customer-experience checklist</div>
+                <div class="nav-card-title" data-i18n="nav_log_t">Log Install</div>
+                <div class="nav-card-desc" data-i18n="nav_log_d">Record a completed installation and the customer-experience checklist</div>
                 <div class="nav-chips"><span class="chip">Job #</span><span class="chip">Checklist</span><span class="chip">Sold By</span></div>
             </a>
             <a href="install_recall.html" class="nav-card fade-up">
                 <span class="nav-card-icon">↩️</span>
-                <div class="nav-card-title">Log Recall</div>
-                <div class="nav-card-desc">Log a callback, auto-link it to the original job, and tag the fault</div>
+                <div class="nav-card-title" data-i18n="nav_recall_t">Log Recall</div>
+                <div class="nav-card-desc" data-i18n="nav_recall_d">Log a callback, auto-link it to the original job, and tag the fault</div>
                 <div class="nav-chips"><span class="chip">Auto-link</span><span class="chip">Fault type</span></div>
             </a>
             <a href="install_turnins.html" class="nav-card fade-up">
                 <span class="nav-card-icon">📄</span>
-                <div class="nav-card-title">Weekly Turn-In</div>
-                <div class="nav-card-desc">Printable weekly sheet of every install you did — jobs, hours, and piece-rate work</div>
+                <div class="nav-card-title" data-i18n="nav_turnin_t">Weekly Turn-In</div>
+                <div class="nav-card-desc" data-i18n="nav_turnin_d">Printable weekly sheet of every install you did — jobs, hours, and piece-rate work</div>
                 <div class="nav-chips"><span class="chip">Printable</span><span class="chip">Auto-filled</span></div>
+            </a>
+            <a href="install_lookup.html" class="nav-card fade-up">
+                <span class="nav-card-icon">🔍</span>
+                <div class="nav-card-title" data-i18n="nav_lookup_t">Job Lookup</div>
+                <div class="nav-card-desc" data-i18n="nav_lookup_d">Search any job number or customer to pull the install and any recalls — fast warranty lookups</div>
+                <div class="nav-chips"><span class="chip">Search</span><span class="chip">Recalls</span></div>
             </a>
             <a href="install_leaderboard.html" class="nav-card fade-up">
                 <span class="nav-card-icon">🏆</span>
-                <div class="nav-card-title">Leaderboard</div>
-                <div class="nav-card-desc">Reviews, red-carpet rate, QA scheduling, and lowest recall rate</div>
+                <div class="nav-card-title" data-i18n="nav_lb_t">Leaderboard</div>
+                <div class="nav-card-desc" data-i18n="nav_lb_d">Reviews, red-carpet rate, QA scheduling, and lowest recall rate</div>
                 <div class="nav-chips"><span class="chip">Rankings</span><span class="chip">Streaks</span></div>
             </a>
             <a href="install_manager.html" class="nav-card mgr-card fade-up">
                 <span class="nav-card-icon">🏢</span>
-                <div class="nav-card-title">Manager</div>
-                <div class="nav-card-desc">PIN-protected — roster, divisions, logins, and recall reports</div>
+                <div class="nav-card-title" data-i18n="nav_mgr_t">Manager</div>
+                <div class="nav-card-desc" data-i18n="nav_mgr_d">PIN-protected — roster, divisions, logins, and recall reports</div>
                 <div class="nav-chips"><span class="chip">Reports</span><span class="chip">Recall Rate</span></div>
             </a>
         </div>
     </div>
 
-    <div id="selectMsg" style="display:none;" class="select-prompt">↑ Pick a division, then choose your name to continue</div>
+    <div id="selectMsg" style="display:none;" class="select-prompt" data-i18n="select_prompt">↑ Pick a division, then choose your name to continue</div>
 </div>
 
 <script>
@@ -259,10 +314,10 @@ function showLoginScreen(message){
             <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:var(--text);margin-bottom:4px">SIGN IN</div>
             <div style="font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:32px">Action Install Tracker</div>
             ${message?`<div style="background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.3);color:#ef4444;font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:10px 14px;margin-bottom:20px">${message}</div>`:''}
-            <input id="ai-u" type="text" autocomplete="username" placeholder="Username" style="width:100%;background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:14px;outline:none;margin-bottom:10px;display:block;transition:border-color .15s" />
-            <input id="ai-p" type="password" autocomplete="current-password" placeholder="Password" style="width:100%;background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:14px;outline:none;margin-bottom:6px;display:block;transition:border-color .15s" />
+            <input id="ai-u" type="text" autocomplete="username" placeholder="${t('login_user')}" style="width:100%;background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:14px;outline:none;margin-bottom:10px;display:block;transition:border-color .15s" />
+            <input id="ai-p" type="password" autocomplete="current-password" placeholder="${t('login_pass')}" style="width:100%;background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:14px;font-family:'Inter',sans-serif;font-size:14px;outline:none;margin-bottom:6px;display:block;transition:border-color .15s" />
             <p id="ai-err" style="font-size:12px;color:#ef4444;font-family:'Oswald',sans-serif;letter-spacing:.08em;margin-bottom:12px;min-height:18px;text-align:left"></p>
-            <button id="ai-btn" style="width:100%;background:var(--red);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;padding:15px;border:none;cursor:pointer;transition:background .15s;margin-bottom:20px">UNLOCK</button>
+            <button id="ai-btn" style="width:100%;background:var(--red);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;padding:15px;border:none;cursor:pointer;transition:background .15s;margin-bottom:20px">${t('login_btn')}</button>
             <a href="install_manager.html" style="font-size:12px;color:var(--faint);text-decoration:none;font-family:'Oswald',sans-serif;letter-spacing:.1em;text-transform:uppercase">Manager Portal →</a>
         </div>`;
     document.body.appendChild(overlay);
@@ -284,6 +339,7 @@ function showLoginScreen(message){
 }
 
 (function boot(){
+    applyStaticLang();
     const s=getSession();
     if(s&&s.personId&&(Date.now()-(s.lastActivity||0))<TIMEOUT_MS){selected=s.personId;localStorage.setItem('installSelectedPerson',selected);bindActivityTracking();resetLogoutTimer();initApp();}
     else{clearSession();showLoginScreen();}
@@ -298,11 +354,12 @@ function initApp(){
         b.onclick=()=>{clearTimeout(_logoutTimer);clearSession();showLoginScreen();};
         wrap.insertBefore(b,wrap.firstChild);
     }
+    applyStaticLang();
     const s=getSession();
     if(s&&!document.getElementById('loggedInName')){
         const tag=document.createElement('div');tag.id='loggedInName';
         tag.style.cssText="font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 0 0 0";
-        tag.innerHTML=`Signed in as <strong style="color:var(--text)">${s.name}</strong>`;
+        tag.innerHTML=`${t('signed_in_as')} <strong style="color:var(--text)">${s.name}</strong>`;
         document.querySelector('.hero-sub').insertAdjacentElement('afterend',tag);
     }
     document.getElementById('clearDivBtn').onclick=()=>{activeDiv=null;localStorage.removeItem('installActiveDiv');render();};
@@ -342,7 +399,7 @@ function renderDivisions(){
         const count=people.filter(p=>p.group===d.key).length;
         return `<button class="div-card ${activeDiv===d.key?'active':''}" style="--accent:${d.accent}" data-div="${d.key}">
             <span class="div-icon">${d.icon}</span>
-            <div class="div-name">${d.name}</div>
+            <div class="div-name">${t('div_'+d.key)}</div>
             <div class="div-count">${count}</div>
             <div class="div-count-lbl">Installers</div>
             <span class="corner">${d.icon}</span>
@@ -356,14 +413,14 @@ function renderRoster(){
     if(!activeDiv){card.style.display='none';return;}
     card.style.display='';
     const d=DIVISIONS.find(x=>x.key===activeDiv);
-    document.getElementById('rosterDivName').textContent=d.name;
+    document.getElementById('rosterDivName').textContent=t('div_'+d.key);
     document.getElementById('rosterDivName').style.color=d.accent;
     card.style.setProperty('--accent',d.accent);
     const crew=people.filter(p=>p.group===activeDiv);
     const list=document.getElementById('peopleList'),empty=document.getElementById('rosterEmpty');
     if(!crew.length){list.innerHTML='';empty.style.display='block';return;}
     empty.style.display='none';
-    list.innerHTML=crew.map(p=>`<button class="person-btn ${selected===p.id?'selected':''}" data-id="${p.id}">${p.name}${selected===p.id?'<span class="person-check">✓ Active</span>':''}</button>`).join('');
+    list.innerHTML=crew.map(p=>`<button class="person-btn ${selected===p.id?'selected':''}" data-id="${p.id}">${p.name}${selected===p.id?`<span class="person-check">${t('active')}</span>`:''}</button>`).join('');
     list.querySelectorAll('.person-btn').forEach(b=>b.onclick=()=>{selected=b.dataset.id;localStorage.setItem('installSelectedPerson',selected);render();});
 }
 

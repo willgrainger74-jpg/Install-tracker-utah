@@ -88,7 +88,8 @@
     </style>
 </head>
 <body>
-<div class="no-print" style="position:fixed;top:12px;right:16px;z-index:9999;">
+<div class="no-print" style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
+  <button onclick="toggleLang()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;">🌐 <span id="langLabel">EN</span></button>
   <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
 </div>
 <script>
@@ -97,13 +98,54 @@ function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElem
 function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme(c==='dark'?'light':'dark');}
 </script>
 
+<script>
+const I18N={
+ h1a:{en:'Weekly ',es:'Reporte '},
+ h1b:{en:'Turn-In',es:'Semanal'},
+ back:{en:'← Dashboard',es:'← Tablero'},
+ print_week:{en:'🖨️ Print Week',es:'🖨️ Imprimir Semana'},
+ print_suffix:{en:'WEEKLY TURN-IN',es:'REPORTE SEMANAL'},
+ sheet_default:{en:'WEEKLY TURN-IN',es:'REPORTE SEMANAL'},
+ s_pay:{en:'Total Pay',es:'Pago Total'},
+ s_installs:{en:'Installs',es:'Instalaciones'},
+ s_hours:{en:'Hours',es:'Horas'},
+ s_piece:{en:'Piece Items',es:'Piezas'},
+ th_date:{en:'Date',es:'Fecha'},
+ th_customer:{en:'Customer',es:'Cliente'},
+ th_job:{en:'Job #',es:'# Trabajo'},
+ th_trade:{en:'Trade',es:'Oficio'},
+ th_work:{en:'Work Done',es:'Trabajo Realizado'},
+ th_hours:{en:'Hours',es:'Horas'},
+ th_pay:{en:'Pay',es:'Pago'},
+ th_status:{en:'Status',es:'Estado'},
+ turnin_for:{en:'Turn-In for:',es:'Reporte para:'},
+ week_of:{en:'WEEK OF',es:'SEMANA DEL'},
+ totals:{en:'Totals',es:'Totales'},
+ install_sg:{en:'install',es:'instalación'},
+ installs_pl:{en:'installs',es:'instalaciones'},
+ piece_sg:{en:'piece item',es:'pieza'},
+ pieces_pl:{en:'piece items',es:'piezas'},
+ c_piece:{en:'Piece',es:'Pieza'},
+ no_week:{en:'No installs logged this week',es:'No hay instalaciones registradas esta semana'},
+ g_underground:{en:'Underground',es:'Subterráneo'},
+ g_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
+ g_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
+ g_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'}
+};
+let LANG=localStorage.getItem('aitLang')||'en';
+function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
+function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('aitLang',LANG);location.reload();}
+function applyStaticLang(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});const ll=document.getElementById('langLabel');if(ll)ll.textContent=LANG==='en'?'EN':'ES';}
+document.addEventListener('DOMContentLoaded',applyStaticLang);
+</script>
+
 <div class="page">
     <div class="page-header no-print">
         <div>
-            <div class="page-title">Weekly <em>Turn-In</em></div>
+            <div class="page-title"><span data-i18n="h1a">Weekly </span><em data-i18n="h1b">Turn-In</em></div>
             <div id="personName" class="page-sub"></div>
         </div>
-        <a href="install_index.html" class="back-btn">← Dashboard</a>
+        <a href="install_index.html" class="back-btn" data-i18n="back">← Dashboard</a>
     </div>
 
     <div class="card no-print">
@@ -111,13 +153,13 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
             <button class="cal-nav-btn" id="prevWeek">←</button>
             <div id="weekRange" class="cal-range"></div>
             <button class="cal-nav-btn" id="nextWeek">→</button>
-            <button class="btn btn-print" onclick="window.print()">🖨️ Print Week</button>
+            <button class="btn btn-print" onclick="window.print()" data-i18n="print_week">🖨️ Print Week</button>
         </div>
     </div>
 
     <div class="card" id="sheet">
         <div class="print-header">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#000;">ACTION INSTALL — WEEKLY TURN-IN</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#000;">ACTION INSTALL — <span data-i18n="print_suffix">WEEKLY TURN-IN</span></div>
             <div style="text-align:right;font-family:'Oswald',sans-serif;font-size:12px;color:#000;">
                 <div id="printName" style="font-weight:bold;"></div>
                 <div id="printRange"></div>
@@ -126,30 +168,30 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
 
         <div class="turnin-header">
             <div>
-                <div class="turnin-title" id="sheetTitle">WEEKLY TURN-IN</div>
+                <div class="turnin-title" id="sheetTitle" data-i18n="sheet_default">WEEKLY TURN-IN</div>
                 <div class="turnin-meta" id="sheetMeta"></div>
             </div>
         </div>
 
         <div class="summary-bar no-print">
-            <div class="summary-stat"><div class="summary-stat-label">Total Pay</div><div class="summary-stat-val red" id="statPay">$0</div></div>
-            <div class="summary-stat"><div class="summary-stat-label">Installs</div><div class="summary-stat-val" id="statInstalls">0</div></div>
-            <div class="summary-stat"><div class="summary-stat-label">Hours</div><div class="summary-stat-val" id="statHours">0</div></div>
-            <div class="summary-stat"><div class="summary-stat-label">Piece Items</div><div class="summary-stat-val" id="statPiece">0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label" data-i18n="s_pay">Total Pay</div><div class="summary-stat-val red" id="statPay">$0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label" data-i18n="s_installs">Installs</div><div class="summary-stat-val" id="statInstalls">0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label" data-i18n="s_hours">Hours</div><div class="summary-stat-val" id="statHours">0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label" data-i18n="s_piece">Piece Items</div><div class="summary-stat-val" id="statPiece">0</div></div>
         </div>
 
         <div class="ti-table-wrap">
             <table class="ti">
                 <thead>
                     <tr>
-                        <th>Date</th>
-                        <th>Customer</th>
-                        <th>Job #</th>
-                        <th>Trade</th>
-                        <th>Work Done</th>
-                        <th class="r">Hours</th>
-                        <th class="r">Pay</th>
-                        <th class="c">Status</th>
+                        <th data-i18n="th_date">Date</th>
+                        <th data-i18n="th_customer">Customer</th>
+                        <th data-i18n="th_job">Job #</th>
+                        <th data-i18n="th_trade">Trade</th>
+                        <th data-i18n="th_work">Work Done</th>
+                        <th class="r" data-i18n="th_hours">Hours</th>
+                        <th class="r" data-i18n="th_pay">Pay</th>
+                        <th class="c" data-i18n="th_status">Status</th>
                     </tr>
                 </thead>
                 <tbody id="ticBody"></tbody>
@@ -201,8 +243,8 @@ db.ref('installPeople/'+selected).once('value',snap=>{
     const p=snap.val();
     if(!p){location.href='install_index.html';return;}
     me={id:selected,name:p.name,group:p.group||'plumbing'};
-    document.getElementById('personName').textContent='Turn-In for: '+p.name+' · '+(GROUP_NAMES[me.group]||me.group);
-    document.getElementById('printName').textContent=p.name+' — '+(GROUP_NAMES[me.group]||me.group);
+    document.getElementById('personName').textContent=t('turnin_for')+' '+p.name+' · '+(t('g_'+me.group)||me.group);
+    document.getElementById('printName').textContent=p.name+' — '+(t('g_'+me.group)||me.group);
     renderWeek();
 });
 
@@ -210,7 +252,7 @@ function renderWeek(){
     const week=getWeek(currentDate);
     const rangeTxt=`${week[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} — ${week[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`.toUpperCase();
     document.getElementById('weekRange').textContent=rangeTxt;
-    document.getElementById('sheetTitle').textContent='WEEK OF '+rangeTxt;
+    document.getElementById('sheetTitle').textContent=t('week_of')+' '+rangeTxt;
     document.getElementById('sheetMeta').textContent=(me?me.name:'')+' · '+rangeTxt;
     document.getElementById('printRange').textContent=rangeTxt;
 
@@ -239,18 +281,18 @@ function renderWeek(){
                 <td class="jobnum">${esc(r.jobNumber)||'—'}</td>
                 <td><span class="pill ${r.trade}">${TRADE_NAMES[r.trade]||r.trade||'—'}</span></td>
                 <td>${work}</td>
-                <td class="r">${hours?hours:(r.payType==='piece'?'Piece':'—')}</td>
+                <td class="r">${hours?hours:(r.payType==='piece'?t('c_piece'):'—')}</td>
                 <td class="r" style="font-weight:600">${pay?fmt$(pay):'—'}</td>
                 <td class="c">${r.approved?'<span class="stat-approved">✓</span>':'<span class="stat-pending">—</span>'}</td>
             </tr>`;
         }).join('');
 
         const blanks=Array(3).fill('<tr class="blank"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
-        const totals=`<tr class="totals"><td colspan="4">Totals — ${rows.length} install${rows.length!==1?'s':''}</td><td>${totPiece} piece item${totPiece!==1?'s':''}</td><td class="r">${Math.round(totHours*100)/100}</td><td class="r">${fmt$(totPay)}</td><td class="c">${nApproved}/${rows.length}</td></tr>`;
+        const totals=`<tr class="totals"><td colspan="4">${t('totals')} — ${rows.length} ${rows.length!==1?t('installs_pl'):t('install_sg')}</td><td>${totPiece} ${totPiece!==1?t('pieces_pl'):t('piece_sg')}</td><td class="r">${Math.round(totHours*100)/100}</td><td class="r">${fmt$(totPay)}</td><td class="c">${nApproved}/${rows.length}</td></tr>`;
 
         const tbody=document.getElementById('ticBody');
         if(!rows.length){
-            tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="icon">📋</div><div>No installs logged this week</div></div></td></tr>`+blanks;
+            tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="icon">📋</div><div>${t('no_week')}</div></div></td></tr>`+blanks;
         }else{
             tbody.innerHTML=body+blanks+totals;
         }
