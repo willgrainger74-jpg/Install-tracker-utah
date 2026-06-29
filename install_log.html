@@ -66,6 +66,15 @@
         .check-row span{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);}
         .check-row.cont{background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.35);}
         .check-row.cont input[type=checkbox]{accent-color:var(--amber);}
+        .piece-list{display:flex;flex-direction:column;gap:6px;}
+        .pay-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s3);border:1px solid var(--wire);transition:border-color .15s;}
+        .pay-row.on{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.07);}
+        .pay-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
+        .pay-row .pr-label{flex:1;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--text);line-height:1.3;}
+        .pay-row .pr-amt{display:flex;align-items:center;gap:3px;font-family:'Oswald',sans-serif;font-size:14px;color:var(--green);font-weight:600;flex-shrink:0;}
+        .pay-row .pr-amt input{width:90px;background:var(--s1);border:1px solid var(--wire2);color:var(--text);padding:8px 10px;font-size:14px;text-align:right;}
+        .job-pay{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:14px 16px;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.35);font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+        .job-pay span{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:var(--green);}
         .trade-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
         @media(max-width:560px){.trade-grid{grid-template-columns:1fr;}}
         .divider{border:none;border-top:1px solid var(--wire);margin:16px 0;}
@@ -168,6 +177,12 @@ const selected=localStorage.getItem('installSelectedPerson');
 if(!sess||!selected||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
 
 let me=null, currentDate=new Date(), selectedDate=null, installsRef=null;
+let RATES={items:{},hourly:0};
+db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourly:parseFloat(v.hourly)||0};if(selectedDate&&installsRef)installsRef.once&&renderSelected();});
+function renderSelected(){/* re-render handled by installs listener; no-op safeguard */}
+function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function rateFor(trade,i){return (RATES.items&&RATES.items[trade]&&RATES.items[trade][i]!=null)?(parseFloat(RATES.items[trade][i])||0):null;}
+function jobPay(c){let p=0;if(c.payType==='piece'&&c.pieceItems){Object.keys(c.pieceItems).forEach(i=>{if(c.pieceItems[i])p+=parseFloat((c.pieceAmounts&&c.pieceAmounts[i])||0)||0;});}if(c.payType==='hours'){p+=(parseFloat(c.hours)||0)*(parseFloat(c.hourlyRate)||0);}return p;}
 
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -227,8 +242,10 @@ function cardHTML(c){
     const locked=!!c.approved;
     const dis=locked?' disabled':'';
     const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${c.trade===t?' selected':''}>${TRADE_NAMES[t]}</option>`).join('');
-    const pieceBlock=c.payType==='piece'?`<div class="section-label" style="margin-top:6px;">${esc(TRADE_NAMES[c.trade]||'')} — Piece-Rate Work</div><div class="trade-grid">${(TRADE_ITEMS[c.trade]||[]).map((item,i)=>`<label class="check-row"><input type="checkbox" ${c.pieceItems&&c.pieceItems[i]?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked)"><span>${esc(item)}</span></label>`).join('')}</div>`:'';
-    const hoursBlock=c.payType==='hours'?`<div class="field"><label>Hours Worked</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateInstall('${c.id}','hours',parseFloat(this.value)||0)" placeholder="e.g. 6.5" /></div>`:'';
+    const pieceBlock=c.payType==='piece'?`<div class="section-label" style="margin-top:6px;">${esc(TRADE_NAMES[c.trade]||'')} — Piece-Rate Work</div><div class="piece-list">${(TRADE_ITEMS[c.trade]||[]).map((item,i)=>{const on=c.pieceItems&&c.pieceItems[i];const amt=(c.pieceAmounts&&c.pieceAmounts[i]!=null)?c.pieceAmounts[i]:'';return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked,'${c.trade}')"><span class="pr-label">${esc(item)}</span>${on?`<span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}"${dis} onchange="setPieceAmount('${c.id}',${i},this.value)" placeholder="0.00"></span>`:''}</div>`;}).join('')}</div>`:'';
+    const hoursBlock=c.payType==='hours'?`<div class="row2"><div class="field"><label>Hours Worked</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateInstall('${c.id}','hours',parseFloat(this.value)||0)" placeholder="e.g. 6.5" /></div><div class="field"><label>Rate ($/hr)</label><input type="number" step="0.01" min="0" value="${c.hourlyRate!=null&&c.hourlyRate!==''?esc(c.hourlyRate):''}"${dis} onchange="updateInstall('${c.id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${RATES.hourly?RATES.hourly:'0.00'}" /></div></div>`:'';
+    const pay=jobPay(c);
+    const payLine=(c.payType==='hours'||c.payType==='piece')?`<div class="job-pay">Job Pay <span>${fmt$(pay)}</span></div>`:'';
     const headRight=locked?`<span class="lock-badge">🔒 Approved — locked</span>`:`<button class="del-call" onclick="deleteInstall('${c.id}')">Delete</button>`;
     return `<div class="call-card${c.continuing?' continuing':''}${locked?' approved':''}">
         <div class="call-card-header"><div class="call-label">Install${c.continuing?' · &#8635; Continuing':''}</div>${headRight}</div>
@@ -250,15 +267,16 @@ function cardHTML(c){
         <hr class="divider"><div class="section-label">Pay / Turn-In</div>
         <div class="field"><label>Trade</label><select${dis} onchange="changeTrade('${c.id}',this.value)">${tradeSel}</select></div>
         <div class="field"><label>Pay Type</label><select${dis} onchange="changePayType('${c.id}',this.value)"><option value=""${!c.payType?' selected':''}>Select…</option><option value="hours"${c.payType==='hours'?' selected':''}>Hours</option><option value="piece"${c.payType==='piece'?' selected':''}>Piece Rate</option></select></div>
-        ${hoursBlock}${pieceBlock}
+        ${hoursBlock}${pieceBlock}${payLine}
     </div>`;
 }
 
 function curPath(){return 'installLogs/'+selectedDate;}
 function updateInstall(id,field,value){db.ref(`${curPath()}/${id}/${field}`).set(value);}
-function changeTrade(id,val){db.ref(`${curPath()}/${id}/trade`).set(val);db.ref(`${curPath()}/${id}/pieceItems`).remove();}
-function changePayType(id,val){const u={payType:val};if(val!=='piece')u.pieceItems=null;if(val!=='hours')u.hours=0;db.ref(`${curPath()}/${id}`).update(u);}
-function togglePiece(id,i,checked){db.ref(`${curPath()}/${id}/pieceItems/${i}`).set(checked?true:null);}
+function changeTrade(id,val){db.ref(`${curPath()}/${id}/trade`).set(val);db.ref(`${curPath()}/${id}/pieceItems`).remove();db.ref(`${curPath()}/${id}/pieceAmounts`).remove();}
+function changePayType(id,val){const u={payType:val};if(val!=='piece'){u.pieceItems=null;u.pieceAmounts=null;}if(val!=='hours')u.hours=0;db.ref(`${curPath()}/${id}`).update(u);if(val==='hours'){db.ref(`${curPath()}/${id}/hourlyRate`).once('value',s=>{if(s.val()==null&&RATES.hourly)db.ref(`${curPath()}/${id}/hourlyRate`).set(RATES.hourly);});}}
+function togglePiece(id,i,checked,trade){const base=`${curPath()}/${id}`;db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const r=rateFor(trade,i);if(r!=null)db.ref(`${base}/pieceAmounts/${i}`).set(r);}else{db.ref(`${base}/pieceAmounts/${i}`).remove();}}
+function setPieceAmount(id,i,val){db.ref(`${curPath()}/${id}/pieceAmounts/${i}`).set(parseFloat(val)||0);}
 function deleteInstall(id){if(confirm('Delete this install?'))db.ref(`${curPath()}/${id}`).remove();}
 
 function hideExtras(){document.getElementById('installsSection').style.display='none';document.getElementById('fabAdd').style.display='none';document.getElementById('addBottom').style.display='none';if(installsRef){installsRef.off();installsRef=null;}}

@@ -107,6 +107,8 @@
         .sc-name{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;line-height:1;}
         .sc-sub{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
         .sc-logo{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--red);white-space:nowrap;}
+        .sc-pay{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:14px 18px;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.35);font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+        .sc-pay span{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;color:var(--green);}
         .spark{display:flex;gap:2px;align-items:flex-end;height:28px;}
         @media (max-width:640px){
             .page{padding-left:12px;padding-right:12px;}
@@ -126,6 +128,7 @@
             .scorecard{border:1px solid #999 !important;border-top:3px solid #000 !important;page-break-inside:avoid;padding:18px 0;}
             .scorecard + .scorecard{page-break-before:always;}
             .sc-name,.sc-sub,.stat-num,.stat-lbl,.stat-meta{color:#000 !important;}
+            .sc-pay,.sc-pay span{color:#000 !important;background:#f2f2f2 !important;border-color:#999 !important;}
             .sc-logo{color:#000 !important;}
             .stat-block{background:#fff !important;border:1px solid #ccc !important;}
         }
@@ -178,6 +181,7 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
         <button class="tab-btn" id="tab-turnins" onclick="showTab('turnins')">⏱️ Turn-Ins</button>
         <button class="tab-btn" id="tab-trends" onclick="showTab('trends')">📈 Trends</button>
         <button class="tab-btn" id="tab-scorecards" onclick="showTab('scorecards')">📋 Scorecards</button>
+        <button class="tab-btn" id="tab-rates" onclick="showTab('rates')">💲 Rates</button>
         <button class="tab-btn" id="tab-logins" onclick="showTab('logins')">🔑 Logins</button>
         <button class="tab-btn" id="tab-archived" onclick="showTab('archived')">🗄️ Archived</button>
     </div>
@@ -239,9 +243,9 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
         </div>
         <div class="g4" id="turninStats" style="margin-bottom:8px"></div>
         <div class="sec-label">By Installer</div>
-        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Installer</th><th>Division</th><th class="r">Installs</th><th class="r">Hours</th><th class="r">Piece Items</th><th class="r">Approved</th></tr></thead><tbody id="turninByPerson"></tbody></table></div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Installer</th><th>Division</th><th class="r">Installs</th><th class="r">Hours</th><th class="r">Piece Items</th><th class="r">Pay</th><th class="r">Approved</th></tr></thead><tbody id="turninByPerson"></tbody></table></div>
         <div class="sec-label">By Trade</div>
-        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Trade</th><th class="r">Installs</th><th class="r">Hours</th><th class="r">Piece Items</th></tr></thead><tbody id="turninByTrade"></tbody></table></div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Trade</th><th class="r">Installs</th><th class="r">Hours</th><th class="r">Piece Items</th><th class="r">Pay</th></tr></thead><tbody id="turninByTrade"></tbody></table></div>
         <div class="sec-label">Detail — Approve &amp; Edit</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">Approving locks the turn-in so the tech can no longer edit it. You can still edit or unapprove here.</div>
         <div id="turninDetail"></div>
@@ -270,6 +274,17 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
             </div>
         </div>
         <div id="scorecardWrap"></div>
+    </div>
+
+    <!-- RATES -->
+    <div id="tab-rates-content" class="hidden">
+        <div class="sec-title">Pay Rates</div>
+        <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6">Set the dollar amount per piece-rate item and the default hourly rate. These pre-fill on the turn-in when a tech logs work — they can still adjust the amount per job. Changing a rate here only affects new entries, not pay already logged.</div>
+        <div class="card" style="max-width:420px;margin-bottom:18px">
+            <div class="sec-label" style="margin-top:0">Default Hourly Rate</div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-family:Oswald,sans-serif;color:var(--green);font-size:18px">$</span><input type="number" step="0.01" min="0" id="rateHourly" onchange="saveHourly(this.value)" placeholder="0.00" style="max-width:160px"> <span style="color:var(--muted);font-size:13px">/ hr</span></div>
+        </div>
+        <div id="rateEditor"></div>
     </div>
 
     <!-- LOGINS -->
@@ -346,12 +361,14 @@ function changePin(){
 }
 
 // ── DATA ──
-let people={},logs={},recalls={},logins={},currentTab='roster';
+let people={},logs={},recalls={},logins={},RATES={items:{},hourly:0},currentTab='roster';
+function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function initPortal(){
     db.ref('installPeople').on('value',s=>{people=s.val()||{};renderCurrent();});
     db.ref('installLogs').on('value',s=>{logs=s.val()||{};renderCurrent();});
     db.ref('recalls').on('value',s=>{recalls=s.val()||{};renderCurrent();});
     db.ref('installTechLogins').on('value',s=>{logins=s.val()||{};if(currentTab==='logins')renderLogins();});
+    db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourly:parseFloat(v.hourly)||0};if(currentTab==='rates'||currentTab==='turnins'||currentTab==='scorecards')renderCurrent();});
 }
 function showTab(name){
     document.querySelectorAll('[id^="tab-"][id$="-content"]').forEach(el=>el.classList.add('hidden'));
@@ -360,7 +377,7 @@ function showTab(name){
     document.getElementById('tab-'+name).classList.add('active');
     currentTab=name;renderCurrent();
 }
-function renderCurrent(){({roster:renderRoster,recalls:renderRecalls,installs:renderInstalls,turnins:renderTurnins,trends:renderTrends,scorecards:renderScorecards,logins:renderLogins,archived:renderArchived}[currentTab]||(()=>{}))();}
+function renderCurrent(){({roster:renderRoster,recalls:renderRecalls,installs:renderInstalls,turnins:renderTurnins,trends:renderTrends,scorecards:renderScorecards,rates:renderRates,logins:renderLogins,archived:renderArchived}[currentTab]||(()=>{}))();}
 
 function activePeople(){return Object.entries(people).filter(([id,p])=>!p.archived).map(([id,p])=>({id,...p}));}
 function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -487,26 +504,27 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'
 
 function renderTurnins(){
     const cutoff=cutoffFrom(document.getElementById('turninRange').value);
-    let totHours=0,totPiece=0,nApproved=0,nPending=0,nInstalls=0;
-    const per={},tr={};DIVS.forEach(([k])=>tr[k]={n:0,hours:0,piece:0});
+    let totHours=0,totPiece=0,nApproved=0,nPending=0,nInstalls=0,totPay=0;
+    const per={},tr={};DIVS.forEach(([k])=>tr[k]={n:0,hours:0,piece:0,pay:0});
     eachLogFull((r)=>{
         nInstalls++;
         const h=(r.payType==='hours')?(parseFloat(r.hours)||0):0;
         const pcs=(r.payType==='piece')?pieceCount(r):0;
-        totHours+=h;totPiece+=pcs;
+        const pay=installPay(r);
+        totHours+=h;totPiece+=pcs;totPay+=pay;
         if(r.approved)nApproved++;else nPending++;
-        const p=per[r.personId]||(per[r.personId]={name:(people[r.personId]||{}).name||'—',group:(people[r.personId]||{}).group||'',n:0,hours:0,piece:0,approved:0});
-        p.n++;p.hours+=h;p.piece+=pcs;if(r.approved)p.approved++;
-        const t=tr[r.trade];if(t){t.n++;t.hours+=h;t.piece+=pcs;}
+        const p=per[r.personId]||(per[r.personId]={name:(people[r.personId]||{}).name||'—',group:(people[r.personId]||{}).group||'',n:0,hours:0,piece:0,approved:0,pay:0});
+        p.n++;p.hours+=h;p.piece+=pcs;p.pay+=pay;if(r.approved)p.approved++;
+        const t=tr[r.trade];if(t){t.n++;t.hours+=h;t.piece+=pcs;t.pay+=pay;}
     },cutoff);
     document.getElementById('turninStats').innerHTML=`
-        <div class="stat-block"><div class="stat-lbl">Total Hours</div><div class="stat-num">${Math.round(totHours*100)/100}</div><div class="stat-meta">In range</div></div>
+        <div class="stat-block"><div class="stat-lbl">Total Pay</div><div class="stat-num" style="color:var(--green)">${fmt$(totPay)}</div><div class="stat-meta">In range</div></div>
+        <div class="stat-block"><div class="stat-lbl">Total Hours</div><div class="stat-num">${Math.round(totHours*100)/100}</div><div class="stat-meta">Hourly jobs</div></div>
         <div class="stat-block"><div class="stat-lbl">Piece Items</div><div class="stat-num">${totPiece}</div><div class="stat-meta">Tasks logged</div></div>
-        <div class="stat-block"><div class="stat-lbl">Approved</div><div class="stat-num">${nApproved}</div><div class="stat-meta">of ${nInstalls} installs</div></div>
-        <div class="stat-block"><div class="stat-lbl">Pending</div><div class="stat-num">${nPending}</div><div class="stat-meta">Awaiting approval</div></div>`;
-    const pr=Object.values(per).sort((a,b)=>b.n-a.n);
-    document.getElementById('turninByPerson').innerHTML=pr.length?pr.map(p=>`<tr><td>${esc(p.name)}</td><td><span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></td><td class="r">${p.n}</td><td class="r">${Math.round(p.hours*100)/100}</td><td class="r">${p.piece}</td><td class="r">${p.approved}/${p.n}</td></tr>`).join(''):'<tr><td colspan="6" class="empty-note">No turn-ins in range.</td></tr>';
-    document.getElementById('turninByTrade').innerHTML=DIVS.map(([k,l])=>{const t=tr[k];return `<tr><td><span class="pill ${k}">${TRADE_NAMES[k]}</span></td><td class="r">${t.n}</td><td class="r">${Math.round(t.hours*100)/100}</td><td class="r">${t.piece}</td></tr>`;}).join('');
+        <div class="stat-block"><div class="stat-lbl">Approved</div><div class="stat-num">${nApproved}/${nInstalls}</div><div class="stat-meta">${nPending} pending</div></div>`;
+    const pr=Object.values(per).sort((a,b)=>b.pay-a.pay);
+    document.getElementById('turninByPerson').innerHTML=pr.length?pr.map(p=>`<tr><td>${esc(p.name)}</td><td><span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></td><td class="r">${p.n}</td><td class="r">${Math.round(p.hours*100)/100}</td><td class="r">${p.piece}</td><td class="r" style="color:var(--green);font-weight:600">${fmt$(p.pay)}</td><td class="r">${p.approved}/${p.n}</td></tr>`).join(''):'<tr><td colspan="7" class="empty-note">No turn-ins in range.</td></tr>';
+    document.getElementById('turninByTrade').innerHTML=DIVS.map(([k,l])=>{const t=tr[k];return `<tr><td><span class="pill ${k}">${TRADE_NAMES[k]}</span></td><td class="r">${t.n}</td><td class="r">${Math.round(t.hours*100)/100}</td><td class="r">${t.piece}</td><td class="r" style="color:var(--green);font-weight:600">${fmt$(t.pay)}</td></tr>`;}).join('');
     // detail grouped by installer
     const groups={};
     eachLogFull((r,id,dk)=>{(groups[r.personId]=groups[r.personId]||[]).push({r,id,dk});},cutoff);
@@ -530,9 +548,10 @@ function turninRow(r,id,dk){
             ? `<div class="trade-grid" style="margin-top:6px">${(TRADE_ITEMS[r.trade]||[]).map((item,i)=>`<label class="check-row"><input type="checkbox" ${r.pieceItems&&r.pieceItems[i]?'checked':''} onchange="mTogglePiece('${dk}','${id}',${i},this.checked)"><span>${esc(item)}</span></label>`).join('')}</div>`
             : '');
     const dateTxt=new Date(r.ts||Date.parse(dk)).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const pay=installPay(r);
     return `<div class="ti-row ${ap?'ap':'pend'}">
         <div class="ti-top">
-            <div class="ti-meta">${dateTxt} · #${esc(r.jobNumber||'—')}${r.customerName?' · '+esc(r.customerName):''} <span class="pill ${r.trade}">${TRADE_NAMES[r.trade]||r.trade||''}</span>${r.continuing?' <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">&#8635; Cont.</span>':''} ${ap?'<span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">✓ Approved</span>':'<span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Pending</span>'}</div>
+            <div class="ti-meta">${dateTxt} · #${esc(r.jobNumber||'—')}${r.customerName?' · '+esc(r.customerName):''} <span class="pill ${r.trade}">${TRADE_NAMES[r.trade]||r.trade||''}</span>${r.continuing?' <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">&#8635; Cont.</span>':''} ${ap?'<span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">✓ Approved</span>':'<span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Pending</span>'} <span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">${fmt$(pay)}</span></div>
             <button class="btn ${ap?'btn-outline':'btn-red'}" onclick="mApprove('${dk}','${id}',${ap?'false':'true'})">${ap?'Unapprove':'Approve'}</button>
         </div>
         <div class="ti-edit">
@@ -591,10 +610,10 @@ function renderTrends(){
 // ── SCORECARDS ──
 function fillScoreWho(){const sel=document.getElementById('scoreWho');const cur=sel.value;sel.innerHTML='<option value="all">All Installers</option>'+activePeople().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');if([...sel.options].some(o=>o.value===cur))sel.value=cur;}
 function personMetrics(id,cutoff){
-    let inst=0,rev=0,rc=0,qa=0,wr=0,hours=0,piece=0,rcl=0;
-    Object.values(logs).forEach(day=>Object.values(day).forEach(r=>{if(r.personId===id&&(r.ts||0)>=cutoff){inst++;if(r.askedReview)rev++;if(r.redCarpet)rc++;if(r.scheduledQA)qa++;if(r.warrantyReview)wr++;if(r.payType==='hours')hours+=parseFloat(r.hours)||0;if(r.payType==='piece'&&r.pieceItems)piece+=Object.keys(r.pieceItems).length;}}));
+    let inst=0,rev=0,rc=0,qa=0,wr=0,hours=0,piece=0,rcl=0,pay=0;
+    Object.values(logs).forEach(day=>Object.values(day).forEach(r=>{if(r.personId===id&&(r.ts||0)>=cutoff){inst++;if(r.askedReview)rev++;if(r.redCarpet)rc++;if(r.scheduledQA)qa++;if(r.warrantyReview)wr++;if(r.payType==='hours')hours+=parseFloat(r.hours)||0;if(r.payType==='piece'&&r.pieceItems)piece+=Object.keys(r.pieceItems).length;pay+=installPay(r);}}));
     Object.values(recalls).forEach(day=>Object.values(day).forEach(r=>{if(r.originalPersonId===id&&(r.ts||0)>=cutoff)rcl++;}));
-    return {inst,rev,rc,qa,wr,hours,piece,rcl};
+    return {inst,rev,rc,qa,wr,hours,piece,rcl,pay};
 }
 function renderScorecards(){
     fillScoreWho();
@@ -611,6 +630,7 @@ function renderScorecards(){
         const rrColor=m.inst&&rr>10?'var(--red)':'var(--green)';
         return `<div class="scorecard">
             <div class="sc-head"><div><div class="sc-name">${esc(p.name)}</div><div class="sc-sub">${GNAME[p.group]||p.group} · ${esc(rangeLabel)}</div></div><div class="sc-logo">ACTION INSTALL</div></div>
+            <div class="sc-pay">Total Pay <span>${fmt$(m.pay)}</span></div>
             <div class="g4">
                 <div class="stat-block"><div class="stat-lbl">Installs</div><div class="stat-num">${m.inst}</div><div class="stat-meta">Completed</div></div>
                 <div class="stat-block"><div class="stat-lbl">Recall Rate</div><div class="stat-num" style="color:${rrColor}">${m.inst?rr+'%':'—'}</div><div class="stat-meta">${m.rcl} recall${m.rcl!==1?'s':''}</div></div>
@@ -626,6 +646,20 @@ function renderScorecards(){
         </div>`;
     }).join('');
 }
+
+// ── RATES ──
+function installPay(r){let p=0;if(r.payType==='piece'&&r.pieceItems){Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i])p+=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;});}if(r.payType==='hours')p+=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return p;}
+function renderRates(){
+    const h=document.getElementById('rateHourly');if(document.activeElement!==h)h.value=RATES.hourly||'';
+    const wrap=document.getElementById('rateEditor');
+    wrap.innerHTML=DIVS.map(([k,l])=>`
+        <div class="sec-label">${l} — Piece Rates</div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Item</th><th class="r" style="width:160px">Rate ($)</th></tr></thead><tbody>
+        ${(TRADE_ITEMS[k]||[]).map((item,i)=>{const v=(RATES.items[k]&&RATES.items[k][i]!=null)?RATES.items[k][i]:'';return `<tr><td>${esc(item)}</td><td class="r"><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end"><span style="color:var(--green)">$</span><input type="number" step="0.01" min="0" value="${v}" onchange="saveItemRate('${k}',${i},this.value)" style="max-width:120px;text-align:right" placeholder="0.00"></div></td></tr>`;}).join('')}
+        </tbody></table></div>`).join('');
+}
+function saveHourly(v){db.ref('installRates/hourly').set(parseFloat(v)||0);toast('Hourly rate saved ✓');}
+function saveItemRate(trade,i,v){db.ref(`installRates/items/${trade}/${i}`).set(parseFloat(v)||0);}
 
 // ── LOGINS ──
 function renderLogins(){

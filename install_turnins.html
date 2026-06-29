@@ -132,10 +132,10 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
         </div>
 
         <div class="summary-bar no-print">
-            <div class="summary-stat"><div class="summary-stat-label">Installs</div><div class="summary-stat-val red" id="statInstalls">0</div></div>
-            <div class="summary-stat"><div class="summary-stat-label">Total Hours</div><div class="summary-stat-val" id="statHours">0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label">Total Pay</div><div class="summary-stat-val red" id="statPay">$0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label">Installs</div><div class="summary-stat-val" id="statInstalls">0</div></div>
+            <div class="summary-stat"><div class="summary-stat-label">Hours</div><div class="summary-stat-val" id="statHours">0</div></div>
             <div class="summary-stat"><div class="summary-stat-label">Piece Items</div><div class="summary-stat-val" id="statPiece">0</div></div>
-            <div class="summary-stat"><div class="summary-stat-label">Approved</div><div class="summary-stat-val" id="statApproved">0/0</div></div>
         </div>
 
         <div class="ti-table-wrap">
@@ -148,6 +148,7 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
                         <th>Trade</th>
                         <th>Work Done</th>
                         <th class="r">Hours</th>
+                        <th class="r">Pay</th>
                         <th class="c">Status</th>
                     </tr>
                 </thead>
@@ -193,6 +194,8 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'
 const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 function getWeek(date){const day=date.getDay(),diff=date.getDate()-day+(day===0?-6:1),mon=new Date(date);mon.setDate(diff);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
 function pieceNames(r){if(!r.pieceItems)return [];return (TRADE_ITEMS[r.trade]||[]).filter((_,i)=>r.pieceItems[i]);}
+function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function jobPay(r){let p=0;if(r.payType==='piece'&&r.pieceItems){Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i])p+=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;});}if(r.payType==='hours')p+=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return p;}
 
 db.ref('installPeople/'+selected).once('value',snap=>{
     const p=snap.val();
@@ -219,11 +222,12 @@ function renderWeek(){
         });
         rows.sort((a,b)=>(a.ts||0)-(b.ts||0));
 
-        let totHours=0,totPiece=0,nApproved=0;
+        let totHours=0,totPiece=0,nApproved=0,totPay=0;
         const body=rows.map(r=>{
             const hours=(r.payType==='hours')?(parseFloat(r.hours)||0):0;
             const pcs=pieceNames(r);
-            totHours+=hours;totPiece+=pcs.length;if(r.approved)nApproved++;
+            const pay=jobPay(r);
+            totHours+=hours;totPiece+=pcs.length;totPay+=pay;if(r.approved)nApproved++;
             const dateTxt=r._d.toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});
             let work='';
             if(r.whatInstalled)work+=`<div class="work-note">${esc(r.whatInstalled)}</div>`;
@@ -236,23 +240,24 @@ function renderWeek(){
                 <td><span class="pill ${r.trade}">${TRADE_NAMES[r.trade]||r.trade||'—'}</span></td>
                 <td>${work}</td>
                 <td class="r">${hours?hours:(r.payType==='piece'?'Piece':'—')}</td>
+                <td class="r" style="font-weight:600">${pay?fmt$(pay):'—'}</td>
                 <td class="c">${r.approved?'<span class="stat-approved">✓</span>':'<span class="stat-pending">—</span>'}</td>
             </tr>`;
         }).join('');
 
-        const blanks=Array(3).fill('<tr class="blank"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
-        const totals=`<tr class="totals"><td colspan="4">Totals — ${rows.length} install${rows.length!==1?'s':''}</td><td>${totPiece} piece item${totPiece!==1?'s':''}</td><td class="r">${Math.round(totHours*100)/100}</td><td class="c">${nApproved}/${rows.length}</td></tr>`;
+        const blanks=Array(3).fill('<tr class="blank"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>').join('');
+        const totals=`<tr class="totals"><td colspan="4">Totals — ${rows.length} install${rows.length!==1?'s':''}</td><td>${totPiece} piece item${totPiece!==1?'s':''}</td><td class="r">${Math.round(totHours*100)/100}</td><td class="r">${fmt$(totPay)}</td><td class="c">${nApproved}/${rows.length}</td></tr>`;
 
         const tbody=document.getElementById('ticBody');
         if(!rows.length){
-            tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="icon">📋</div><div>No installs logged this week</div></div></td></tr>`+blanks;
+            tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="icon">📋</div><div>No installs logged this week</div></div></td></tr>`+blanks;
         }else{
             tbody.innerHTML=body+blanks+totals;
         }
+        document.getElementById('statPay').textContent=fmt$(totPay);
         document.getElementById('statInstalls').textContent=rows.length;
         document.getElementById('statHours').textContent=Math.round(totHours*100)/100;
         document.getElementById('statPiece').textContent=totPiece;
-        document.getElementById('statApproved').textContent=nApproved+'/'+rows.length;
     });
 }
 
