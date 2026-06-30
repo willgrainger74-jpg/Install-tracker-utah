@@ -263,7 +263,7 @@ function renderWeek(){
         const rows=[];
         results.forEach(({d,logs,recalls})=>{
             if(logs)Object.values(logs).forEach(r=>{ if(r.personId===selected) rows.push({...r,_d:d}); });
-            if(recalls)Object.values(recalls).forEach(r=>{ if(r.loggedById===selected && (r.hoursOn||r.pieceOn)) rows.push({...r,_d:d,_isRecall:true,trade:r.payTrade||r.division,jobNumber:r.originalJobNumber,whatInstalled:r.recallReason}); });
+            if(recalls)Object.values(recalls).forEach(r=>{ if(((r.personId||r.loggedById)===selected) && (r.hoursOn||r.pieceOn)) rows.push({...r,_d:d,_isRecall:true,trade:r.payTrade||r.division,jobNumber:r.originalJobNumber,whatInstalled:r.recallReason}); });
         });
         rows.sort((a,b)=>(a.ts||0)-(b.ts||0));
 
