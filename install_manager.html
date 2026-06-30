@@ -278,6 +278,7 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
             <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <input id="newName" type="text" data-i18n-ph="ph_newname" placeholder="Installer name" style="min-width:180px" />
                 <select id="newGroup"><option value="underground">Underground</option><option value="plumbing">Plumbing Install</option><option value="hvac">HVAC Install</option><option value="electrical">Electrical Install</option></select>
+                <select id="newTier"><option value="helper1">Helper 1</option><option value="helper2">Helper 2</option><option value="helper3">Helper 3</option><option value="lead1" selected>Lead 1</option><option value="lead2">Lead 2</option><option value="lead3">Lead 3</option></select>
                 <button class="btn btn-red" onclick="addPerson()" data-i18n="add_installer">+ Add Installer</button>
             </div>
         </div>
@@ -363,12 +364,13 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
 
     <!-- RATES -->
     <div id="tab-rates-content" class="hidden">
-        <div class="sec-title" data-i18n="st_rates">Pay Rates</div>
-        <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6" data-i18n="rates_intro">Set the dollar amount per piece-rate item and the default hourly rate. These pre-fill on the turn-in when a tech logs work — they can still adjust the amount per job. Changing a rate here only affects new entries, not pay already logged.</div>
-        <div class="card" style="max-width:420px;margin-bottom:18px">
-            <div class="sec-label" style="margin-top:0" data-i18n="default_hourly">Default Hourly Rate</div>
-            <div style="display:flex;align-items:center;gap:8px"><span style="font-family:Oswald,sans-serif;color:var(--green);font-size:18px">$</span><input type="number" step="0.01" min="0" id="rateHourly" onchange="saveHourly(this.value)" placeholder="0.00" style="max-width:160px"> <span style="color:var(--muted);font-size:13px">/ hr</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div class="sec-title" data-i18n="st_rates">Pay Rates</div>
+            <button class="btn btn-outline" onclick="confirmSeedRates()">⟳ Load Standard Rates</button>
         </div>
+        <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6" data-i18n="rates_intro">Set the dollar amount per piece-rate item for each tier (Helper 1–3, Lead 1–3) and the hourly rate per tier. When a tech logs work, the rate for their tier pre-fills automatically — they can still adjust the amount and quantity per job. Changing a rate here only affects new entries, not pay already logged.</div>
+        <div class="sec-label" style="margin-top:0" data-i18n="default_hourly">Hourly Rate by Tier ($/hr)</div>
+        <div id="hourlyEditor" style="margin-bottom:18px"></div>
         <div id="rateEditor"></div>
     </div>
 
@@ -422,12 +424,52 @@ const DEFAULT_PIN='1234';
 const DIVS=[['underground',t('g_underground')],['plumbing',t('g_plumbing')],['hvac',t('g_hvac')],['electrical',t('g_electrical')]];
 const GNAME=Object.fromEntries(DIVS);
 const TRADE_NAMES={underground:t('ts_underground'),plumbing:t('ts_plumbing'),hvac:t('ts_hvac'),electrical:t('ts_electrical')};
-const TRADE_ITEMS={
-    underground:['Standard Dig','Non-Standard Dig','Standard Backfill','Non-Standard Backfill','Hand Dig','Liner Shot','uLiner Shot','Liner Shot Minimum'],
-    plumbing:['Water Heater / Water Softener','Water Repipe / Drain Repipe','Basement Breakup','Floor Drain / Sump Pump','Stack Replacement','Shower Valve / Toilet Flange','Sewage Pump System / Sump Pump System','Sewage Pump Swap / Sump Pump Swap','Main Valve & PRV / Halo Ion / Angle Stop / Disposal / Faucet / Toilet / Hose Bib'],
-    hvac:['Swap','Add','Full System','Water Heater'],
-    electrical:['Panel Install','Meter Install','Circuit Restore','Home Runs (More Than Two on Meter or Panel)','Panel Meter Combo','Basement Rough In','SER Pull over 40FT','Whole House Rewire 0–2500 sqft','Whole House Rewire 2500+ sqft']
+const TIERS=[['helper1','Helper 1'],['helper2','Helper 2'],['helper3','Helper 3'],['lead1','Lead 1'],['lead2','Lead 2'],['lead3','Lead 3']];
+const TIER_LABEL={helper1:'Helper 1',helper2:'Helper 2',helper3:'Helper 3',lead1:'Lead 1',lead2:'Lead 2',lead3:'Lead 3'};
+const HOURLY_TIERS={helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40};
+const RATE_SHEET={
+    hvac:[
+        {name:'Swap',helper1:120,helper2:160,helper3:200,lead1:220,lead2:240,lead3:280},
+        {name:'Full / Add',helper1:220,helper2:240,helper3:280,lead1:300,lead2:360,lead3:400},
+        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180}
+    ],
+    plumbing:[
+        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180},
+        {name:'Water/Drain Repipe > 800 sq ft',helper1:80,helper2:120,helper3:160,lead1:180,lead2:220,lead3:260},
+        {name:'Water/Drain Repipe — 2 bath or less',helper1:280,helper2:320,helper3:360,lead1:400,lead2:440,lead3:480},
+        {name:'Water/Drain Repipe — 2 bath or more',helper1:480,helper2:520,helper3:560,lead1:600,lead2:640,lead3:680},
+        {name:"Basement Breakup to 20' (incl. backfill)",helper1:240,helper2:280,helper3:320,lead1:360,lead2:400,lead3:440},
+        {name:'Floor Drain / Sump Pump Swap',helper1:60,helper2:80,helper3:100,lead1:120,lead2:140,lead3:160},
+        {name:'Stack Replacement',helper1:120,helper2:160,helper3:200,lead1:240,lead2:280,lead3:320},
+        {name:'Shower Valve / Toilet Flange',helper1:60,helper2:70,helper3:80,lead1:90,lead2:100,lead3:110},
+        {name:'Sump Pump System / Sewage Ejection Pump System',helper1:180,helper2:220,helper3:260,lead1:300,lead2:340,lead3:380},
+        {name:'Sewage Ejection Pump Swap',helper1:90,helper2:105,helper3:120,lead1:150,lead2:190,lead3:230},
+        {name:'Main Valve & PRV / Toilet / Angle Stop / Faucet / Disposal / Halo Ion / Hose Bib',helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40}
+    ],
+    electrical:[
+        {name:'SER Pull over 40 ft',helper1:90,helper2:90,helper3:90,lead1:150,lead2:150,lead3:150},
+        {name:'Circuit Restore',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
+        {name:'Basement Rough In',helper1:312,helper2:372,helper3:420,lead1:520,lead2:620,lead3:700},
+        {name:'Meter / Panel Combo',helper1:252,helper2:294,helper3:336,lead1:420,lead2:490,lead3:560},
+        {name:'Panel',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
+        {name:'Sub-panel',helper1:130,helper2:145,helper3:168,lead1:215,lead2:245,lead3:280},
+        {name:'Meter',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
+        {name:'Whole House Re-wire — up to 2500 sq ft',helper1:840,helper2:978,helper3:1104,lead1:1400,lead2:1630,lead3:1840},
+        {name:'Whole House Re-wire — 2500–3500 sq ft',helper1:1700,helper2:1780,helper3:1830,lead1:2650,lead2:2850,lead3:3050},
+        {name:'Home Run',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
+        {name:'Generator',helper1:210,helper2:210,helper3:210,lead1:320,lead2:320,lead3:320}
+    ],
+    underground:[
+        {name:'Dig',helper1:100,helper2:120,helper3:140,lead1:160,lead2:180,lead3:210},
+        {name:'Non-typical Dig',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
+        {name:'Liner / ft',helper1:2,helper2:2.5,helper3:3,lead1:3.5,lead2:4,lead3:4.5},
+        {name:'Backfill',helper1:100,helper2:130,helper3:150,lead1:160,lead2:180,lead3:210},
+        {name:'Non-typical Backfill',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
+        {name:'Hand Dig',helper1:140,helper2:160,helper3:180,lead1:220,lead2:250,lead3:275}
+    ]
 };
+const TRADE_ITEMS={underground:[],plumbing:[],hvac:[],electrical:[]};
+Object.keys(RATE_SHEET).forEach(k=>{TRADE_ITEMS[k]=RATE_SHEET[k].map(x=>x.name);});
 
 // ── PIN ──
 function checkPin(){
@@ -446,14 +488,14 @@ function changePin(){
 }
 
 // ── DATA ──
-let people={},logs={},recalls={},logins={},RATES={items:{},hourly:0},currentTab='roster';
+let people={},logs={},recalls={},logins={},RATES={items:{},hourlyTiers:{}},currentTab='roster';
 function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function initPortal(){
     db.ref('installPeople').on('value',s=>{people=s.val()||{};renderCurrent();});
     db.ref('installLogs').on('value',s=>{logs=s.val()||{};renderCurrent();});
     db.ref('recalls').on('value',s=>{recalls=s.val()||{};renderCurrent();});
     db.ref('installTechLogins').on('value',s=>{logins=s.val()||{};if(currentTab==='logins')renderLogins();});
-    db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourly:parseFloat(v.hourly)||0};if(currentTab==='rates'||currentTab==='turnins'||currentTab==='scorecards')renderCurrent();});
+    db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourlyTiers:v.hourlyTiers||{}};if(!v.items||!Object.keys(v.items).length){seedStandardRates(true);}if(currentTab==='rates'||currentTab==='turnins'||currentTab==='scorecards')renderCurrent();});
 }
 function showTab(name){
     document.querySelectorAll('[id^="tab-"][id$="-content"]').forEach(el=>el.classList.add('hidden'));
@@ -469,12 +511,13 @@ function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,
 
 // ── ROSTER ──
 function addPerson(){
-    const name=document.getElementById('newName').value.trim();const group=document.getElementById('newGroup').value;
+    const name=document.getElementById('newName').value.trim();const group=document.getElementById('newGroup').value;const tier=document.getElementById('newTier').value;
     if(!name){toast('Enter a name','#dc2626');return;}
-    db.ref('installPeople').push({name,group,archived:false});
+    db.ref('installPeople').push({name,group,tier,archived:false});
     document.getElementById('newName').value='';toast('Installer added ✓');
 }
 function setGroup(id,g){db.ref('installPeople/'+id+'/group').set(g);toast('Division updated ✓');}
+function setTier(id,tr){db.ref('installPeople/'+id+'/tier').set(tr);toast('Tier updated ✓');}
 function archivePerson(id,name){if(!confirm(`Archive ${name}? Their history is preserved and still counts in reports, but they'll be hidden and can't sign in.`))return;db.ref('installPeople/'+id+'/archived').set(true);Object.entries(logins).forEach(([lid,r])=>{if(r.personId===id)db.ref('installTechLogins/'+lid+'/disabled').set(true);});toast(name+' archived');}
 function reactivatePerson(id,name){if(!confirm(`Reactivate ${name}?`))return;db.ref('installPeople/'+id+'/archived').set(false);Object.entries(logins).forEach(([lid,r])=>{if(r.personId===id)db.ref('installTechLogins/'+lid+'/disabled').set(false);});toast(name+' reactivated ✓');}
 
@@ -487,10 +530,12 @@ function renderRoster(){
         html+=`<div class="sec-label">${label} · ${crew.length}</div>`;
         crew.sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
             const opts=DIVS.map(([k,l])=>`<option value="${k}" ${p.group===k?'selected':''}>${l}</option>`).join('');
+            const tierOpts=TIERS.map(([k,l])=>`<option value="${k}" ${(p.tier||'lead1')===k?'selected':''}>${l}</option>`).join('');
             html+=`<div class="person-row">
-                <div class="pr-name">${p.name}</div>
+                <div class="pr-name">${p.name} <span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.4)">${TIER_LABEL[p.tier||'lead1']}</span></div>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                     <select onchange="setGroup('${p.id}',this.value)" style="padding:7px 10px;font-size:13px">${opts}</select>
+                    <select onchange="setTier('${p.id}',this.value)" style="padding:7px 10px;font-size:13px">${tierOpts}</select>
                     <button class="btn btn-outline" onclick="archivePerson('${p.id}','${p.name.replace(/'/g,"\\'")}')">Archive</button>
                 </div></div>`;
         });
@@ -584,7 +629,7 @@ function renderInstalls(){
 
 // ── TURN-INS (hours / piece rate) ──
 function eachLogFull(cb,cutoff){Object.entries(logs).forEach(([dk,day])=>Object.entries(day).forEach(([id,r])=>{if((r.ts||0)>=cutoff)cb(r,id,dk);}));}
-function pieceCount(r){return r.pieceItems?Object.keys(r.pieceItems).length:0;}
+function pieceCount(r){return r.pieceItems?Object.keys(r.pieceItems).filter(i=>r.pieceItems[i]).length:0;}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function renderTurnins(){
@@ -593,8 +638,8 @@ function renderTurnins(){
     const per={},tr={};DIVS.forEach(([k])=>tr[k]={n:0,hours:0,piece:0,pay:0});
     eachLogFull((r)=>{
         nInstalls++;
-        const h=(r.payType==='hours')?(parseFloat(r.hours)||0):0;
-        const pcs=(r.payType==='piece')?pieceCount(r):0;
+        const h=parseFloat(r.hours)||0;
+        const pcs=pieceCount(r);
         const pay=installPay(r);
         totHours+=h;totPiece+=pcs;totPay+=pay;
         if(r.approved)nApproved++;else nPending++;
@@ -626,12 +671,11 @@ function renderTurnins(){
 function turninRow(r,id,dk){
     const ap=!!r.approved;
     const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${r.trade===t?' selected':''}>${TRADE_NAMES[t]}</option>`).join('');
-    const paySel=`<option value=""${!r.payType?' selected':''}>Select…</option><option value="hours"${r.payType==='hours'?' selected':''}>Hours</option><option value="piece"${r.payType==='piece'?' selected':''}>Piece Rate</option>`;
-    const payEdit=r.payType==='hours'
-        ? `<input type="number" step="0.25" min="0" value="${r.hours?esc(r.hours):''}" onchange="mUpdate('${dk}','${id}','hours',parseFloat(this.value)||0)" placeholder="Hours" style="max-width:120px" />`
-        : (r.payType==='piece'
-            ? `<div class="trade-grid" style="margin-top:6px">${(TRADE_ITEMS[r.trade]||[]).map((item,i)=>`<label class="check-row"><input type="checkbox" ${r.pieceItems&&r.pieceItems[i]?'checked':''} onchange="mTogglePiece('${dk}','${id}',${i},this.checked)"><span>${esc(item)}</span></label>`).join('')}</div>`
-            : '');
+    const hoursOn=r.hoursOn||r.payType==='hours';
+    const pieceOn=r.pieceOn||r.payType==='piece';
+    const tier=(people[r.personId]||{}).tier||'lead1';
+    const hoursEdit=hoursOn?`<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="ti-lbl">Hours</label><input type="number" step="0.25" min="0" value="${r.hours?esc(r.hours):''}" onchange="mUpdate('${dk}','${id}','hours',parseFloat(this.value)||0)" placeholder="Hours" style="max-width:100px" /><label class="ti-lbl">Rate $/hr</label><input type="number" step="0.01" min="0" value="${r.hourlyRate!=null&&r.hourlyRate!==''?esc(r.hourlyRate):''}" onchange="mUpdate('${dk}','${id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${(RATES.hourlyTiers&&RATES.hourlyTiers[tier])||HOURLY_TIERS[tier]}" style="max-width:100px" /></div>`:'';
+    const pieceEdit=pieceOn?`<div style="margin-top:8px">${(RATE_SHEET[r.trade]||[]).map((row,i)=>{const on=r.pieceItems&&r.pieceItems[i];const qty=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?r.pieceQty[i]:1;const amt=(r.pieceAmounts&&r.pieceAmounts[i]!=null)?r.pieceAmounts[i]:'';return `<label class="check-row" style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><input type="checkbox" ${on?'checked':''} onchange="mTogglePiece('${dk}','${id}',${i},this.checked,'${r.trade}','${tier}')"><span style="flex:1">${esc(row.name)}</span>${on?`<span style="color:var(--muted);font-size:12px">×</span><input type="number" step="1" min="0" value="${esc(qty)}" onchange="mUpdate('${dk}','${id}','pieceQty/${i}',parseFloat(this.value)||0)" style="max-width:56px;text-align:center" /><span style="color:var(--green)">$</span><input type="number" step="0.01" min="0" value="${amt}" onchange="mUpdate('${dk}','${id}','pieceAmounts/${i}',parseFloat(this.value)||0)" style="max-width:80px;text-align:right" />`:''}</label>`;}).join('')}</div>`:'';
     const dateTxt=new Date(r.ts||Date.parse(dk)).toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const pay=installPay(r);
     return `<div class="ti-row ${ap?'ap':'pend'}">
@@ -641,16 +685,18 @@ function turninRow(r,id,dk){
         </div>
         <div class="ti-edit">
             <label class="ti-lbl">Trade</label><select onchange="mChangeTrade('${dk}','${id}',this.value)" style="max-width:180px">${tradeSel}</select>
-            <label class="ti-lbl">Pay</label><select onchange="mChangePay('${dk}','${id}',this.value)" style="max-width:150px">${paySel}</select>
+            <label class="check-row" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px"><input type="checkbox" ${hoursOn?'checked':''} onchange="mToggleHours('${dk}','${id}',this.checked,'${tier}')"><span>💵 Hours</span></label>
+            <label class="check-row" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px"><input type="checkbox" ${pieceOn?'checked':''} onchange="mTogglePieceSection('${dk}','${id}',this.checked)"><span>🔧 Piece</span></label>
         </div>
-        ${payEdit}
+        ${hoursEdit}${pieceEdit}
     </div>`;
 }
 
 function mUpdate(dk,id,f,v){db.ref(`installLogs/${dk}/${id}/${f}`).set(v);}
-function mChangeTrade(dk,id,v){db.ref(`installLogs/${dk}/${id}/trade`).set(v);db.ref(`installLogs/${dk}/${id}/pieceItems`).remove();}
-function mChangePay(dk,id,v){const u={payType:v};if(v!=='piece')u.pieceItems=null;if(v!=='hours')u.hours=0;db.ref(`installLogs/${dk}/${id}`).update(u);}
-function mTogglePiece(dk,id,i,checked){db.ref(`installLogs/${dk}/${id}/pieceItems/${i}`).set(checked?true:null);}
+function mChangeTrade(dk,id,v){db.ref(`installLogs/${dk}/${id}/trade`).set(v);db.ref(`installLogs/${dk}/${id}/pieceItems`).remove();db.ref(`installLogs/${dk}/${id}/pieceAmounts`).remove();db.ref(`installLogs/${dk}/${id}/pieceQty`).remove();}
+function mToggleHours(dk,id,on,tier){const base=`installLogs/${dk}/${id}`;db.ref(base+'/hoursOn').set(!!on);if(on){db.ref(base+'/hourlyRate').once('value',s=>{if(s.val()==null||s.val()===''){const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tier])||HOURLY_TIERS[tier];db.ref(base+'/hourlyRate').set(parseFloat(v)||0);}});}else{db.ref(base+'/hours').set(0);}}
+function mTogglePieceSection(dk,id,on){const base=`installLogs/${dk}/${id}`;db.ref(base+'/pieceOn').set(!!on);if(!on){db.ref(base+'/pieceItems').remove();db.ref(base+'/pieceAmounts').remove();db.ref(base+'/pieceQty').remove();}}
+function mTogglePiece(dk,id,i,checked,trade,tier){const base=`installLogs/${dk}/${id}`;db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];let rate=(saved&&saved[tier]!=null&&saved[tier]!=='')?saved[tier]:((RATE_SHEET[trade]&&RATE_SHEET[trade][i])?RATE_SHEET[trade][i][tier]:null);if(rate!=null)db.ref(`${base}/pieceAmounts/${i}`).set(parseFloat(rate)||0);db.ref(`${base}/pieceQty/${i}`).once('value',s=>{if(s.val()==null)db.ref(`${base}/pieceQty/${i}`).set(1);});}else{db.ref(`${base}/pieceAmounts/${i}`).remove();db.ref(`${base}/pieceQty/${i}`).remove();}}
 function mApprove(dk,id,val){db.ref(`installLogs/${dk}/${id}`).update({approved:val,approvedTs:val?Date.now():null,approvedBy:val?'manager':null});toast(val?'Approved ✓ — locked':'Unapproved');}
 function approveAllFiltered(){
     const cutoff=cutoffFrom(document.getElementById('turninRange').value);
@@ -696,7 +742,7 @@ function renderTrends(){
 function fillScoreWho(){const sel=document.getElementById('scoreWho');const cur=sel.value;sel.innerHTML='<option value="all">All Installers</option>'+activePeople().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');if([...sel.options].some(o=>o.value===cur))sel.value=cur;}
 function personMetrics(id,cutoff){
     let inst=0,rev=0,rc=0,qa=0,wr=0,hours=0,piece=0,rcl=0,pay=0;
-    Object.values(logs).forEach(day=>Object.values(day).forEach(r=>{if(r.personId===id&&(r.ts||0)>=cutoff){inst++;if(r.askedReview)rev++;if(r.redCarpet)rc++;if(r.scheduledQA)qa++;if(r.warrantyReview)wr++;if(r.payType==='hours')hours+=parseFloat(r.hours)||0;if(r.payType==='piece'&&r.pieceItems)piece+=Object.keys(r.pieceItems).length;pay+=installPay(r);}}));
+    Object.values(logs).forEach(day=>Object.values(day).forEach(r=>{if(r.personId===id&&(r.ts||0)>=cutoff){inst++;if(r.askedReview)rev++;if(r.redCarpet)rc++;if(r.scheduledQA)qa++;if(r.warrantyReview)wr++;hours+=parseFloat(r.hours)||0;if(r.pieceItems)piece+=Object.keys(r.pieceItems).filter(k=>r.pieceItems[k]).length;pay+=installPay(r);}}));
     Object.values(recalls).forEach(day=>Object.values(day).forEach(r=>{if(r.originalPersonId===id&&(r.ts||0)>=cutoff)rcl++;}));
     return {inst,rev,rc,qa,wr,hours,piece,rcl,pay};
 }
@@ -733,18 +779,28 @@ function renderScorecards(){
 }
 
 // ── RATES ──
-function installPay(r){let p=0;if(r.payType==='piece'&&r.pieceItems){Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i])p+=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;});}if(r.payType==='hours')p+=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return p;}
+function installPay(r){let p=0;if(r.pieceItems){Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i]){const q=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?parseFloat(r.pieceQty[i]):1;const a=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;p+=(isNaN(q)?0:q)*a;}});}p+=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return p;}
 function renderRates(){
-    const h=document.getElementById('rateHourly');if(document.activeElement!==h)h.value=RATES.hourly||'';
+    // tiered hourly row
+    const hwrap=document.getElementById('hourlyEditor');
+    if(hwrap){hwrap.innerHTML=`<div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr>${TIERS.map(([,l])=>`<th class="r">${l}</th>`).join('')}</tr></thead><tbody><tr>${TIERS.map(([tk])=>{const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tk]!=null&&RATES.hourlyTiers[tk]!=='')?RATES.hourlyTiers[tk]:'';return `<td class="r"><div style="display:flex;align-items:center;gap:3px;justify-content:flex-end"><span style="color:var(--green)">$</span><input type="number" step="0.01" min="0" value="${v}" onchange="saveHourlyTier('${tk}',this.value)" style="max-width:84px;text-align:right" placeholder="0.00"></div></td>`;}).join('')}</tr></tbody></table></div>`;}
     const wrap=document.getElementById('rateEditor');
     wrap.innerHTML=DIVS.map(([k,l])=>`
         <div class="sec-label">${l} — ${t('piece_rates')}</div>
-        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th>Item</th><th class="r" style="width:160px">Rate ($)</th></tr></thead><tbody>
-        ${(TRADE_ITEMS[k]||[]).map((item,i)=>{const v=(RATES.items[k]&&RATES.items[k][i]!=null)?RATES.items[k][i]:'';return `<tr><td>${esc(item)}</td><td class="r"><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end"><span style="color:var(--green)">$</span><input type="number" step="0.01" min="0" value="${v}" onchange="saveItemRate('${k}',${i},this.value)" style="max-width:120px;text-align:right" placeholder="0.00"></div></td></tr>`;}).join('')}
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th style="min-width:200px">Item</th>${TIERS.map(([,tl])=>`<th class="r" style="width:90px">${tl}</th>`).join('')}</tr></thead><tbody>
+        ${(RATE_SHEET[k]||[]).map((row,i)=>`<tr><td>${esc(row.name)}</td>${TIERS.map(([tk])=>{const saved=RATES.items[k]&&RATES.items[k][i];const v=(saved&&saved[tk]!=null&&saved[tk]!=='')?saved[tk]:'';return `<td class="r"><div style="display:flex;align-items:center;gap:2px;justify-content:flex-end"><span style="color:var(--green);font-size:12px">$</span><input type="number" step="0.01" min="0" value="${v}" onchange="saveItemRate('${k}',${i},'${tk}',this.value)" style="max-width:76px;text-align:right;padding:8px 6px" placeholder="${row[tk]}"></div></td>`;}).join('')}</tr>`).join('')}
         </tbody></table></div>`).join('');
 }
-function saveHourly(v){db.ref('installRates/hourly').set(parseFloat(v)||0);toast('Hourly rate saved ✓');}
-function saveItemRate(trade,i,v){db.ref(`installRates/items/${trade}/${i}`).set(parseFloat(v)||0);}
+function saveHourlyTier(tier,v){db.ref('installRates/hourlyTiers/'+tier).set(parseFloat(v)||0);toast('Hourly rate saved ✓');}
+function saveItemRate(trade,i,tier,v){db.ref(`installRates/items/${trade}/${i}/${tier}`).set(parseFloat(v)||0);}
+// write the full printed rate sheet into Firebase. silent=true only fills when empty (first-run seed)
+function seedStandardRates(silent){
+    const items={};Object.keys(RATE_SHEET).forEach(k=>{items[k]=RATE_SHEET[k].map(row=>({helper1:row.helper1,helper2:row.helper2,helper3:row.helper3,lead1:row.lead1,lead2:row.lead2,lead3:row.lead3}));});
+    db.ref('installRates/items').set(items);
+    db.ref('installRates/hourlyTiers').once('value',s=>{if(!silent||s.val()==null)db.ref('installRates/hourlyTiers').set({...HOURLY_TIERS});});
+    if(!silent)toast('Standard rates loaded ✓');
+}
+function confirmSeedRates(){if(confirm('Load the standard piece rates from the printed sheet? This overwrites every rate in the table with the sheet values.'))seedStandardRates(false);}
 
 // ── LOGINS ──
 function renderLogins(){

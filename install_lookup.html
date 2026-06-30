@@ -144,10 +144,10 @@ const db=firebase.database();
 
 const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing',hvac:'HVAC',electrical:'Electrical'};
 const TRADE_ITEMS={
-    underground:['Standard Dig','Non-Standard Dig','Standard Backfill','Non-Standard Backfill','Hand Dig','Liner Shot','uLiner Shot','Liner Shot Minimum'],
-    plumbing:['Water Heater / Water Softener','Water Repipe / Drain Repipe','Basement Breakup','Floor Drain / Sump Pump','Stack Replacement','Shower Valve / Toilet Flange','Sewage Pump System / Sump Pump System','Sewage Pump Swap / Sump Pump Swap','Main Valve & PRV / Halo Ion / Angle Stop / Disposal / Faucet / Toilet / Hose Bib'],
-    hvac:['Swap','Add','Full System','Water Heater'],
-    electrical:['Panel Install','Meter Install','Circuit Restore','Home Runs (More Than Two on Meter or Panel)','Panel Meter Combo','Basement Rough In','SER Pull over 40FT','Whole House Rewire 0–2500 sqft','Whole House Rewire 2500+ sqft']
+    hvac:['Swap','Full / Add','Water Heater / Water Softener'],
+    plumbing:['Water Heater / Water Softener','Water/Drain Repipe > 800 sq ft','Water/Drain Repipe — 2 bath or less','Water/Drain Repipe — 2 bath or more',"Basement Breakup to 20' (incl. backfill)",'Floor Drain / Sump Pump Swap','Stack Replacement','Shower Valve / Toilet Flange','Sump Pump System / Sewage Ejection Pump System','Sewage Ejection Pump Swap','Main Valve & PRV / Toilet / Angle Stop / Faucet / Disposal / Halo Ion / Hose Bib'],
+    electrical:['SER Pull over 40 ft','Circuit Restore','Basement Rough In','Meter / Panel Combo','Panel','Sub-panel','Meter','Whole House Re-wire — up to 2500 sq ft','Whole House Re-wire — 2500–3500 sq ft','Home Run','Generator'],
+    underground:['Dig','Non-typical Dig','Liner / ft','Backfill','Non-typical Backfill','Hand Dig']
 };
 
 const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
@@ -157,8 +157,8 @@ if(!sess||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='instal
 let LOGS={},RECALLS={};
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function jobPay(r){let p=0;if(r.payType==='piece'&&r.pieceItems){Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i])p+=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;});}if(r.payType==='hours')p+=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return p;}
-function pieceNames(r){if(!r.pieceItems)return [];return (TRADE_ITEMS[r.trade]||[]).filter((_,i)=>r.pieceItems[i]);}
+function jobPay(r){let p=0;if(r.pieceItems){Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i]){const q=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?parseFloat(r.pieceQty[i]):1;const a=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;p+=(isNaN(q)?0:q)*a;}});}p+=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return p;}
+function pieceNames(r){if(!r.pieceItems)return [];return (TRADE_ITEMS[r.trade]||[]).map((nm,i)=>({nm,i})).filter(o=>r.pieceItems[o.i]).map(o=>{const q=(r.pieceQty&&r.pieceQty[o.i]!=null&&r.pieceQty[o.i]!=='')?parseFloat(r.pieceQty[o.i]):1;return (q&&q!==1)?`${o.nm} ×${q}`:o.nm;});}
 
 db.ref('installLogs').on('value',s=>{LOGS=s.val()||{};doSearch();});
 db.ref('recalls').on('value',s=>{RECALLS=s.val()||{};doSearch();});
