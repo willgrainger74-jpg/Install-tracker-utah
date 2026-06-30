@@ -3,88 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log Recall — Action Install Tracker</title>
+    <title>Log Recalls — Action Install Tracker</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#666;--faint:#333;--text:#efefef;--green:#10b981;--amber:#f59e0b;}
-        html.light{--bg:#f4f4f4;--s1:#fff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,.08);--wire2:rgba(0,0,0,.14);--muted:#555;--faint:#999;--text:#111;--red3:#fde8e8;}
+        *, *::before, *::after { box-sizing:border-box;margin:0;padding:0; }
+        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#aaa;--faint:#666;--text:#efefef;--green:#10b981;--amber:#f59e0b;--blue:#3b82f6;--purple:#a855f7;}
+        html.light{--bg:#f4f4f4;--s1:#ffffff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,0.08);--wire2:rgba(0,0,0,0.14);--muted:#555555;--faint:#999999;--text:#111111;--red3:#fde8e8;}
         html.light body::after{display:none;}
         html.light input,html.light select,html.light textarea{background:var(--s3);border-color:var(--wire2);color:var(--text);}
-        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
-        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:999;}
-        .page{max-width:840px;margin:0 auto;padding:24px 20px 80px;}
-        .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
-        .back{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none;}
-        .back:hover{color:var(--text);}
-        .eyebrow{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:.25em;color:var(--red);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-top:18px;}
-        .eyebrow::before{content:'';width:20px;height:2px;background:var(--red);}
-        h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,7vw,72px);line-height:.9;letter-spacing:2px;margin:2px 0 4px;}
-        h1 em{font-style:normal;color:var(--red);}
-        .sub{font-size:13px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:28px;}
-        .card{background:var(--s1);border:1px solid var(--wire);border-top:2px solid var(--red);padding:28px 30px;margin-bottom:22px;}
-        .sec-lbl{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:4px 0 16px;}
-        .field{margin-bottom:18px;}
-        .field label{display:block;font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
-        .field input,.field select,.field textarea{width:100%;background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:13px 14px;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color .15s;}
-        .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--red);}
-        .field input::placeholder,.field textarea::placeholder{color:var(--faint);}
-        .field textarea{resize:vertical;min-height:80px;}
-        .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-        @media(max-width:560px){.row2{grid-template-columns:1fr;}}
-        /* match panel */
-        .match{border:1px solid var(--wire2);border-left:3px solid var(--muted);background:var(--s2);padding:16px 18px;margin-bottom:18px;font-size:13px;color:var(--muted);}
-        .match.found{border-left-color:var(--green);}
-        .match.none{border-left-color:var(--amber);}
-        .match .m-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;}
-        .match.found .m-title{color:var(--green);}
-        .match.none .m-title{color:var(--amber);}
-        .match .m-row{color:var(--text);line-height:1.7;}
-        .match .m-row b{color:var(--text);}
-        .match .m-row span{color:var(--muted);}
-        /* fault radio */
-        .fault-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
-        @media(max-width:560px){.fault-grid{grid-template-columns:1fr;}}
-        .fault{background:var(--s2);border:1px solid var(--wire);border-top:3px solid var(--faint);padding:16px;cursor:pointer;text-align:center;transition:all .15s;}
-        .fault:hover{background:var(--s3);}
-        .fault.on{border-top-color:var(--red);background:var(--red3);}
-        .fault .f-icon{font-size:24px;display:block;margin-bottom:6px;}
-        .fault .f-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text);}
-        .fault .f-desc{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.3;}
-        .btn{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:16px 24px;border:none;cursor:pointer;}
-        .btn-primary{background:var(--red);color:#fff;width:100%;}
-        .btn-primary:hover{background:var(--red2);}
-        .toggle{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--wire);padding:13px 14px;cursor:pointer;transition:border-color .15s;}
-        .toggle:hover{border-color:var(--wire2);}
-        .toggle input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
-        .toggle span{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text);}
-        .pay-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s2);border:1px solid var(--wire);margin-bottom:6px;}
+        html.light input::placeholder,html.light textarea::placeholder{color:var(--faint);}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+        body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:999;}
+        .page{max-width:1400px;margin:0 auto;padding:24px 20px 80px;}
+        .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--wire);}
+        .page-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,72px);line-height:0.9;letter-spacing:2px;}
+        .page-title em{font-style:normal;color:var(--red);}
+        .page-sub{font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
+        .back-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);border:1px solid var(--wire2);padding:10px 18px;text-decoration:none;transition:all 0.15s;white-space:nowrap;margin-top:8px;display:inline-block;}
+        .back-btn:hover{color:var(--text);border-color:var(--muted);}
+        .card{background:var(--s1);border:1px solid var(--wire);padding:24px 28px;margin-bottom:20px;}
+        .card-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--text);margin-bottom:16px;}
+        .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+        .cal-nav-btn{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:var(--muted);background:var(--s2);border:1px solid var(--wire);padding:10px 20px;cursor:pointer;transition:all 0.15s;}
+        .cal-nav-btn:hover{color:var(--text);border-color:var(--red);}
+        .cal-range{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);}
+        .cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
+        .cal-day-label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);text-align:center;padding:6px 0;}
+        .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+        .cal-day{background:var(--s2);border:1px solid var(--wire);border-top:2px solid transparent;padding:14px 8px;cursor:pointer;transition:all 0.15s;text-align:left;width:100%;}
+        .cal-day:hover{border-top-color:var(--red);background:var(--s3);}
+        .cal-day.has-calls{border-top-color:var(--red);background:rgba(68,10,10,0.4);}
+        .cal-day.selected{border-color:rgba(220,38,38,0.5);border-top-color:var(--red);background:var(--red3);box-shadow:0 0 0 1px var(--red);}
+        .cal-day-num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--text);line-height:1;}
+        .cal-day-stat{font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.04em;color:var(--red);margin-top:4px;}
+        .cal-day-empty{font-size:13px;color:var(--muted);margin-top:4px;}
+        .calls-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+        .btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;padding:10px 20px;border:none;cursor:pointer;transition:all 0.15s;}
+        .btn-red{background:var(--red);color:#fff;}
+        .btn-red:hover{background:var(--red2);}
+        .btn-red:active{transform:scale(0.97);}
+        .call-card{background:var(--s2);border:1px solid var(--wire);border-left:3px solid var(--red);padding:20px;margin-bottom:12px;}
+        .call-card.continuing{border-left-color:var(--amber);}
+        .call-card.approved{border-left-color:var(--green);}
+        .lock-badge{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.4);padding:6px 12px;}
+        .lock-note{font-size:12px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);padding:8px 12px;margin-bottom:12px;letter-spacing:.03em;}
+        .call-card.approved input,.call-card.approved select,.call-card.approved textarea{opacity:.7;cursor:not-allowed;}
+        .call-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+        .call-label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+        .del-call{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--red);background:var(--red3);border:1px solid rgba(220,38,38,0.3);padding:6px 14px;cursor:pointer;transition:all 0.15s;}
+        .del-call:hover{background:var(--red);color:#fff;}
+        .field{margin-bottom:12px;}
+        .field label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px;}
+        input[type=text],input[type=number],input[type=tel],textarea,select{background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:10px 14px;width:100%;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:border-color 0.15s;}
+        input::placeholder,textarea::placeholder{color:var(--muted);}
+        input:focus,textarea:focus,select:focus{border-color:var(--red);}
+        select option{background:var(--s3);color:var(--text);}
+        .check-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--s3);border:1px solid var(--wire);margin-bottom:6px;cursor:pointer;transition:border-color 0.15s;}
+        .check-row:hover{border-color:var(--wire2);}
+        .check-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--red);flex-shrink:0;}
+        .check-row span{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);}
+        .check-row.cont{background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.35);}
+        .check-row.cont input[type=checkbox]{accent-color:var(--amber);}
+        .piece-list{display:flex;flex-direction:column;gap:6px;}
+        .pay-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s3);border:1px solid var(--wire);transition:border-color .15s;}
         .pay-row.on{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.07);}
         .pay-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
         .pay-row .pr-label{flex:1;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--text);line-height:1.3;}
-        .pay-row .pr-qty,.pay-row .pr-amt{display:flex;align-items:center;gap:3px;font-family:'Oswald',sans-serif;font-size:14px;color:var(--green);font-weight:600;flex-shrink:0;}
-        .pay-row .pr-qty{color:var(--muted);}
-        .pay-row .pr-qty input{width:54px;background:var(--s1);border:1px solid var(--wire2);color:var(--text);padding:8px;font-size:14px;text-align:center;}
-        .pay-row .pr-amt input{width:88px;background:var(--s1);border:1px solid var(--wire2);color:var(--text);padding:8px 10px;font-size:14px;text-align:right;}
-        .pay-row .pr-line{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.5px;color:var(--green);flex-shrink:0;min-width:72px;text-align:right;}
-        .job-pay{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:14px 16px;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.35);font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+        .pay-row .pr-amt{display:flex;align-items:center;gap:3px;font-family:'Oswald',sans-serif;font-size:14px;color:var(--green);font-weight:600;flex-shrink:0;}
+        .pay-row .pr-amt input{width:90px;background:var(--s1);border:1px solid var(--wire2);color:var(--text);padding:8px 10px;font-size:14px;text-align:right;}
+        .pay-row .pr-qty{display:flex;align-items:center;gap:3px;font-family:'Oswald',sans-serif;font-size:14px;color:var(--muted);font-weight:600;flex-shrink:0;}
+        .pay-row .pr-qty input{width:56px;background:var(--s1);border:1px solid var(--wire2);color:var(--text);padding:8px 8px;font-size:14px;text-align:center;}
+        .pay-row .pr-line{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.5px;color:var(--green);flex-shrink:0;min-width:74px;text-align:right;}
+        .paytoggles{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;}
+        .check-row.pay-toggle{background:var(--s3);}
+        .check-row.pay-toggle input[type=checkbox]{accent-color:var(--green);}
+        @media(max-width:560px){.paytoggles{grid-template-columns:1fr;}.pay-row{flex-wrap:wrap;}}
+        .job-pay{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:14px 16px;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.35);font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
         .job-pay span{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:var(--green);}
-        .pay-hours-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px;}
-        @media(max-width:560px){.paytoggles{grid-template-columns:1fr!important;}.pay-row{flex-wrap:wrap;}.pay-hours-grid{grid-template-columns:1fr;}}
-        #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;z-index:9999;transition:transform .3s;}
-        #toast.show{transform:translateX(-50%) translateY(0);}
+        .trade-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+        @media(max-width:560px){.trade-grid{grid-template-columns:1fr;}}
+        .divider{border:none;border-top:1px solid var(--wire);margin:16px 0;}
+        .section-label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+        .fab{position:fixed;bottom:28px;right:24px;z-index:1000;background:var(--red);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;padding:14px 24px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(220,38,38,0.5);transition:all 0.15s;display:none;align-items:center;gap:8px;}
+        .fab:hover{background:var(--red2);box-shadow:0 4px 28px rgba(220,38,38,0.7);}
+        .fab:active{transform:scale(0.97);}
+        .add-call-bottom{width:100%;background:transparent;border:2px dashed rgba(220,38,38,0.3);color:var(--red);font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;padding:16px;cursor:pointer;transition:all 0.15s;margin-top:8px;}
+        .add-call-bottom:hover{background:var(--red3);border-color:var(--red);}
         @media (max-width:640px){
-            .page{padding-left:14px;padding-right:14px;}
-            input[type=text],input[type=number],textarea,select{font-size:16px;min-height:54px;padding:14px 16px;}
+            .page{padding:18px 12px 90px;}
+            input[type=text],input[type=number],input[type=tel],textarea,select{font-size:16px;min-height:54px;padding:14px 16px;}
             textarea{min-height:84px;}
-            .btn,.btn-primary{min-height:56px;font-size:15px;padding:16px 22px;}
-            .toggle{min-height:58px;padding:15px 16px;}
-            .fault{min-height:64px;padding:16px;}
-            .fault-grid{grid-template-columns:1fr;}
+            .field label{font-size:14px;}
+            .btn,.btn-red{min-height:56px;font-size:14px;padding:16px 22px;}
+            .check-row{min-height:60px;padding:16px;}
+            .check-row input[type=checkbox]{width:26px;height:26px;}
+            .check-row span{font-size:14px;}
+            .del-call{min-height:46px;padding:10px 18px;font-size:14px;}
+            .add-call-bottom{padding:20px;font-size:14px;}
+            .cal-grid{gap:3px;}
+            .cal-day{padding:12px 4px;min-height:78px;}
+            .cal-day-num{font-size:30px;}
+            .cal-day-label{font-size:12px;}
+            .fab{bottom:20px;right:16px;padding:16px 22px;font-size:14px;}
+            .call-card{padding:18px 16px;}
+            .cal-nav-btn{padding:14px 22px;font-size:20px;}
         }
-    </style>
+    
+        /* recall-specific */
+        .match{border:1px solid var(--wire2);border-left:3px solid var(--muted);background:var(--s2);padding:12px 14px;margin:6px 0 12px;font-size:13px;color:var(--muted);}
+        .match.found{border-left-color:var(--green);}
+        .match.none{border-left-color:var(--amber);}
+        .match .m-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px;}
+        .match.found .m-title{color:var(--green);}
+        .match.none .m-title{color:var(--amber);}
+        .match .m-row{color:var(--text);line-height:1.6;}
+        .fault-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;}
+        @media(max-width:560px){.fault-grid{grid-template-columns:1fr;}}
+        .fault{background:var(--s3);border:1px solid var(--wire);border-top:3px solid var(--faint);padding:13px 8px;cursor:pointer;text-align:center;transition:all .15s;}
+        .fault:hover{background:var(--s2);}
+        .fault.on{border-top-color:var(--red);background:var(--red3);}
+        .fault .f-icon{font-size:20px;display:block;margin-bottom:4px;}
+        .fault .f-name{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);}
+</style>
 </head>
 <body>
 <div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
@@ -99,115 +141,100 @@ function toggleTheme(){var c=localStorage.getItem('aitTheme')||'dark';applyTheme
 
 <script>
 const I18N={
+ h1a:{en:'Log ',es:'Registrar '},
+ h1b:{en:'Recalls',es:'Rellamadas'},
  back:{en:'← Dashboard',es:'← Tablero'},
- eyebrow:{en:'Callback',es:'Rellamada'},
- h1a:{en:'Log a ',es:'Registrar una '},
- h1b:{en:'Recall',es:'Rellamada'},
- sub:{en:'Link it to the original job and tag what went wrong',es:'Vincúlala al trabajo original y marca qué salió mal'},
- sec_orig:{en:'Original Job',es:'Trabajo Original'},
+ fab_add:{en:'+ Add Recall',es:'+ Agregar Rellamada'},
+ add_top:{en:'+ Add Recall',es:'+ Agregar Rellamada'},
+ add_more:{en:'+ Add Another Recall',es:'+ Agregar Otra Rellamada'},
+ autosave:{en:'Every field saves automatically as you type — no save button.',es:'Cada campo se guarda automáticamente al escribir — sin botón de guardar.'},
+ d_mon:{en:'Mon',es:'Lun'},d_tue:{en:'Tue',es:'Mar'},d_wed:{en:'Wed',es:'Mié'},d_thu:{en:'Thu',es:'Jue'},d_fri:{en:'Fri',es:'Vie'},d_sat:{en:'Sat',es:'Sáb'},d_sun:{en:'Sun',es:'Dom'},
+ day_recalls:{en:'Recalls',es:'Rellamadas'},
+ logging_for:{en:'Logging for:',es:'Registrando para:'},
+ recall_word:{en:'recall',es:'rellamada'},
+ recalls_word:{en:'recalls',es:'rellamadas'},
+ none_day:{en:'No recalls logged for this day',es:'No hay rellamadas registradas para este día'},
+ recall_label:{en:'Recall',es:'Rellamada'},
  lbl_origjob:{en:'Original Job Number',es:'Número de Trabajo Original'},
- ph_origjob:{en:'Type the job # to auto-link the original install',es:'Escribe el # de trabajo para vincular la instalación original'},
- sec_details:{en:'Recall Details',es:'Detalles de la Rellamada'},
+ ph_origjob:{en:'Job # to auto-link the original install',es:'# de trabajo para vincular la instalación'},
  lbl_customer:{en:'Customer Name',es:'Nombre del Cliente'},
  ph_customer:{en:'Customer on the original job',es:'Cliente del trabajo original'},
  lbl_division:{en:'Division',es:'División'},
- opt_underground:{en:'Underground',es:'Subterráneo'},
- opt_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
- opt_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
- opt_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'},
  lbl_reason:{en:'What Was the Recall For?',es:'¿Para Qué Fue la Rellamada?'},
- ph_reason:{en:'e.g. Water heater leaking at the cold inlet fitting',es:'ej. Calentador goteando en la conexión de entrada fría'},
- lbl_date:{en:'Recall Date',es:'Fecha de Rellamada'},
- sec_fault:{en:'Fault Type',es:'Tipo de Falla'},
- fi_name:{en:'Install Error',es:'Error de Instalación'},
- fi_desc:{en:'Workmanship / how it was installed',es:'Mano de obra / cómo se instaló'},
- fm_name:{en:'Manufacturer',es:'Fabricante'},
- fm_desc:{en:'Defective part or equipment',es:'Parte o equipo defectuoso'},
- fo_name:{en:'Other',es:'Otro'},
- fo_desc:{en:'Customer-caused, unrelated, etc.',es:'Causado por el cliente, no relacionado, etc.'},
+ ph_reason:{en:'e.g. Water heater leaking at the cold inlet',es:'ej. Calentador goteando en la entrada fría'},
+ lbl_fault:{en:'Fault Type',es:'Tipo de Falla'},
+ f_install:{en:'Install Error',es:'Error de Instalación'},
+ f_manufacturer:{en:'Manufacturer',es:'Fabricante'},
+ f_other:{en:'Other',es:'Otro'},
  lbl_notes:{en:'Notes',es:'Notas'},
  ph_notes:{en:'Anything else about the callback',es:'Cualquier otra cosa sobre la rellamada'},
- btn_save:{en:'↩️ Save Recall',es:'↩️ Guardar Rellamada'},
  m_found:{en:'✓ Original install found',es:'✓ Instalación original encontrada'},
- m_installedby:{en:'Installed by',es:'Instalado por'},
- m_none_title:{en:'No matching install on file',es:'No se encontró instalación coincidente'},
- m_none_body:{en:'This recall will be saved without a linked original job. Double-check the job number, or continue if the original predates the tracker.',es:'Esta rellamada se guardará sin un trabajo original vinculado. Verifica el número de trabajo, o continúa si el original es anterior al rastreador.'},
- t_needjob:{en:'Enter the original job number',es:'Ingresa el número de trabajo original'},
- t_needreason:{en:'Describe what the recall was for',es:'Describe para qué fue la rellamada'},
- t_saved:{en:'Recall logged ✓',es:'Rellamada registrada ✓'},
- t_failed:{en:'Save failed — check connection',es:'Error al guardar — revisa la conexión'},
- sec_pay:{en:'Recall Pay',es:'Pago de Rellamada'},
- pay_hint:{en:"Pay for the work done on this callback. Rates fill in from the division and the tech's tier — adjust per job.",es:'Pago por el trabajo de esta rellamada. Las tarifas se llenan según la división y el nivel del técnico — ajusta por trabajo.'},
+ m_by:{en:'Installed by',es:'Instalado por'},
+ m_none:{en:'No matching install on file',es:'Sin instalación coincidente'},
+ pay_section:{en:'Recall Pay',es:'Pago de Rellamada'},
  opt_hours:{en:'Hours',es:'Horas'},
  opt_piece:{en:'Piece Rate',es:'Por Pieza'},
  lbl_hoursworked:{en:'Hours Worked',es:'Horas Trabajadas'},
  ph_hours:{en:'e.g. 2.5',es:'ej. 2.5'},
  lbl_rate:{en:'Rate ($/hr)',es:'Tarifa ($/hr)'},
+ lbl_qty:{en:'Qty',es:'Cant.'},
  piecerate_work:{en:'Piece-Rate Work',es:'Trabajo Por Pieza'},
- job_pay:{en:'Recall Pay',es:'Pago de Rellamada'}
+ job_pay:{en:'Recall Pay',es:'Pago de Rellamada'},
+ del:{en:'Delete',es:'Eliminar'},
+ confirm_del:{en:'Delete this recall?',es:'¿Eliminar esta rellamada?'},
+ locked_badge:{en:'🔒 Approved — locked',es:'🔒 Aprobado — bloqueado'},
+ locked_note:{en:'A manager approved this recall. Ask a manager if it needs changing.',es:'Un gerente aprobó esta rellamada. Pide a un gerente si necesita cambios.'},
+ g_underground:{en:'Underground',es:'Subterráneo'},
+ g_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
+ g_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
+ g_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'},
+ tn_underground:{en:'Underground',es:'Subterráneo'},
+ tn_plumbing:{en:'Plumbing',es:'Plomería'},
+ tn_hvac:{en:'HVAC',es:'HVAC'},
+ tn_electrical:{en:'Electrical',es:'Eléctrica'}
 };
 let LANG=localStorage.getItem('aitLang')||'en';
 function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
+function tradeName(k){return t('tn_'+k)||k;}
 function toggleLang(){LANG=LANG==='en'?'es':'en';localStorage.setItem('aitLang',LANG);location.reload();}
 function applyStaticLang(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});const ll=document.getElementById('langLabel');if(ll)ll.textContent=LANG==='en'?'EN':'ES';}
 document.addEventListener('DOMContentLoaded',applyStaticLang);
 </script>
 
+<button class="fab" id="fabAdd" data-i18n="fab_add">+ Add Recall</button>
 <div class="page">
-    <div class="top"><a href="install_index.html" class="back" data-i18n="back">← Dashboard</a></div>
-    <div class="eyebrow" data-i18n="eyebrow">Callback</div>
-    <h1><span data-i18n="h1a">Log a </span><em data-i18n="h1b">Recall</em></h1>
-    <div class="sub" data-i18n="sub">Link it to the original job and tag what went wrong</div>
-
-    <div class="card">
-        <div class="sec-lbl" data-i18n="sec_orig">Original Job</div>
-        <div class="field"><label data-i18n="lbl_origjob">Original Job Number</label><input id="origJob" type="text" data-i18n-ph="ph_origjob" placeholder="Type the job # to auto-link the original install" /></div>
-        <div class="match" id="matchPanel" style="display:none;"></div>
+    <div class="page-header">
+        <div>
+            <div class="page-title"><span data-i18n="h1a">Log </span><em data-i18n="h1b">Recalls</em></div>
+            <div id="personName" class="page-sub"></div>
+        </div>
+        <a href="install_index.html" class="back-btn" data-i18n="back">← Dashboard</a>
     </div>
-
     <div class="card">
-        <div class="sec-lbl" data-i18n="sec_details">Recall Details</div>
-        <div class="row2">
-            <div class="field"><label data-i18n="lbl_customer">Customer Name</label><input id="customerName" type="text" data-i18n-ph="ph_customer" placeholder="Customer on the original job" /></div>
-            <div class="field"><label data-i18n="lbl_division">Division</label>
-                <select id="division">
-                    <option value="underground" data-i18n="opt_underground">Underground</option>
-                    <option value="plumbing" data-i18n="opt_plumbing">Plumbing Install</option>
-                    <option value="hvac" data-i18n="opt_hvac">HVAC Install</option>
-                    <option value="electrical" data-i18n="opt_electrical">Electrical Install</option>
-                </select>
+        <div class="cal-nav">
+            <button class="cal-nav-btn" id="prevWeek">←</button>
+            <div id="weekRange" class="cal-range"></div>
+            <button class="cal-nav-btn" id="nextWeek">→</button>
+        </div>
+        <div class="cal-days-header">
+            <div class="cal-day-label" data-i18n="d_mon">Mon</div><div class="cal-day-label" data-i18n="d_tue">Tue</div><div class="cal-day-label" data-i18n="d_wed">Wed</div><div class="cal-day-label" data-i18n="d_thu">Thu</div><div class="cal-day-label" data-i18n="d_fri">Fri</div><div class="cal-day-label" data-i18n="d_sat">Sat</div><div class="cal-day-label" data-i18n="d_sun">Sun</div>
+        </div>
+        <div class="cal-grid" id="calendarDays"></div>
+    </div>
+    <div id="recallsSection" style="display:none;">
+        <div class="card">
+            <div class="calls-header">
+                <div class="card-title" id="dayTitle" data-i18n="day_recalls">Recalls</div>
+                <button class="btn btn-red" id="addTop" data-i18n="add_top">+ Add Recall</button>
             </div>
+            <div style="font-size:12px;color:var(--faint);margin:-8px 0 16px;letter-spacing:.04em;" data-i18n="autosave">Every field saves automatically as you type — no save button.</div>
+            <div id="recallsList"></div>
+            <button class="add-call-bottom" id="addBottom" style="display:none;" data-i18n="add_more">+ Add Another Recall</button>
         </div>
-        <div class="field"><label data-i18n="lbl_reason">What Was the Recall For?</label><textarea id="reason" data-i18n-ph="ph_reason" placeholder="e.g. Water heater leaking at the cold inlet fitting"></textarea></div>
-        <div class="field"><label data-i18n="lbl_date">Recall Date</label><input id="recallDate" type="date" /></div>
     </div>
-
-    <div class="card">
-        <div class="sec-lbl" data-i18n="sec_fault">Fault Type</div>
-        <div class="fault-grid">
-            <div class="fault" data-f="install"><span class="f-icon">🛠️</span><div class="f-name" data-i18n="fi_name">Install Error</div><div class="f-desc" data-i18n="fi_desc">Workmanship / how it was installed</div></div>
-            <div class="fault" data-f="manufacturer"><span class="f-icon">🏭</span><div class="f-name" data-i18n="fm_name">Manufacturer</div><div class="f-desc" data-i18n="fm_desc">Defective part or equipment</div></div>
-            <div class="fault" data-f="other"><span class="f-icon">❔</span><div class="f-name" data-i18n="fo_name">Other</div><div class="f-desc" data-i18n="fo_desc">Customer-caused, unrelated, etc.</div></div>
-        </div>
-        <div class="field" style="margin-top:18px;"><label data-i18n="lbl_notes">Notes</label><textarea id="notes" data-i18n-ph="ph_notes" placeholder="Anything else about the callback"></textarea></div>
-    </div>
-
-    <div class="card">
-        <div class="sec-lbl" data-i18n="sec_pay">Recall Pay</div>
-        <div style="font-size:12px;color:var(--muted);margin:-8px 0 16px;line-height:1.5" data-i18n="pay_hint">Pay for the work done on this callback. Rates fill in from the division and the tech's tier — adjust per job.</div>
-        <div class="paytoggles" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
-            <label class="toggle" id="tgHours"><input type="checkbox" id="cbHours"><span>💵 <span data-i18n="opt_hours">Hours</span></span></label>
-            <label class="toggle" id="tgPiece"><input type="checkbox" id="cbPiece"><span>🔧 <span data-i18n="opt_piece">Piece Rate</span></span></label>
-        </div>
-        <div id="payBody"></div>
-    </div>
-
-    <button class="btn btn-primary" id="saveBtn" data-i18n="btn_save">↩️ Save Recall</button>
 </div>
-<div id="toast"></div>
 
 <script>
-// ════ FIREBASE — paste your INSTALL TRACKER project config (same as install_index.html) ════
 firebase.initializeApp({
     apiKey: "AIzaSyBdTIdrCajlNM4_BYgJxZwFe0KXKgKw7yM",
     authDomain: "install-tracker-30b1b.firebaseapp.com",
@@ -218,9 +245,9 @@ firebase.initializeApp({
     appId: "1:160965691779:web:c42baf2dd271a275994eb6"
 });
 const db=firebase.database();
+
 const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing Install',hvac:'HVAC Install',electrical:'Electrical Install'};
 
-// ════ TIERED PIECE-RATE SHEETS (same source as the log page) ════
 const TIERS=[['helper1','Helper 1'],['helper2','Helper 2'],['helper3','Helper 3'],['lead1','Lead 1'],['lead2','Lead 2'],['lead3','Lead 3']];
 const HOURLY_TIERS={helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40};
 const RATE_SHEET={
@@ -232,8 +259,8 @@ const RATE_SHEET={
     plumbing:[
         {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180},
         {name:'Water/Drain Repipe > 800 sq ft',helper1:80,helper2:120,helper3:160,lead1:180,lead2:220,lead3:260},
-        {name:'Water/Drain Repipe — 2 bath or less',helper1:280,helper2:320,helper3:360,lead1:400,lead2:440,lead3:480},
-        {name:'Water/Drain Repipe — 2 bath or more',helper1:480,helper2:520,helper3:560,lead1:600,lead2:640,lead3:680},
+        {name:'Water/Drain Repipe \u2014 2 bath or less',helper1:280,helper2:320,helper3:360,lead1:400,lead2:440,lead3:480},
+        {name:'Water/Drain Repipe \u2014 2 bath or more',helper1:480,helper2:520,helper3:560,lead1:600,lead2:640,lead3:680},
         {name:"Basement Breakup to 20' (incl. backfill)",helper1:240,helper2:280,helper3:320,lead1:360,lead2:400,lead3:440},
         {name:'Floor Drain / Sump Pump Swap',helper1:60,helper2:80,helper3:100,lead1:120,lead2:140,lead3:160},
         {name:'Stack Replacement',helper1:120,helper2:160,helper3:200,lead1:240,lead2:280,lead3:320},
@@ -250,8 +277,8 @@ const RATE_SHEET={
         {name:'Panel',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
         {name:'Sub-panel',helper1:130,helper2:145,helper3:168,lead1:215,lead2:245,lead3:280},
         {name:'Meter',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
-        {name:'Whole House Re-wire — up to 2500 sq ft',helper1:840,helper2:978,helper3:1104,lead1:1400,lead2:1630,lead3:1840},
-        {name:'Whole House Re-wire — 2500–3500 sq ft',helper1:1700,helper2:1780,helper3:1830,lead1:2650,lead2:2850,lead3:3050},
+        {name:'Whole House Re-wire \u2014 up to 2500 sq ft',helper1:840,helper2:978,helper3:1104,lead1:1400,lead2:1630,lead3:1840},
+        {name:'Whole House Re-wire \u2014 2500\u20133500 sq ft',helper1:1700,helper2:1780,helper3:1830,lead1:2650,lead2:2850,lead3:3050},
         {name:'Home Run',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
         {name:'Generator',helper1:210,helper2:210,helper3:210,lead1:320,lead2:320,lead3:320}
     ],
@@ -264,147 +291,122 @@ const RATE_SHEET={
         {name:'Hand Dig',helper1:140,helper2:160,helper3:180,lead1:220,lead2:250,lead3:275}
     ]
 };
-let RATES={items:{},hourlyTiers:{}};
-let workerTier='lead1';
-function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function rateFor(trade,i){const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];if(saved&&saved[workerTier]!=null&&saved[workerTier]!=='')return parseFloat(saved[workerTier])||0;const def=RATE_SHEET[trade]&&RATE_SHEET[trade][i];return def&&def[workerTier]!=null?parseFloat(def[workerTier])||0:null;}
-function hourlyForTier(){const v=(RATES.hourlyTiers&&RATES.hourlyTiers[workerTier]!=null&&RATES.hourlyTiers[workerTier]!=='')?RATES.hourlyTiers[workerTier]:HOURLY_TIERS[workerTier];return parseFloat(v)||0;}
-// local pay state for this recall (written into the record on Save)
-let pay={hoursOn:false,pieceOn:false,hours:0,hourlyRate:0,pieceItems:{},pieceQty:{},pieceAmounts:{}};
-function payTotal(){let p=0;Object.keys(pay.pieceItems).forEach(i=>{if(pay.pieceItems[i]){const q=pay.pieceQty[i]!=null&&pay.pieceQty[i]!==''?parseFloat(pay.pieceQty[i]):1;const a=parseFloat(pay.pieceAmounts[i])||0;p+=(isNaN(q)?0:q)*a;}});if(pay.hoursOn)p+=(parseFloat(pay.hours)||0)*(parseFloat(pay.hourlyRate)||0);return p;}
-db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourlyTiers:v.hourlyTiers||{}};renderPay();});
 
 const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
-function getSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY));}catch{return null;}}
-const sess=getSession();
-if(!sess||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
+let sess=null; try{sess=JSON.parse(localStorage.getItem(SESSION_KEY));}catch(e){}
+const selected=localStorage.getItem('installSelectedPerson');
+if(!sess||!selected||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
 
-let allLogs={}, faultType='install', matchedJob=null;
-document.getElementById('recallDate').value=new Date().toISOString().slice(0,10);
-if(sess&&sess.personId){db.ref('installPeople/'+sess.personId).once('value',s=>{const p=s.val();if(p&&p.tier)workerTier=p.tier;if(!pay.hourlyRate)pay.hourlyRate=hourlyForTier();renderPay();});}
+let me=null, currentDate=new Date(), selectedDate=null, recallsRef=null, allLogs={}, recCache={};
+function lockedRec(id){return !!(recCache[id]&&recCache[id].approved);}
+let RATES={items:{},hourlyTiers:{}};
+db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourlyTiers:v.hourlyTiers||{}};});
+db.ref('installLogs').on('value',s=>{allLogs=s.val()||{};});
 
-db.ref('installLogs').on('value',snap=>{allLogs=snap.val()||{};tryMatch();});
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function getWeek(date){const day=date.getDay(),diff=date.getDate()-day+(day===0?-6:1),mon=new Date(date);mon.setDate(diff);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
+function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+const myTier=()=>(me&&me.tier)||'lead1';
+function rateFor(trade,i){const tier=myTier();const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];if(saved&&saved[tier]!=null&&saved[tier]!=='')return parseFloat(saved[tier])||0;const def=RATE_SHEET[trade]&&RATE_SHEET[trade][i];return def&&def[tier]!=null?parseFloat(def[tier])||0:null;}
+function hourlyForTier(){const tier=myTier();const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tier]!=null&&RATES.hourlyTiers[tier]!=='')?RATES.hourlyTiers[tier]:HOURLY_TIERS[tier];return parseFloat(v)||0;}
+function jobPay(c){let p=0;if(c.pieceItems){Object.keys(c.pieceItems).forEach(i=>{if(c.pieceItems[i]){const q=(c.pieceQty&&c.pieceQty[i]!=null&&c.pieceQty[i]!=='')?parseFloat(c.pieceQty[i]):1;const a=parseFloat((c.pieceAmounts&&c.pieceAmounts[i])||0)||0;p+=(isNaN(q)?0:q)*a;}});}p+=(parseFloat(c.hours)||0)*(parseFloat(c.hourlyRate)||0);return p;}
 
-document.querySelectorAll('.fault').forEach(f=>{
-    f.classList.toggle('on',f.dataset.f===faultType);
-    f.onclick=()=>{faultType=f.dataset.f;document.querySelectorAll('.fault').forEach(x=>x.classList.toggle('on',x===f));};
+function findInstallByJob(job){const j=(job||'').trim().toLowerCase();if(!j)return null;let hit=null;Object.entries(allLogs).forEach(([d,day])=>Object.entries(day).forEach(([id,r])=>{if((r.jobNumber||'').trim().toLowerCase()===j){if(!hit||(r.ts||0)<(hit.ts||0))hit={...r,_id:id,_dk:d};}}));return hit;}
+
+db.ref('installPeople/'+selected).once('value',snap=>{
+    const p=snap.val();
+    if(!p){location.href='install_index.html';return;}
+    me={id:selected,name:p.name,group:p.group||'plumbing',tier:p.tier||'lead1'};
+    document.getElementById('personName').textContent=t('logging_for')+' '+p.name+' \u00b7 '+(t('g_'+me.group)||me.group);
+    renderCalendar();
 });
 
-let _deb;
-document.getElementById('origJob').oninput=()=>{clearTimeout(_deb);_deb=setTimeout(tryMatch,250);};
-
-function findInstallByJob(job){
-    const j=(job||'').trim().toLowerCase();if(!j)return null;
-    let hit=null;
-    Object.entries(allLogs).forEach(([dk,day])=>Object.entries(day).forEach(([id,r])=>{
-        if((r.jobNumber||'').trim().toLowerCase()===j){if(!hit||(r.ts||0)<(hit.ts||0))hit={...r,_id:id,_dk:dk};}
-    }));
-    return hit; // earliest matching install = the original
-}
-
-function tryMatch(){
-    const job=document.getElementById('origJob').value;
-    const panel=document.getElementById('matchPanel');
-    if(!job.trim()){panel.style.display='none';matchedJob=null;return;}
-    const hit=findInstallByJob(job);
-    panel.style.display='block';
-    if(hit){
-        matchedJob=hit;
-        panel.className='match found';
-        panel.innerHTML=`<div class="m-title">${t('m_found')}</div>
-            <div class="m-row"><b>${hit.customerName||'—'}</b> <span>· Job #${hit.jobNumber}</span></div>
-            <div class="m-row"><span>${t('m_installedby')}</span> <b>${hit.installerName||'—'}</b> <span>· ${GROUP_NAMES[hit.group]||hit.group} · ${new Date(hit.ts).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span></div>
-            ${hit.whatInstalled?`<div class="m-row"><span>${hit.whatInstalled}</span></div>`:''}`;
-        // auto-fill
-        if(hit.customerName&&!document.getElementById('customerName').value)document.getElementById('customerName').value=hit.customerName;
-        if(hit.group)document.getElementById('division').value=hit.group;
-    }else{
-        matchedJob=null;
-        panel.className='match none';
-        panel.innerHTML=`<div class="m-title">${t('m_none_title')}</div>
-            <div class="m-row"><span>${t('m_none_body')}</span></div>`;
-    }
-}
-
-function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-
-function curTrade(){return document.getElementById('division').value||'plumbing';}
-function renderPay(){
-    const body=document.getElementById('payBody');if(!body)return;
-    const cbH=document.getElementById('cbHours'),cbP=document.getElementById('cbPiece');
-    if(cbH)cbH.checked=pay.hoursOn;if(cbP)cbP.checked=pay.pieceOn;
-    document.getElementById('tgHours').classList.toggle('on',pay.hoursOn);
-    document.getElementById('tgPiece').classList.toggle('on',pay.pieceOn);
-    const trade=curTrade();
-    let html='';
-    if(pay.hoursOn){
-        html+=`<div class="pay-hours-grid">
-            <div class="field" style="margin-bottom:0"><label>${t('lbl_hoursworked')}</label><input type="number" step="0.25" min="0" value="${pay.hours||''}" oninput="pay.hours=parseFloat(this.value)||0;updateTotal()" placeholder="${t('ph_hours')}"></div>
-            <div class="field" style="margin-bottom:0"><label>${t('lbl_rate')}</label><input type="number" step="0.01" min="0" value="${pay.hourlyRate||''}" oninput="pay.hourlyRate=parseFloat(this.value)||0;updateTotal()" placeholder="${hourlyForTier()||'0.00'}"></div>
-        </div>`;
-    }
-    if(pay.pieceOn){
-        html+=`<div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:12px 0 8px">${GROUP_NAMES[trade]||trade} — ${t('piecerate_work')}</div>`;
-        html+=(RATE_SHEET[trade]||[]).map((row,i)=>{
-            const on=!!pay.pieceItems[i];const qty=pay.pieceQty[i]!=null&&pay.pieceQty[i]!==''?pay.pieceQty[i]:1;const amt=pay.pieceAmounts[i]!=null?pay.pieceAmounts[i]:'';
-            const line=on?((parseFloat(qty)||0)*(parseFloat(amt)||0)):0;
-            return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''} onchange="rcTogglePiece(${i},this.checked)"><span class="pr-label">${row.name}</span>${on?`<span class="pr-qty">×<input type="number" step="1" min="0" value="${qty}" oninput="rcSetQty(${i},this.value)"></span><span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}" oninput="rcSetAmt(${i},this.value)" placeholder="0.00"></span><span class="pr-line">${fmt$(line)}</span>`:''}</div>`;
-        }).join('');
-    }
-    if(pay.hoursOn||pay.pieceOn){html+=`<div class="job-pay">${t('job_pay')} <span id="payTotal">${fmt$(payTotal())}</span></div>`;}
-    body.innerHTML=html;
-}
-function updateTotal(){const el=document.getElementById('payTotal');if(el)el.textContent=fmt$(payTotal());}
-function rcTogglePiece(i,checked){if(checked){pay.pieceItems[i]=true;if(pay.pieceQty[i]==null)pay.pieceQty[i]=1;const r=rateFor(curTrade(),i);if(r!=null&&pay.pieceAmounts[i]==null)pay.pieceAmounts[i]=r;}else{delete pay.pieceItems[i];delete pay.pieceQty[i];delete pay.pieceAmounts[i];}renderPay();}
-function rcSetQty(i,v){pay.pieceQty[i]=v===''?1:(parseFloat(v)||0);updateTotal();}
-function rcSetAmt(i,v){pay.pieceAmounts[i]=parseFloat(v)||0;updateTotal();}
-document.getElementById('cbHours').onchange=function(){pay.hoursOn=this.checked;if(this.checked&&!pay.hourlyRate)pay.hourlyRate=hourlyForTier();else if(!this.checked)pay.hours=0;renderPay();};
-document.getElementById('cbPiece').onchange=function(){pay.pieceOn=this.checked;if(!this.checked){pay.pieceItems={};pay.pieceQty={};pay.pieceAmounts={};}renderPay();};
-document.getElementById('division').addEventListener('change',()=>{if(pay.pieceOn){pay.pieceItems={};pay.pieceQty={};pay.pieceAmounts={};}renderPay();});
-renderPay();
-
-document.getElementById('saveBtn').onclick=()=>{
-    const origJob=document.getElementById('origJob').value.trim();
-    const customerName=document.getElementById('customerName').value.trim();
-    const reason=document.getElementById('reason').value.trim();
-    if(!origJob){toast(t('t_needjob'),'#dc2626');return;}
-    if(!reason){toast(t('t_needreason'),'#dc2626');return;}
-    const dateStr=document.getElementById('recallDate').value||dkOf(new Date());
-    const d=new Date(dateStr+'T12:00:00');
-    const rec={
-        originalJobNumber:origJob,
-        customerName,
-        division:document.getElementById('division').value,
-        recallReason:reason,
-        faultType,
-        notes:document.getElementById('notes').value.trim(),
-        loggedByName:sess.name||'',loggedById:sess.personId||'',
-        // original-install linkage (attribution for recall-rate)
-        originalPersonId: matchedJob?matchedJob.personId:null,
-        originalInstallerName: matchedJob?matchedJob.installerName:null,
-        originalCallId: matchedJob?matchedJob._id:null,
-        originalDateKey: matchedJob?matchedJob._dk:null,
-        linked: !!matchedJob,
-        // recall-work pay for the tech who fixed it (flows to the weekly turn-in)
-        payTrade: document.getElementById('division').value,
-        workerTier: workerTier,
-        hoursOn: !!pay.hoursOn,
-        pieceOn: !!pay.pieceOn,
-        hours: pay.hoursOn?(parseFloat(pay.hours)||0):0,
-        hourlyRate: pay.hoursOn?(parseFloat(pay.hourlyRate)||0):0,
-        pieceItems: pay.pieceOn?pay.pieceItems:null,
-        pieceQty: pay.pieceOn?pay.pieceQty:null,
-        pieceAmounts: pay.pieceOn?pay.pieceAmounts:null,
-        date:dateStr,ts:d.getTime()
-    };
-    db.ref('recalls/'+dkOf(d)).push(rec,err=>{
-        if(err){toast(t('t_failed'),'#dc2626');return;}
-        toast(t('t_saved'));
-        setTimeout(()=>location.href='install_index.html',900);
+function renderCalendar(){
+    const week=getWeek(currentDate);
+    document.getElementById('weekRange').textContent=`${week[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} \u2014 ${week[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`.toUpperCase();
+    const grid=document.getElementById('calendarDays');grid.innerHTML='';
+    week.forEach(()=>{const slot=document.createElement('button');slot.className='cal-day';slot.innerHTML='<div class="cal-day-num" style="opacity:.2">\u2014</div>';grid.appendChild(slot);});
+    week.forEach((d,i)=>{
+        db.ref('recalls/'+dk(d)).once('value',snap=>{
+            const all=snap.val();const arr=all?Object.values(all).filter(r=>(r.personId||r.loggedById)===selected):[];
+            const n=arr.length;const dateKey=dk(d),isSel=selectedDate===dateKey;const btn=grid.children[i];
+            btn.className='cal-day'+(n>0?' has-calls':'')+(isSel?' selected':'');
+            btn.innerHTML=`<div class="cal-day-num">${d.getDate()}</div>${n>0?`<div class="cal-day-stat">${n} ${n>1?t('recalls_word'):t('recall_word')}</div>`:`<div class="cal-day-empty">\u2014</div>`}`;
+            btn.onclick=()=>{selectedDate=isSel?null:dateKey;renderCalendar();if(selectedDate)renderRecalls(d);else hideExtras();};
+        });
     });
-};
+}
 
-let _tt;function toast(msg,color){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color||'var(--green)';t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2600);}
+function renderRecalls(date){
+    document.getElementById('recallsSection').style.display='block';
+    document.getElementById('fabAdd').style.display='flex';
+    document.getElementById('addBottom').style.display='block';
+    document.getElementById('dayTitle').textContent=date.toLocaleDateString(LANG==='es'?'es-ES':'en-US',{weekday:'long',month:'short',day:'numeric'})+' \u2014 '+t('day_recalls');
+    const path='recalls/'+dk(date);
+    if(recallsRef)recallsRef.off();
+    recallsRef=db.ref(path);
+    recallsRef.on('value',snap=>{
+        const all=snap.val();
+        const arr=all?Object.keys(all).map(id=>({id,...all[id]})).filter(r=>(r.personId||r.loggedById)===selected):[];
+        arr.sort((a,b)=>(a.ts||0)-(b.ts||0));
+        recCache={};arr.forEach(r=>recCache[r.id]=r);
+        const c=document.getElementById('recallsList');
+        if(!arr.length){c.innerHTML='<p style="color:var(--muted);text-align:center;padding:32px;font-family:Oswald,sans-serif;letter-spacing:0.1em;text-transform:uppercase;font-size:13px;">'+t('none_day')+'</p>';}
+        else{c.innerHTML=arr.map(recallCard).join('');}
+        renderCalendar();
+    });
+    const blank=()=>({personId:selected,installerName:me.name,loggedById:selected,loggedByName:me.name,workerTier:me.tier,originalJobNumber:'',customerName:'',division:me.group,payTrade:me.group,recallReason:'',faultType:'install',notes:'',linked:false,originalPersonId:null,originalInstallerName:null,originalCallId:null,originalDateKey:null,hoursOn:false,pieceOn:false,hours:0,date:dk(date),ts:Date.now()});
+    const doAdd=()=>{db.ref(path).push().set(blank()).then(()=>{setTimeout(()=>{const cards=document.querySelectorAll('.call-card');if(cards.length)cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'center'});},200);});};
+    document.getElementById('addTop').onclick=doAdd;
+    document.getElementById('addBottom').onclick=doAdd;
+    document.getElementById('fabAdd').onclick=doAdd;
+}
+
+function recallCard(c){
+    const locked=!!c.approved;const dis=locked?' disabled':'';
+    const trade=c.division||c.payTrade||'plumbing';
+    const hoursOn=!!c.hoursOn, pieceOn=!!c.pieceOn;
+    const divSel=['underground','plumbing','hvac','electrical'].map(k=>`<option value="${k}"${trade===k?' selected':''}>${t('g_'+k)}</option>`).join('');
+    const faultBtns=[['install','\ud83d\udee0\ufe0f','f_install'],['manufacturer','\ud83c\udfed','f_manufacturer'],['other','\u2754','f_other']].map(([k,ic,lbl])=>`<div class="fault${c.faultType===k?' on':''}" onclick="updateRec('${c.id}','faultType','${k}')"><span class="f-icon">${ic}</span><div class="f-name">${t(lbl)}</div></div>`).join('');
+    let matchHtml='';
+    if(c.originalJobNumber){matchHtml = c.linked ? `<div class="match found"><div class="m-title">${t('m_found')}</div><div class="m-row">${t('m_by')} <b>${esc(c.originalInstallerName||'\u2014')}</b></div></div>` : `<div class="match none"><div class="m-title">${t('m_none')}</div></div>`;}
+    const pieceBlock=pieceOn?`<div class="section-label" style="margin-top:14px;">${esc(tradeName(trade))} \u2014 ${t('piecerate_work')}</div><div class="piece-list">${(RATE_SHEET[trade]||[]).map((row,i)=>{const on=c.pieceItems&&c.pieceItems[i];const amt=(c.pieceAmounts&&c.pieceAmounts[i]!=null)?c.pieceAmounts[i]:'';const qty=(c.pieceQty&&c.pieceQty[i]!=null&&c.pieceQty[i]!=='')?c.pieceQty[i]:1;const lineTot=on?((parseFloat(qty)||0)*(parseFloat(amt)||0)):0;return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked,'${trade}')"><span class="pr-label">${esc(row.name)}</span>${on?`<span class="pr-qty">\u00d7<input type="number" step="1" min="0" value="${esc(qty)}"${dis} onchange="setPieceQty('${c.id}',${i},this.value)"></span><span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}"${dis} onchange="setPieceAmount('${c.id}',${i},this.value)" placeholder="0.00"></span><span class="pr-line">${fmt$(lineTot)}</span>`:''}</div>`;}).join('')}</div>`:'';
+    const hoursBlock=hoursOn?`<div class="section-label" style="margin-top:14px;">${t('opt_hours')}</div><div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div class="field"><label>${t('lbl_hoursworked')}</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateRec('${c.id}','hours',parseFloat(this.value)||0)" placeholder="${t('ph_hours')}" /></div><div class="field"><label>${t('lbl_rate')}</label><input type="number" step="0.01" min="0" value="${c.hourlyRate!=null&&c.hourlyRate!==''?esc(c.hourlyRate):''}"${dis} onchange="updateRec('${c.id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${hourlyForTier()||'0.00'}" /></div></div>`:'';
+    const pay=jobPay(c);
+    const payLine=(hoursOn||pieceOn)?`<div class="job-pay">${t('job_pay')} <span>${fmt$(pay)}</span></div>`:'';
+    const headRight=locked?`<span class="lock-badge">${t('locked_badge')}</span>`:`<button class="del-call" onclick="deleteRecall('${c.id}')">${t('del')}</button>`;
+    return `<div class="call-card${locked?' approved':''}">
+        <div class="call-card-header"><div class="call-label">${t('recall_label')}</div>${headRight}</div>
+        ${locked?`<div class="lock-note">${t('locked_note')}</div>`:''}
+        <div class="field"><label>${t('lbl_origjob')}</label><input type="text" value="${esc(c.originalJobNumber)}"${dis} onchange="setOrigJob('${c.id}',this.value)" placeholder="${t('ph_origjob')}" /></div>
+        ${matchHtml}
+        <div class="field"><label>${t('lbl_customer')}</label><input type="text" value="${esc(c.customerName)}"${dis} onchange="updateRec('${c.id}','customerName',this.value)" placeholder="${t('ph_customer')}" /></div>
+        <div class="field"><label>${t('lbl_division')}</label><select${dis} onchange="changeDivision('${c.id}',this.value)">${divSel}</select></div>
+        <div class="field"><label>${t('lbl_reason')}</label><textarea rows="2"${dis} onchange="updateRec('${c.id}','recallReason',this.value)" placeholder="${t('ph_reason')}">${esc(c.recallReason)}</textarea></div>
+        <hr class="divider"><div class="section-label">${t('lbl_fault')}</div>
+        <div class="fault-grid">${faultBtns}</div>
+        <div class="field" style="margin-top:12px"><label>${t('lbl_notes')}</label><textarea rows="2"${dis} onchange="updateRec('${c.id}','notes',this.value)" placeholder="${t('ph_notes')}">${esc(c.notes)}</textarea></div>
+        <hr class="divider"><div class="section-label">${t('pay_section')}</div>
+        <div class="paytoggles"><label class="check-row pay-toggle"><input type="checkbox" ${hoursOn?'checked':''}${dis} onchange="toggleHours('${c.id}',this.checked)"><span>\ud83d\udcb5 ${t('opt_hours')}</span></label><label class="check-row pay-toggle"><input type="checkbox" ${pieceOn?'checked':''}${dis} onchange="togglePieceSection('${c.id}',this.checked)"><span>\ud83d\udd27 ${t('opt_piece')}</span></label></div>
+        ${hoursBlock}${pieceBlock}${payLine}
+    </div>`;
+}
+
+function curPath(){return 'recalls/'+selectedDate;}
+function updateRec(id,field,value){if(lockedRec(id))return;db.ref(`${curPath()}/${id}/${field}`).set(value);}
+function setOrigJob(id,val){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/originalJobNumber`).set(val);const hit=findInstallByJob(val);if(hit){const u={linked:true,originalPersonId:hit.personId,originalInstallerName:hit.installerName||null,originalCallId:hit._id,originalDateKey:hit._dk};db.ref(base).once('value',s=>{const r=s.val()||{};if(!r.customerName&&hit.customerName)u.customerName=hit.customerName;db.ref(base).update(u);});}else{db.ref(base).update({linked:false,originalPersonId:null,originalInstallerName:null,originalCallId:null,originalDateKey:null});}}
+function changeDivision(id,val){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/division`).set(val);db.ref(`${base}/payTrade`).set(val);db.ref(`${base}/pieceItems`).remove();db.ref(`${base}/pieceAmounts`).remove();db.ref(`${base}/pieceQty`).remove();}
+function toggleHours(id,on){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/hoursOn`).set(!!on);if(on){db.ref(`${base}/hourlyRate`).once('value',s=>{if(s.val()==null||s.val()==='')db.ref(`${base}/hourlyRate`).set(hourlyForTier());});}else{db.ref(`${base}/hours`).set(0);}}
+function togglePieceSection(id,on){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/pieceOn`).set(!!on);if(!on){db.ref(`${base}/pieceItems`).remove();db.ref(`${base}/pieceAmounts`).remove();db.ref(`${base}/pieceQty`).remove();}}
+function togglePiece(id,i,checked,trade){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const r=rateFor(trade,i);if(r!=null)db.ref(`${base}/pieceAmounts/${i}`).set(r);db.ref(`${base}/pieceQty/${i}`).once('value',s=>{if(s.val()==null)db.ref(`${base}/pieceQty/${i}`).set(1);});}else{db.ref(`${base}/pieceAmounts/${i}`).remove();db.ref(`${base}/pieceQty/${i}`).remove();}}
+function setPieceAmount(id,i,val){if(lockedRec(id))return;db.ref(`${curPath()}/${id}/pieceAmounts/${i}`).set(parseFloat(val)||0);}
+function setPieceQty(id,i,val){if(lockedRec(id))return;const q=val===''?1:(parseFloat(val)||0);db.ref(`${curPath()}/${id}/pieceQty/${i}`).set(q);}
+function deleteRecall(id){if(lockedRec(id)){alert(t('locked_note'));return;}if(confirm(t('confirm_del')))db.ref(`${curPath()}/${id}`).remove();}
+
+function hideExtras(){document.getElementById('recallsSection').style.display='none';document.getElementById('fabAdd').style.display='none';document.getElementById('addBottom').style.display='none';if(recallsRef){recallsRef.off();recallsRef=null;}}
+document.getElementById('prevWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()-7*864e5);selectedDate=null;hideExtras();renderCalendar();};
+document.getElementById('nextWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()+7*864e5);selectedDate=null;hideExtras();renderCalendar();};
 </script>
 </body>
 </html>

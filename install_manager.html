@@ -97,6 +97,23 @@
         .ti-meta{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--text);text-transform:uppercase;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
         .ti-edit{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
         .ti-lbl{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+        .inst-card{background:var(--s1);border:1px solid var(--wire);margin-bottom:8px;}
+        .inst-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:transparent;border:none;border-left:3px solid var(--red);padding:16px 18px;cursor:pointer;text-align:left;transition:background .15s;}
+        .inst-head:hover{background:var(--s2);}
+        .inst-name{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text);}
+        .inst-name .chev{color:var(--red);font-size:13px;margin-right:4px;}
+        .inst-stats{display:flex;align-items:center;gap:18px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+        .inst-stats .pay{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.5px;color:var(--green);}
+        .inst-stats .allok{color:var(--green);}
+        .inst-body{padding:6px 14px 14px;border-left:3px solid var(--red);}
+        .ti-line{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--s2);border:1px solid var(--wire);border-left:3px solid var(--amber);padding:11px 14px;margin-bottom:6px;}
+        .ti-line.ap{border-left-color:var(--green);}
+        .ti-line-main{flex:1;min-width:200px;}
+        .ti-line-meta{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+        .ti-line-work{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4;}
+        .ti-line-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+        .ti-line-right .ti-pay{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green);letter-spacing:.5px;}
+        @media(max-width:560px){.inst-stats{gap:12px;width:100%;justify-content:space-between;}.ti-line-right{width:100%;justify-content:space-between;}}
         .ti-row .trade-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
         @media(max-width:560px){.ti-row .trade-grid{grid-template-columns:1fr;}}
         .ti-row .check-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s3);border:1px solid var(--wire);cursor:pointer;}
@@ -391,6 +408,17 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
     </div>
 </div></div>
 
+<!-- EDIT TURN-IN MODAL -->
+<div id="editModal" class="modal">
+    <div class="modal-box" style="max-width:560px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+            <div><div class="m-title">Edit Turn-In</div><div style="font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px" id="editModalSub"></div></div>
+            <button class="btn btn-outline" onclick="closeEdit()">Done</button>
+        </div>
+        <div id="editModalBody"></div>
+    </div>
+</div>
+
 <!-- LOGIN MODAL -->
 <div id="loginModal" class="modal">
     <div class="modal-box">
@@ -489,11 +517,12 @@ function changePin(){
 
 // ── DATA ──
 let people={},logs={},recalls={},logins={},RATES={items:{},hourlyTiers:{}},currentTab='roster';
+let expandedInstaller=null, editOpen=null;
 function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function initPortal(){
     db.ref('installPeople').on('value',s=>{people=s.val()||{};renderCurrent();});
-    db.ref('installLogs').on('value',s=>{logs=s.val()||{};renderCurrent();});
-    db.ref('recalls').on('value',s=>{recalls=s.val()||{};renderCurrent();});
+    db.ref('installLogs').on('value',s=>{logs=s.val()||{};renderCurrent();if(editOpen)renderEditModal();});
+    db.ref('recalls').on('value',s=>{recalls=s.val()||{};renderCurrent();if(editOpen)renderEditModal();});
     db.ref('installTechLogins').on('value',s=>{logins=s.val()||{};if(currentTab==='logins')renderLogins();});
     db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourlyTiers:v.hourlyTiers||{}};if(!v.items||!Object.keys(v.items).length){seedStandardRates(true);}if(currentTab==='rates'||currentTab==='turnins'||currentTab==='scorecards')renderCurrent();});
 }
@@ -629,12 +658,13 @@ function renderInstalls(){
 
 // ── TURN-INS (hours / piece rate) ──
 function eachLogFull(cb,cutoff){Object.entries(logs).forEach(([dk,day])=>Object.entries(day).forEach(([id,r])=>{if((r.ts||0)>=cutoff)cb(r,id,dk);}));}
+function eachRecallPay(cb,cutoff){Object.entries(recalls).forEach(([dk,day])=>Object.entries(day).forEach(([id,r])=>{if((r.ts||0)>=cutoff&&(r.hoursOn||r.pieceOn))cb(r,id,dk,(r.personId||r.loggedById));}));}
 function pieceCount(r){return r.pieceItems?Object.keys(r.pieceItems).filter(i=>r.pieceItems[i]).length:0;}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function renderTurnins(){
     const cutoff=cutoffFrom(document.getElementById('turninRange').value);
-    let totHours=0,totPiece=0,nApproved=0,nPending=0,nInstalls=0,totPay=0;
+    let totHours=0,totPiece=0,nApproved=0,nPending=0,nInstalls=0,nRecalls=0,totPay=0;
     const per={},tr={};DIVS.forEach(([k])=>tr[k]={n:0,hours:0,piece:0,pay:0});
     eachLogFull((r)=>{
         nInstalls++;
@@ -643,67 +673,133 @@ function renderTurnins(){
         const pay=installPay(r);
         totHours+=h;totPiece+=pcs;totPay+=pay;
         if(r.approved)nApproved++;else nPending++;
-        const p=per[r.personId]||(per[r.personId]={name:(people[r.personId]||{}).name||'—',group:(people[r.personId]||{}).group||'',n:0,hours:0,piece:0,approved:0,pay:0});
+        const p=per[r.personId]||(per[r.personId]={name:(people[r.personId]||{}).name||'—',group:(people[r.personId]||{}).group||'',n:0,recalls:0,hours:0,piece:0,approved:0,pay:0});
         p.n++;p.hours+=h;p.piece+=pcs;p.pay+=pay;if(r.approved)p.approved++;
         const t=tr[r.trade];if(t){t.n++;t.hours+=h;t.piece+=pcs;t.pay+=pay;}
     },cutoff);
+    eachRecallPay((r,id,dk,pid)=>{
+        const trade=r.payTrade||r.division;
+        const h=parseFloat(r.hours)||0;const pcs=pieceCount(r);const pay=installPay(r);
+        totHours+=h;totPiece+=pcs;totPay+=pay;nRecalls++;
+        if(r.approved)nApproved++;else nPending++;
+        const p=per[pid]||(per[pid]={name:(people[pid]||{}).name||'—',group:(people[pid]||{}).group||'',n:0,recalls:0,hours:0,piece:0,approved:0,pay:0});
+        p.recalls++;p.hours+=h;p.piece+=pcs;p.pay+=pay;if(r.approved)p.approved++;
+        const t=tr[trade];if(t){t.hours+=h;t.piece+=pcs;t.pay+=pay;}
+    },cutoff);
+    const nTotal=nInstalls+nRecalls;
     document.getElementById('turninStats').innerHTML=`
         <div class="stat-block"><div class="stat-lbl">${t('stat_totalpay')}</div><div class="stat-num" style="color:var(--green)">${fmt$(totPay)}</div><div class="stat-meta">${t('meta_inrange')}</div></div>
         <div class="stat-block"><div class="stat-lbl">${t('stat_totalhours')}</div><div class="stat-num">${Math.round(totHours*100)/100}</div><div class="stat-meta">${t('meta_hourly')}</div></div>
-        <div class="stat-block"><div class="stat-lbl">${t('stat_pieceitems')}</div><div class="stat-num">${totPiece}</div><div class="stat-meta">${t('meta_tasks')}</div></div>
-        <div class="stat-block"><div class="stat-lbl">${t('stat_approved')}</div><div class="stat-num">${nApproved}/${nInstalls}</div><div class="stat-meta">${nPending} ${t('meta_pending')}</div></div>`;
-    const pr=Object.values(per).sort((a,b)=>b.pay-a.pay);
-    document.getElementById('turninByPerson').innerHTML=pr.length?pr.map(p=>`<tr><td>${esc(p.name)}</td><td><span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></td><td class="r">${p.n}</td><td class="r">${Math.round(p.hours*100)/100}</td><td class="r">${p.piece}</td><td class="r" style="color:var(--green);font-weight:600">${fmt$(p.pay)}</td><td class="r">${p.approved}/${p.n}</td></tr>`).join(''):'<tr><td colspan="7" class="empty-note">No turn-ins in range.</td></tr>';
+        <div class="stat-block"><div class="stat-lbl">${t('stat_pieceitems')}</div><div class="stat-num">${totPiece}</div><div class="stat-meta">${nRecalls?nRecalls+' recall'+(nRecalls!==1?'s':''):t('meta_tasks')}</div></div>
+        <div class="stat-block"><div class="stat-lbl">${t('stat_approved')}</div><div class="stat-num">${nApproved}/${nTotal}</div><div class="stat-meta">${nPending} ${t('meta_pending')}</div></div>`;
+    const pr=Object.values(per).filter(p=>p.n>0||p.recalls>0).sort((a,b)=>b.pay-a.pay);
+    document.getElementById('turninByPerson').innerHTML=pr.length?pr.map(p=>`<tr><td>${esc(p.name)}${p.recalls?` <span class="pill" style="color:var(--red);border-color:rgba(220,38,38,.4)">${p.recalls}&#8617;</span>`:''}</td><td><span class="pill ${p.group}">${GNAME[p.group]||p.group}</span></td><td class="r">${p.n}</td><td class="r">${Math.round(p.hours*100)/100}</td><td class="r">${p.piece}</td><td class="r" style="color:var(--green);font-weight:600">${fmt$(p.pay)}</td><td class="r">${p.approved}/${p.n+p.recalls}</td></tr>`).join(''):'<tr><td colspan="7" class="empty-note">No turn-ins in range.</td></tr>';
     document.getElementById('turninByTrade').innerHTML=DIVS.map(([k,l])=>{const t=tr[k];return `<tr><td><span class="pill ${k}">${TRADE_NAMES[k]}</span></td><td class="r">${t.n}</td><td class="r">${Math.round(t.hours*100)/100}</td><td class="r">${t.piece}</td><td class="r" style="color:var(--green);font-weight:600">${fmt$(t.pay)}</td></tr>`;}).join('');
-    // detail grouped by installer
+    // detail grouped by installer (installs + payable recalls)
     const groups={};
-    eachLogFull((r,id,dk)=>{(groups[r.personId]=groups[r.personId]||[]).push({r,id,dk});},cutoff);
+    eachLogFull((r,id,dk)=>{(groups[r.personId]=groups[r.personId]||[]).push({r,id,dk,kind:'install'});},cutoff);
+    eachRecallPay((r,id,dk,pid)=>{(groups[pid]=groups[pid]||[]).push({r,id,dk,kind:'recall'});},cutoff);
     const order=Object.keys(groups).sort((a,b)=>((people[a]||{}).name||'').localeCompare((people[b]||{}).name||''));
     const wrap=document.getElementById('turninDetail');
     if(!order.length){wrap.innerHTML='<div class="empty-note">No turn-ins in range.</div>';return;}
     wrap.innerHTML=order.map(pid=>{
         const name=(people[pid]||{}).name||'—';
-        const rows=groups[pid].sort((a,b)=>(b.r.ts||0)-(a.r.ts||0)).map(({r,id,dk})=>turninRow(r,id,dk)).join('');
-        return `<div class="sec-label" style="margin-top:18px">${esc(name)} · ${groups[pid].length} install${groups[pid].length>1?'s':''}</div>${rows}`;
+        const g=groups[pid];
+        const tot=g.reduce((s,x)=>s+installPay(x.r),0);
+        const appr=g.filter(x=>x.r.approved).length;
+        const nI=g.filter(x=>x.kind==='install').length, nR=g.filter(x=>x.kind==='recall').length;
+        const open=expandedInstaller===pid;
+        const lines=open?g.sort((a,b)=>(b.r.ts||0)-(a.r.ts||0)).map(x=>turninLine(x.r,x.id,x.dk,x.kind)).join(''):'';
+        const cnt=`${nI} install${nI!==1?'s':''}`+(nR?` · ${nR} recall${nR!==1?'s':''}`:'');
+        return `<div class="inst-card">
+            <button class="inst-head" onclick="toggleInstaller('${pid}')">
+                <div class="inst-name"><span class="chev">${open?'▾':'▸'}</span> ${esc(name)}</div>
+                <div class="inst-stats"><span>${cnt}</span><span class="pay">${fmt$(tot)}</span><span class="${appr===g.length?'allok':''}">${appr}/${g.length} ✓</span></div>
+            </button>
+            ${open?`<div class="inst-body">${lines}</div>`:''}
+        </div>`;
     }).join('');
 }
 
-function turninRow(r,id,dk){
+function toggleInstaller(pid){expandedInstaller=expandedInstaller===pid?null:pid;renderTurnins();}
+
+// compact one-line summary of the work on a turn-in (no inline checklist)
+function workSummary(r){
+    const parts=[];
+    const h=parseFloat(r.hours)||0;if(h)parts.push(h+' hr'+(h!==1?'s':''));
+    if(r.pieceItems){(RATE_SHEET[r.trade]||[]).forEach((row,i)=>{if(r.pieceItems[i]){const q=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?parseFloat(r.pieceQty[i]):1;parts.push(row.name+(q&&q!==1?' ×'+q:''));}});}
+    return parts.length?parts.join(' · '):'—';
+}
+
+function turninLine(r,id,dk,kind){
     const ap=!!r.approved;
-    const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${r.trade===t?' selected':''}>${TRADE_NAMES[t]}</option>`).join('');
-    const hoursOn=r.hoursOn||r.payType==='hours';
-    const pieceOn=r.pieceOn||r.payType==='piece';
-    const tier=(people[r.personId]||{}).tier||'lead1';
-    const hoursEdit=hoursOn?`<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap"><label class="ti-lbl">Hours</label><input type="number" step="0.25" min="0" value="${r.hours?esc(r.hours):''}" onchange="mUpdate('${dk}','${id}','hours',parseFloat(this.value)||0)" placeholder="Hours" style="max-width:100px" /><label class="ti-lbl">Rate $/hr</label><input type="number" step="0.01" min="0" value="${r.hourlyRate!=null&&r.hourlyRate!==''?esc(r.hourlyRate):''}" onchange="mUpdate('${dk}','${id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${(RATES.hourlyTiers&&RATES.hourlyTiers[tier])||HOURLY_TIERS[tier]}" style="max-width:100px" /></div>`:'';
-    const pieceEdit=pieceOn?`<div style="margin-top:8px">${(RATE_SHEET[r.trade]||[]).map((row,i)=>{const on=r.pieceItems&&r.pieceItems[i];const qty=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?r.pieceQty[i]:1;const amt=(r.pieceAmounts&&r.pieceAmounts[i]!=null)?r.pieceAmounts[i]:'';return `<label class="check-row" style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><input type="checkbox" ${on?'checked':''} onchange="mTogglePiece('${dk}','${id}',${i},this.checked,'${r.trade}','${tier}')"><span style="flex:1">${esc(row.name)}</span>${on?`<span style="color:var(--muted);font-size:12px">×</span><input type="number" step="1" min="0" value="${esc(qty)}" onchange="mUpdate('${dk}','${id}','pieceQty/${i}',parseFloat(this.value)||0)" style="max-width:56px;text-align:center" /><span style="color:var(--green)">$</span><input type="number" step="0.01" min="0" value="${amt}" onchange="mUpdate('${dk}','${id}','pieceAmounts/${i}',parseFloat(this.value)||0)" style="max-width:80px;text-align:right" />`:''}</label>`;}).join('')}</div>`:'';
+    const isR=kind==='recall';
+    const col=isR?'recalls':'installLogs';
+    const trade=isR?(r.payTrade||r.division):r.trade;
+    const job=isR?(r.originalJobNumber||'—'):(r.jobNumber||'—');
+    const rr=isR?{...r,trade}:r;
     const dateTxt=new Date(r.ts||Date.parse(dk)).toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const pay=installPay(r);
-    return `<div class="ti-row ${ap?'ap':'pend'}">
-        <div class="ti-top">
-            <div class="ti-meta">${dateTxt} · #${esc(r.jobNumber||'—')}${r.customerName?' · '+esc(r.customerName):''} <span class="pill ${r.trade}">${TRADE_NAMES[r.trade]||r.trade||''}</span>${r.continuing?' <span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">&#8635; Cont.</span>':''} ${ap?'<span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">✓ Approved</span>':'<span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Pending</span>'} <span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">${fmt$(pay)}</span></div>
-            <button class="btn ${ap?'btn-outline':'btn-red'}" onclick="mApprove('${dk}','${id}',${ap?'false':'true'})">${ap?'Unapprove':'Approve'}</button>
+    return `<div class="ti-line ${ap?'ap':'pend'}">
+        <div class="ti-line-main">
+            <div class="ti-line-meta">${dateTxt} · #${esc(job)}${r.customerName?' · '+esc(r.customerName):''} <span class="pill ${trade}">${TRADE_NAMES[trade]||trade||''}</span>${isR?'<span class="pill" style="color:var(--red);border-color:rgba(220,38,38,.4)">&#8617; Recall</span>':''}${ap?'<span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">✓</span>':'<span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Pending</span>'}</div>
+            <div class="ti-line-work">${esc((isR&&r.recallReason?r.recallReason+' — ':'')+workSummary(rr))}</div>
         </div>
-        <div class="ti-edit">
-            <label class="ti-lbl">Trade</label><select onchange="mChangeTrade('${dk}','${id}',this.value)" style="max-width:180px">${tradeSel}</select>
-            <label class="check-row" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px"><input type="checkbox" ${hoursOn?'checked':''} onchange="mToggleHours('${dk}','${id}',this.checked,'${tier}')"><span>💵 Hours</span></label>
-            <label class="check-row" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px"><input type="checkbox" ${pieceOn?'checked':''} onchange="mTogglePieceSection('${dk}','${id}',this.checked)"><span>🔧 Piece</span></label>
+        <div class="ti-line-right">
+            <span class="ti-pay">${fmt$(pay)}</span>
+            <button class="btn btn-outline" onclick="openEdit('${col}','${dk}','${id}')">Edit</button>
+            <button class="btn ${ap?'btn-outline':'btn-red'}" onclick="mApprove('${col}','${dk}','${id}',${ap?'false':'true'})">${ap?'Unapprove':'Approve'}</button>
         </div>
-        ${hoursEdit}${pieceEdit}
     </div>`;
 }
 
-function mUpdate(dk,id,f,v){db.ref(`installLogs/${dk}/${id}/${f}`).set(v);}
-function mChangeTrade(dk,id,v){db.ref(`installLogs/${dk}/${id}/trade`).set(v);db.ref(`installLogs/${dk}/${id}/pieceItems`).remove();db.ref(`installLogs/${dk}/${id}/pieceAmounts`).remove();db.ref(`installLogs/${dk}/${id}/pieceQty`).remove();}
-function mToggleHours(dk,id,on,tier){const base=`installLogs/${dk}/${id}`;db.ref(base+'/hoursOn').set(!!on);if(on){db.ref(base+'/hourlyRate').once('value',s=>{if(s.val()==null||s.val()===''){const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tier])||HOURLY_TIERS[tier];db.ref(base+'/hourlyRate').set(parseFloat(v)||0);}});}else{db.ref(base+'/hours').set(0);}}
-function mTogglePieceSection(dk,id,on){const base=`installLogs/${dk}/${id}`;db.ref(base+'/pieceOn').set(!!on);if(!on){db.ref(base+'/pieceItems').remove();db.ref(base+'/pieceAmounts').remove();db.ref(base+'/pieceQty').remove();}}
-function mTogglePiece(dk,id,i,checked,trade,tier){const base=`installLogs/${dk}/${id}`;db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];let rate=(saved&&saved[tier]!=null&&saved[tier]!=='')?saved[tier]:((RATE_SHEET[trade]&&RATE_SHEET[trade][i])?RATE_SHEET[trade][i][tier]:null);if(rate!=null)db.ref(`${base}/pieceAmounts/${i}`).set(parseFloat(rate)||0);db.ref(`${base}/pieceQty/${i}`).once('value',s=>{if(s.val()==null)db.ref(`${base}/pieceQty/${i}`).set(1);});}else{db.ref(`${base}/pieceAmounts/${i}`).remove();db.ref(`${base}/pieceQty/${i}`).remove();}}
-function mApprove(dk,id,val){db.ref(`installLogs/${dk}/${id}`).update({approved:val,approvedTs:val?Date.now():null,approvedBy:val?'manager':null});toast(val?'Approved ✓ — locked':'Unapproved');}
+// ── EDIT MODAL ──
+function openEdit(col,dk,id){editOpen={col,dk,id};document.getElementById('editModal').style.display='flex';renderEditModal();}
+function closeEdit(){editOpen=null;document.getElementById('editModal').style.display='none';}
+function renderEditModal(){
+    if(!editOpen)return;const {col,dk,id}=editOpen;const src=col==='recalls'?recalls:logs;const r=(src[dk]||{})[id];
+    if(!r){closeEdit();return;}
+    const isR=col==='recalls';
+    const job=isR?(r.originalJobNumber||'—'):(r.jobNumber||'—');
+    document.getElementById('editModalSub').textContent=`${isR?'↩ Recall · ':''}#${job}${r.customerName?' · '+r.customerName:''} · ${new Date(r.ts||Date.parse(dk)).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+    document.getElementById('editModalBody').innerHTML=editorHTML(r,id,dk,col);
+}
+function editorHTML(r,id,dk,col){
+    const isR=col==='recalls';
+    const trade=isR?(r.payTrade||r.division):r.trade;
+    const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${trade===t?' selected':''}>${TRADE_NAMES[t]}</option>`).join('');
+    const hoursOn=r.hoursOn||r.payType==='hours';
+    const pieceOn=r.pieceOn||r.payType==='piece';
+    const tier=(people[r.personId||r.loggedById]||{}).tier||r.workerTier||'lead1';
+    const hoursEdit=hoursOn?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><div class="field" style="margin:0"><label class="ti-lbl">Hours</label><input type="number" step="0.25" min="0" value="${r.hours?esc(r.hours):''}" onchange="mUpdate('${col}','${dk}','${id}','hours',parseFloat(this.value)||0)" placeholder="Hours" /></div><div class="field" style="margin:0"><label class="ti-lbl">Rate $/hr</label><input type="number" step="0.01" min="0" value="${r.hourlyRate!=null&&r.hourlyRate!==''?esc(r.hourlyRate):''}" onchange="mUpdate('${col}','${dk}','${id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${(RATES.hourlyTiers&&RATES.hourlyTiers[tier])||HOURLY_TIERS[tier]}" /></div></div>`:'';
+    const pieceEdit=pieceOn?`<div style="margin-top:10px">${(RATE_SHEET[trade]||[]).map((row,i)=>{const on=r.pieceItems&&r.pieceItems[i];const qty=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?r.pieceQty[i]:1;const amt=(r.pieceAmounts&&r.pieceAmounts[i]!=null)?r.pieceAmounts[i]:'';return `<label class="check-row" style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><input type="checkbox" ${on?'checked':''} onchange="mTogglePiece('${col}','${dk}','${id}',${i},this.checked,'${trade}','${tier}')"><span style="flex:1">${esc(row.name)}</span>${on?`<span style="color:var(--muted);font-size:12px">×</span><input type="number" step="1" min="0" value="${esc(qty)}" onchange="mUpdate('${col}','${dk}','${id}','pieceQty/${i}',parseFloat(this.value)||0)" style="max-width:56px;text-align:center" /><span style="color:var(--green)">$</span><input type="number" step="0.01" min="0" value="${amt}" onchange="mUpdate('${col}','${dk}','${id}','pieceAmounts/${i}',parseFloat(this.value)||0)" style="max-width:80px;text-align:right" />`:''}</label>`;}).join('')}</div>`:'';
+    const ap=!!r.approved;
+    return `<div class="ti-edit" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+            <label class="ti-lbl">Trade</label><select onchange="mChangeTrade('${col}','${dk}','${id}',this.value)" style="max-width:180px">${tradeSel}</select>
+            <label class="check-row" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px"><input type="checkbox" ${hoursOn?'checked':''} onchange="mToggleHours('${col}','${dk}','${id}',this.checked,'${tier}')"><span>💵 Hours</span></label>
+            <label class="check-row" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px"><input type="checkbox" ${pieceOn?'checked':''} onchange="mTogglePieceSection('${col}','${dk}','${id}',this.checked)"><span>🔧 Piece</span></label>
+        </div>
+        ${hoursEdit}${pieceEdit}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--wire)">
+            <div style="font-family:'Oswald',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-size:13px">Pay <span style="color:var(--green);font-weight:700">${fmt$(installPay(r))}</span></div>
+            <button class="btn ${ap?'btn-outline':'btn-red'}" onclick="mApprove('${col}','${dk}','${id}',${ap?'false':'true'})">${ap?'Unapprove':'Approve'}</button>
+        </div>`;
+}
+
+function mUpdate(col,dk,id,f,v){db.ref(`${col}/${dk}/${id}/${f}`).set(v);}
+function mChangeTrade(col,dk,id,v){const base=`${col}/${dk}/${id}`;if(col==='recalls'){db.ref(base+'/division').set(v);db.ref(base+'/payTrade').set(v);}else{db.ref(base+'/trade').set(v);}db.ref(base+'/pieceItems').remove();db.ref(base+'/pieceAmounts').remove();db.ref(base+'/pieceQty').remove();}
+function mToggleHours(col,dk,id,on,tier){const base=`${col}/${dk}/${id}`;db.ref(base+'/hoursOn').set(!!on);if(on){db.ref(base+'/hourlyRate').once('value',s=>{if(s.val()==null||s.val()===''){const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tier])||HOURLY_TIERS[tier];db.ref(base+'/hourlyRate').set(parseFloat(v)||0);}});}else{db.ref(base+'/hours').set(0);}}
+function mTogglePieceSection(col,dk,id,on){const base=`${col}/${dk}/${id}`;db.ref(base+'/pieceOn').set(!!on);if(!on){db.ref(base+'/pieceItems').remove();db.ref(base+'/pieceAmounts').remove();db.ref(base+'/pieceQty').remove();}}
+function mTogglePiece(col,dk,id,i,checked,trade,tier){const base=`${col}/${dk}/${id}`;db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];let rate=(saved&&saved[tier]!=null&&saved[tier]!=='')?saved[tier]:((RATE_SHEET[trade]&&RATE_SHEET[trade][i])?RATE_SHEET[trade][i][tier]:null);if(rate!=null)db.ref(`${base}/pieceAmounts/${i}`).set(parseFloat(rate)||0);db.ref(`${base}/pieceQty/${i}`).once('value',s=>{if(s.val()==null)db.ref(`${base}/pieceQty/${i}`).set(1);});}else{db.ref(`${base}/pieceAmounts/${i}`).remove();db.ref(`${base}/pieceQty/${i}`).remove();}}
+function mApprove(col,dk,id,val){db.ref(`${col}/${dk}/${id}`).update({approved:val,approvedTs:val?Date.now():null,approvedBy:val?'manager':null});toast(val?'Approved ✓ — locked':'Unapproved');}
 function approveAllFiltered(){
     const cutoff=cutoffFrom(document.getElementById('turninRange').value);
-    const updates=[];eachLogFull((r,id,dk)=>{if(!r.approved)updates.push({dk,id});},cutoff);
+    const updates=[];
+    eachLogFull((r,id,dk)=>{if(!r.approved)updates.push({col:'installLogs',dk,id});},cutoff);
+    eachRecallPay((r,id,dk)=>{if(!r.approved)updates.push({col:'recalls',dk,id});},cutoff);
     if(!updates.length){toast('Nothing to approve','#dc2626');return;}
     if(!confirm(`Approve and lock ${updates.length} turn-in${updates.length>1?'s':''}? Techs won't be able to edit them.`))return;
-    updates.forEach(u=>db.ref(`installLogs/${u.dk}/${u.id}`).update({approved:true,approvedTs:Date.now(),approvedBy:'manager'}));
+    updates.forEach(u=>db.ref(`${u.col}/${u.dk}/${u.id}`).update({approved:true,approvedTs:Date.now(),approvedBy:'manager'}));
     toast(`Approved ${updates.length} ✓`);
 }
 // ── TRENDS ──
