@@ -56,6 +56,23 @@
         .btn{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:16px 24px;border:none;cursor:pointer;}
         .btn-primary{background:var(--red);color:#fff;width:100%;}
         .btn-primary:hover{background:var(--red2);}
+        .toggle{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--wire);padding:13px 14px;cursor:pointer;transition:border-color .15s;}
+        .toggle:hover{border-color:var(--wire2);}
+        .toggle input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
+        .toggle span{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text);}
+        .pay-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s2);border:1px solid var(--wire);margin-bottom:6px;}
+        .pay-row.on{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.07);}
+        .pay-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
+        .pay-row .pr-label{flex:1;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--text);line-height:1.3;}
+        .pay-row .pr-qty,.pay-row .pr-amt{display:flex;align-items:center;gap:3px;font-family:'Oswald',sans-serif;font-size:14px;color:var(--green);font-weight:600;flex-shrink:0;}
+        .pay-row .pr-qty{color:var(--muted);}
+        .pay-row .pr-qty input{width:54px;background:var(--s1);border:1px solid var(--wire2);color:var(--text);padding:8px;font-size:14px;text-align:center;}
+        .pay-row .pr-amt input{width:88px;background:var(--s1);border:1px solid var(--wire2);color:var(--text);padding:8px 10px;font-size:14px;text-align:right;}
+        .pay-row .pr-line{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.5px;color:var(--green);flex-shrink:0;min-width:72px;text-align:right;}
+        .job-pay{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:14px 16px;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.35);font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+        .job-pay span{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:var(--green);}
+        .pay-hours-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px;}
+        @media(max-width:560px){.paytoggles{grid-template-columns:1fr!important;}.pay-row{flex-wrap:wrap;}.pay-hours-grid{grid-template-columns:1fr;}}
         #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--green);color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;z-index:9999;transition:transform .3s;}
         #toast.show{transform:translateX(-50%) translateY(0);}
         @media (max-width:640px){
@@ -118,7 +135,16 @@ const I18N={
  t_needjob:{en:'Enter the original job number',es:'Ingresa el número de trabajo original'},
  t_needreason:{en:'Describe what the recall was for',es:'Describe para qué fue la rellamada'},
  t_saved:{en:'Recall logged ✓',es:'Rellamada registrada ✓'},
- t_failed:{en:'Save failed — check connection',es:'Error al guardar — revisa la conexión'}
+ t_failed:{en:'Save failed — check connection',es:'Error al guardar — revisa la conexión'},
+ sec_pay:{en:'Recall Pay',es:'Pago de Rellamada'},
+ pay_hint:{en:"Pay for the work done on this callback. Rates fill in from the division and the tech's tier — adjust per job.",es:'Pago por el trabajo de esta rellamada. Las tarifas se llenan según la división y el nivel del técnico — ajusta por trabajo.'},
+ opt_hours:{en:'Hours',es:'Horas'},
+ opt_piece:{en:'Piece Rate',es:'Por Pieza'},
+ lbl_hoursworked:{en:'Hours Worked',es:'Horas Trabajadas'},
+ ph_hours:{en:'e.g. 2.5',es:'ej. 2.5'},
+ lbl_rate:{en:'Rate ($/hr)',es:'Tarifa ($/hr)'},
+ piecerate_work:{en:'Piece-Rate Work',es:'Trabajo Por Pieza'},
+ job_pay:{en:'Recall Pay',es:'Pago de Rellamada'}
 };
 let LANG=localStorage.getItem('aitLang')||'en';
 function t(k){const e=I18N[k];return e?(e[LANG]||e.en):k;}
@@ -166,6 +192,16 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
         <div class="field" style="margin-top:18px;"><label data-i18n="lbl_notes">Notes</label><textarea id="notes" data-i18n-ph="ph_notes" placeholder="Anything else about the callback"></textarea></div>
     </div>
 
+    <div class="card">
+        <div class="sec-lbl" data-i18n="sec_pay">Recall Pay</div>
+        <div style="font-size:12px;color:var(--muted);margin:-8px 0 16px;line-height:1.5" data-i18n="pay_hint">Pay for the work done on this callback. Rates fill in from the division and the tech's tier — adjust per job.</div>
+        <div class="paytoggles" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+            <label class="toggle" id="tgHours"><input type="checkbox" id="cbHours"><span>💵 <span data-i18n="opt_hours">Hours</span></span></label>
+            <label class="toggle" id="tgPiece"><input type="checkbox" id="cbPiece"><span>🔧 <span data-i18n="opt_piece">Piece Rate</span></span></label>
+        </div>
+        <div id="payBody"></div>
+    </div>
+
     <button class="btn btn-primary" id="saveBtn" data-i18n="btn_save">↩️ Save Recall</button>
 </div>
 <div id="toast"></div>
@@ -184,6 +220,60 @@ firebase.initializeApp({
 const db=firebase.database();
 const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing Install',hvac:'HVAC Install',electrical:'Electrical Install'};
 
+// ════ TIERED PIECE-RATE SHEETS (same source as the log page) ════
+const TIERS=[['helper1','Helper 1'],['helper2','Helper 2'],['helper3','Helper 3'],['lead1','Lead 1'],['lead2','Lead 2'],['lead3','Lead 3']];
+const HOURLY_TIERS={helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40};
+const RATE_SHEET={
+    hvac:[
+        {name:'Swap',helper1:120,helper2:160,helper3:200,lead1:220,lead2:240,lead3:280},
+        {name:'Full / Add',helper1:220,helper2:240,helper3:280,lead1:300,lead2:360,lead3:400},
+        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180}
+    ],
+    plumbing:[
+        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180},
+        {name:'Water/Drain Repipe > 800 sq ft',helper1:80,helper2:120,helper3:160,lead1:180,lead2:220,lead3:260},
+        {name:'Water/Drain Repipe — 2 bath or less',helper1:280,helper2:320,helper3:360,lead1:400,lead2:440,lead3:480},
+        {name:'Water/Drain Repipe — 2 bath or more',helper1:480,helper2:520,helper3:560,lead1:600,lead2:640,lead3:680},
+        {name:"Basement Breakup to 20' (incl. backfill)",helper1:240,helper2:280,helper3:320,lead1:360,lead2:400,lead3:440},
+        {name:'Floor Drain / Sump Pump Swap',helper1:60,helper2:80,helper3:100,lead1:120,lead2:140,lead3:160},
+        {name:'Stack Replacement',helper1:120,helper2:160,helper3:200,lead1:240,lead2:280,lead3:320},
+        {name:'Shower Valve / Toilet Flange',helper1:60,helper2:70,helper3:80,lead1:90,lead2:100,lead3:110},
+        {name:'Sump Pump System / Sewage Ejection Pump System',helper1:180,helper2:220,helper3:260,lead1:300,lead2:340,lead3:380},
+        {name:'Sewage Ejection Pump Swap',helper1:90,helper2:105,helper3:120,lead1:150,lead2:190,lead3:230},
+        {name:'Main Valve & PRV / Toilet / Angle Stop / Faucet / Disposal / Halo Ion / Hose Bib',helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40}
+    ],
+    electrical:[
+        {name:'SER Pull over 40 ft',helper1:90,helper2:90,helper3:90,lead1:150,lead2:150,lead3:150},
+        {name:'Circuit Restore',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
+        {name:'Basement Rough In',helper1:312,helper2:372,helper3:420,lead1:520,lead2:620,lead3:700},
+        {name:'Meter / Panel Combo',helper1:252,helper2:294,helper3:336,lead1:420,lead2:490,lead3:560},
+        {name:'Panel',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
+        {name:'Sub-panel',helper1:130,helper2:145,helper3:168,lead1:215,lead2:245,lead3:280},
+        {name:'Meter',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
+        {name:'Whole House Re-wire — up to 2500 sq ft',helper1:840,helper2:978,helper3:1104,lead1:1400,lead2:1630,lead3:1840},
+        {name:'Whole House Re-wire — 2500–3500 sq ft',helper1:1700,helper2:1780,helper3:1830,lead1:2650,lead2:2850,lead3:3050},
+        {name:'Home Run',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
+        {name:'Generator',helper1:210,helper2:210,helper3:210,lead1:320,lead2:320,lead3:320}
+    ],
+    underground:[
+        {name:'Dig',helper1:100,helper2:120,helper3:140,lead1:160,lead2:180,lead3:210},
+        {name:'Non-typical Dig',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
+        {name:'Liner / ft',helper1:2,helper2:2.5,helper3:3,lead1:3.5,lead2:4,lead3:4.5},
+        {name:'Backfill',helper1:100,helper2:130,helper3:150,lead1:160,lead2:180,lead3:210},
+        {name:'Non-typical Backfill',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
+        {name:'Hand Dig',helper1:140,helper2:160,helper3:180,lead1:220,lead2:250,lead3:275}
+    ]
+};
+let RATES={items:{},hourlyTiers:{}};
+let workerTier='lead1';
+function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function rateFor(trade,i){const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];if(saved&&saved[workerTier]!=null&&saved[workerTier]!=='')return parseFloat(saved[workerTier])||0;const def=RATE_SHEET[trade]&&RATE_SHEET[trade][i];return def&&def[workerTier]!=null?parseFloat(def[workerTier])||0:null;}
+function hourlyForTier(){const v=(RATES.hourlyTiers&&RATES.hourlyTiers[workerTier]!=null&&RATES.hourlyTiers[workerTier]!=='')?RATES.hourlyTiers[workerTier]:HOURLY_TIERS[workerTier];return parseFloat(v)||0;}
+// local pay state for this recall (written into the record on Save)
+let pay={hoursOn:false,pieceOn:false,hours:0,hourlyRate:0,pieceItems:{},pieceQty:{},pieceAmounts:{}};
+function payTotal(){let p=0;Object.keys(pay.pieceItems).forEach(i=>{if(pay.pieceItems[i]){const q=pay.pieceQty[i]!=null&&pay.pieceQty[i]!==''?parseFloat(pay.pieceQty[i]):1;const a=parseFloat(pay.pieceAmounts[i])||0;p+=(isNaN(q)?0:q)*a;}});if(pay.hoursOn)p+=(parseFloat(pay.hours)||0)*(parseFloat(pay.hourlyRate)||0);return p;}
+db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourlyTiers:v.hourlyTiers||{}};renderPay();});
+
 const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
 function getSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY));}catch{return null;}}
 const sess=getSession();
@@ -191,6 +281,7 @@ if(!sess||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='instal
 
 let allLogs={}, faultType='install', matchedJob=null;
 document.getElementById('recallDate').value=new Date().toISOString().slice(0,10);
+if(sess&&sess.personId){db.ref('installPeople/'+sess.personId).once('value',s=>{const p=s.val();if(p&&p.tier)workerTier=p.tier;if(!pay.hourlyRate)pay.hourlyRate=hourlyForTier();renderPay();});}
 
 db.ref('installLogs').on('value',snap=>{allLogs=snap.val()||{};tryMatch();});
 
@@ -237,6 +328,41 @@ function tryMatch(){
 
 function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 
+function curTrade(){return document.getElementById('division').value||'plumbing';}
+function renderPay(){
+    const body=document.getElementById('payBody');if(!body)return;
+    const cbH=document.getElementById('cbHours'),cbP=document.getElementById('cbPiece');
+    if(cbH)cbH.checked=pay.hoursOn;if(cbP)cbP.checked=pay.pieceOn;
+    document.getElementById('tgHours').classList.toggle('on',pay.hoursOn);
+    document.getElementById('tgPiece').classList.toggle('on',pay.pieceOn);
+    const trade=curTrade();
+    let html='';
+    if(pay.hoursOn){
+        html+=`<div class="pay-hours-grid">
+            <div class="field" style="margin-bottom:0"><label>${t('lbl_hoursworked')}</label><input type="number" step="0.25" min="0" value="${pay.hours||''}" oninput="pay.hours=parseFloat(this.value)||0;updateTotal()" placeholder="${t('ph_hours')}"></div>
+            <div class="field" style="margin-bottom:0"><label>${t('lbl_rate')}</label><input type="number" step="0.01" min="0" value="${pay.hourlyRate||''}" oninput="pay.hourlyRate=parseFloat(this.value)||0;updateTotal()" placeholder="${hourlyForTier()||'0.00'}"></div>
+        </div>`;
+    }
+    if(pay.pieceOn){
+        html+=`<div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:12px 0 8px">${GROUP_NAMES[trade]||trade} — ${t('piecerate_work')}</div>`;
+        html+=(RATE_SHEET[trade]||[]).map((row,i)=>{
+            const on=!!pay.pieceItems[i];const qty=pay.pieceQty[i]!=null&&pay.pieceQty[i]!==''?pay.pieceQty[i]:1;const amt=pay.pieceAmounts[i]!=null?pay.pieceAmounts[i]:'';
+            const line=on?((parseFloat(qty)||0)*(parseFloat(amt)||0)):0;
+            return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''} onchange="rcTogglePiece(${i},this.checked)"><span class="pr-label">${row.name}</span>${on?`<span class="pr-qty">×<input type="number" step="1" min="0" value="${qty}" oninput="rcSetQty(${i},this.value)"></span><span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}" oninput="rcSetAmt(${i},this.value)" placeholder="0.00"></span><span class="pr-line">${fmt$(line)}</span>`:''}</div>`;
+        }).join('');
+    }
+    if(pay.hoursOn||pay.pieceOn){html+=`<div class="job-pay">${t('job_pay')} <span id="payTotal">${fmt$(payTotal())}</span></div>`;}
+    body.innerHTML=html;
+}
+function updateTotal(){const el=document.getElementById('payTotal');if(el)el.textContent=fmt$(payTotal());}
+function rcTogglePiece(i,checked){if(checked){pay.pieceItems[i]=true;if(pay.pieceQty[i]==null)pay.pieceQty[i]=1;const r=rateFor(curTrade(),i);if(r!=null&&pay.pieceAmounts[i]==null)pay.pieceAmounts[i]=r;}else{delete pay.pieceItems[i];delete pay.pieceQty[i];delete pay.pieceAmounts[i];}renderPay();}
+function rcSetQty(i,v){pay.pieceQty[i]=v===''?1:(parseFloat(v)||0);updateTotal();}
+function rcSetAmt(i,v){pay.pieceAmounts[i]=parseFloat(v)||0;updateTotal();}
+document.getElementById('cbHours').onchange=function(){pay.hoursOn=this.checked;if(this.checked&&!pay.hourlyRate)pay.hourlyRate=hourlyForTier();else if(!this.checked)pay.hours=0;renderPay();};
+document.getElementById('cbPiece').onchange=function(){pay.pieceOn=this.checked;if(!this.checked){pay.pieceItems={};pay.pieceQty={};pay.pieceAmounts={};}renderPay();};
+document.getElementById('division').addEventListener('change',()=>{if(pay.pieceOn){pay.pieceItems={};pay.pieceQty={};pay.pieceAmounts={};}renderPay();});
+renderPay();
+
 document.getElementById('saveBtn').onclick=()=>{
     const origJob=document.getElementById('origJob').value.trim();
     const customerName=document.getElementById('customerName').value.trim();
@@ -259,6 +385,16 @@ document.getElementById('saveBtn').onclick=()=>{
         originalCallId: matchedJob?matchedJob._id:null,
         originalDateKey: matchedJob?matchedJob._dk:null,
         linked: !!matchedJob,
+        // recall-work pay for the tech who fixed it (flows to the weekly turn-in)
+        payTrade: document.getElementById('division').value,
+        workerTier: workerTier,
+        hoursOn: !!pay.hoursOn,
+        pieceOn: !!pay.pieceOn,
+        hours: pay.hoursOn?(parseFloat(pay.hours)||0):0,
+        hourlyRate: pay.hoursOn?(parseFloat(pay.hourlyRate)||0):0,
+        pieceItems: pay.pieceOn?pay.pieceItems:null,
+        pieceQty: pay.pieceOn?pay.pieceQty:null,
+        pieceAmounts: pay.pieceOn?pay.pieceAmounts:null,
         date:dateStr,ts:d.getTime()
     };
     db.ref('recalls/'+dkOf(d)).push(rec,err=>{

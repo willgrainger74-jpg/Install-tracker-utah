@@ -256,11 +256,14 @@ function renderWeek(){
     document.getElementById('sheetMeta').textContent=(me?me.name:'')+' · '+rangeTxt;
     document.getElementById('printRange').textContent=rangeTxt;
 
-    Promise.all(week.map(d=>db.ref('installLogs/'+dk(d)).once('value').then(s=>({d,all:s.val()})))).then(results=>{
+    Promise.all(week.map(d=>Promise.all([
+        db.ref('installLogs/'+dk(d)).once('value'),
+        db.ref('recalls/'+dk(d)).once('value')
+    ]).then(([ls,rs])=>({d,logs:ls.val(),recalls:rs.val()})))).then(results=>{
         const rows=[];
-        results.forEach(({d,all})=>{
-            if(!all)return;
-            Object.values(all).forEach(r=>{ if(r.personId===selected) rows.push({...r,_d:d}); });
+        results.forEach(({d,logs,recalls})=>{
+            if(logs)Object.values(logs).forEach(r=>{ if(r.personId===selected) rows.push({...r,_d:d}); });
+            if(recalls)Object.values(recalls).forEach(r=>{ if(r.loggedById===selected && (r.hoursOn||r.pieceOn)) rows.push({...r,_d:d,_isRecall:true,trade:r.payTrade||r.division,jobNumber:r.originalJobNumber,whatInstalled:r.recallReason}); });
         });
         rows.sort((a,b)=>(a.ts||0)-(b.ts||0));
 
@@ -276,7 +279,7 @@ function renderWeek(){
             if(pcs.length)work+=`<ul class="work-list">${pcs.map(p=>`<li>• ${esc(p)}</li>`).join('')}</ul>`;
             if(!work)work='<span class="work-note">—</span>';
             return `<tr>
-                <td style="white-space:nowrap">${dateTxt}${r.continuing?'<div class="cont-tag">&#8635; cont.</div>':''}</td>
+                <td style="white-space:nowrap">${dateTxt}${r.continuing?'<div class="cont-tag">&#8635; cont.</div>':''}${r._isRecall?'<div class="cont-tag" style="color:var(--red)">&#8617; recall</div>':''}</td>
                 <td>${esc(r.customerName)||'—'}</td>
                 <td class="jobnum">${esc(r.jobNumber)||'—'}</td>
                 <td><span class="pill ${r.trade}">${TRADE_NAMES[r.trade]||r.trade||'—'}</span></td>
