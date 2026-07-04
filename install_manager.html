@@ -6,6 +6,7 @@
     <title>Manager — Action Install Tracker</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="rates.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -114,6 +115,13 @@
         .ti-line-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
         .ti-line-right .ti-pay{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green);letter-spacing:.5px;}
         @media(max-width:560px){.inst-stats{gap:12px;width:100%;justify-content:space-between;}.ti-line-right{width:100%;justify-content:space-between;}}
+        .thread-box{border:1px solid rgba(59,130,246,.3);border-left:3px solid #3b82f6;background:rgba(59,130,246,.04);padding:10px 12px;margin-bottom:8px;}
+        .thread-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+        .th-meta{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+        .thread-warn{border:1px solid rgba(245,158,11,.4);border-left:3px solid var(--amber);background:rgba(245,158,11,.07);color:var(--amber);font-size:12px;font-weight:600;padding:8px 12px;margin-bottom:8px;}
+        .thread-day{display:flex;align-items:stretch;gap:8px;}
+        .thread-day .td-tag{flex-shrink:0;align-self:center;font-family:'Oswald',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#60a5fa;border:1px solid rgba(59,130,246,.4);padding:2px 7px;}
+        .thread-day .ti-line{flex:1;}
         .ti-row .trade-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
         @media(max-width:560px){.ti-row .trade-grid{grid-template-columns:1fr;}}
         .ti-row .check-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s3);border:1px solid var(--wire);cursor:pointer;}
@@ -150,6 +158,14 @@
             .stat-block{background:#fff !important;border:1px solid #ccc !important;}
         }
     </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#080808">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Installs">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
 </head>
 <body>
 <div class="no-print" style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
@@ -452,52 +468,7 @@ const DEFAULT_PIN='1234';
 const DIVS=[['underground',t('g_underground')],['plumbing',t('g_plumbing')],['hvac',t('g_hvac')],['electrical',t('g_electrical')]];
 const GNAME=Object.fromEntries(DIVS);
 const TRADE_NAMES={underground:t('ts_underground'),plumbing:t('ts_plumbing'),hvac:t('ts_hvac'),electrical:t('ts_electrical')};
-const TIERS=[['helper1','Helper 1'],['helper2','Helper 2'],['helper3','Helper 3'],['lead1','Lead 1'],['lead2','Lead 2'],['lead3','Lead 3']];
-const TIER_LABEL={helper1:'Helper 1',helper2:'Helper 2',helper3:'Helper 3',lead1:'Lead 1',lead2:'Lead 2',lead3:'Lead 3'};
-const HOURLY_TIERS={helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40};
-const RATE_SHEET={
-    hvac:[
-        {name:'Swap',helper1:120,helper2:160,helper3:200,lead1:220,lead2:240,lead3:280},
-        {name:'Full / Add',helper1:220,helper2:240,helper3:280,lead1:300,lead2:360,lead3:400},
-        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180}
-    ],
-    plumbing:[
-        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180},
-        {name:'Water/Drain Repipe > 800 sq ft',helper1:80,helper2:120,helper3:160,lead1:180,lead2:220,lead3:260},
-        {name:'Water/Drain Repipe — 2 bath or less',helper1:280,helper2:320,helper3:360,lead1:400,lead2:440,lead3:480},
-        {name:'Water/Drain Repipe — 2 bath or more',helper1:480,helper2:520,helper3:560,lead1:600,lead2:640,lead3:680},
-        {name:"Basement Breakup to 20' (incl. backfill)",helper1:240,helper2:280,helper3:320,lead1:360,lead2:400,lead3:440},
-        {name:'Floor Drain / Sump Pump Swap',helper1:60,helper2:80,helper3:100,lead1:120,lead2:140,lead3:160},
-        {name:'Stack Replacement',helper1:120,helper2:160,helper3:200,lead1:240,lead2:280,lead3:320},
-        {name:'Shower Valve / Toilet Flange',helper1:60,helper2:70,helper3:80,lead1:90,lead2:100,lead3:110},
-        {name:'Sump Pump System / Sewage Ejection Pump System',helper1:180,helper2:220,helper3:260,lead1:300,lead2:340,lead3:380},
-        {name:'Sewage Ejection Pump Swap',helper1:90,helper2:105,helper3:120,lead1:150,lead2:190,lead3:230},
-        {name:'Main Valve & PRV / Toilet / Angle Stop / Faucet / Disposal / Halo Ion / Hose Bib',helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40}
-    ],
-    electrical:[
-        {name:'SER Pull over 40 ft',helper1:90,helper2:90,helper3:90,lead1:150,lead2:150,lead3:150},
-        {name:'Circuit Restore',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
-        {name:'Basement Rough In',helper1:312,helper2:372,helper3:420,lead1:520,lead2:620,lead3:700},
-        {name:'Meter / Panel Combo',helper1:252,helper2:294,helper3:336,lead1:420,lead2:490,lead3:560},
-        {name:'Panel',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
-        {name:'Sub-panel',helper1:130,helper2:145,helper3:168,lead1:215,lead2:245,lead3:280},
-        {name:'Meter',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
-        {name:'Whole House Re-wire — up to 2500 sq ft',helper1:840,helper2:978,helper3:1104,lead1:1400,lead2:1630,lead3:1840},
-        {name:'Whole House Re-wire — 2500–3500 sq ft',helper1:1700,helper2:1780,helper3:1830,lead1:2650,lead2:2850,lead3:3050},
-        {name:'Home Run',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
-        {name:'Generator',helper1:210,helper2:210,helper3:210,lead1:320,lead2:320,lead3:320}
-    ],
-    underground:[
-        {name:'Dig',helper1:100,helper2:120,helper3:140,lead1:160,lead2:180,lead3:210},
-        {name:'Non-typical Dig',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
-        {name:'Liner / ft',helper1:2,helper2:2.5,helper3:3,lead1:3.5,lead2:4,lead3:4.5},
-        {name:'Backfill',helper1:100,helper2:130,helper3:150,lead1:160,lead2:180,lead3:210},
-        {name:'Non-typical Backfill',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
-        {name:'Hand Dig',helper1:140,helper2:160,helper3:180,lead1:220,lead2:250,lead3:275}
-    ]
-};
-const TRADE_ITEMS={underground:[],plumbing:[],hvac:[],electrical:[]};
-Object.keys(RATE_SHEET).forEach(k=>{TRADE_ITEMS[k]=RATE_SHEET[k].map(x=>x.name);});
+// piece-rate sheet now loads from shared rates.js
 
 // ── PIN ──
 function checkPin(){
@@ -709,7 +680,25 @@ function renderTurnins(){
         const appr=g.filter(x=>x.r.approved).length;
         const nI=g.filter(x=>x.kind==='install').length, nR=g.filter(x=>x.kind==='recall').length;
         const open=expandedInstaller===pid;
-        const lines=open?g.sort((a,b)=>(b.r.ts||0)-(a.r.ts||0)).map(x=>turninLine(x.r,x.id,x.dk,x.kind)).join(''):'';
+        let lines='';
+        if(open){
+            // group installs by job number (2+ entries with same job = a thread); recalls & unnumbered stay single
+            const sorted=[...g].sort((a,b)=>(b.r.ts||0)-(a.r.ts||0));
+            const byJob={};
+            sorted.forEach(x=>{const j=x.kind==='install'?String(x.r.jobNumber||'').trim().toLowerCase():'';if(j)(byJob[j]=byJob[j]||[]).push(x);});
+            const threaded=new Set();
+            Object.values(byJob).forEach(arr=>{if(arr.length>=2)arr.forEach(x=>threaded.add(x.id));});
+            const done=new Set();
+            lines=sorted.map(x=>{
+                if(done.has(x.id))return '';
+                if(threaded.has(x.id)){
+                    const j=String(x.r.jobNumber||'').trim().toLowerCase();
+                    const arr=byJob[j];arr.forEach(y=>done.add(y.id));
+                    return threadBlock(arr,pid);
+                }
+                return turninLine(x.r,x.id,x.dk,x.kind);
+            }).join('');
+        }
         const cnt=`${nI} install${nI!==1?'s':''}`+(nR?` · ${nR} recall${nR!==1?'s':''}`:'');
         return `<div class="inst-card">
             <button class="inst-head" onclick="toggleInstaller('${pid}')">
@@ -722,6 +711,41 @@ function renderTurnins(){
 }
 
 function toggleInstaller(pid){expandedInstaller=expandedInstaller===pid?null:pid;renderTurnins();}
+
+// ── JOB THREADS (multi-day jobs sharing one job number) ──
+let THREAD_MAP={};
+function threadBlock(arr,pid){
+    const days=[...arr].sort((a,b)=>(a.r.ts||0)-(b.r.ts||0));
+    const job=days[0].r.jobNumber||'—';
+    const cust=days.map(x=>x.r.customerName).find(Boolean)||'';
+    const totPay=days.reduce((s,x)=>s+installPay(x.r),0);
+    const totHrs=days.reduce((s,x)=>s+(parseFloat(x.r.hours)||0),0);
+    const totPcs=days.reduce((s,x)=>s+pieceCount(x.r),0);
+    const appr=days.filter(x=>x.r.approved).length;
+    // duplicate piece claims across days: same item index checked on 2+ days
+    const seen={};const dups=[];
+    days.forEach(x=>{if(!x.r.pieceItems)return;Object.keys(x.r.pieceItems).forEach(i=>{if(!x.r.pieceItems[i])return;const key=x.r.trade+'|'+i;seen[key]=(seen[key]||0)+1;});});
+    Object.entries(seen).forEach(([key,n])=>{if(n>=2){const [trade,i]=key.split('|');const row=RATE_SHEET[trade]&&RATE_SHEET[trade][i];dups.push((row?row.name:('item '+i))+' ×'+n+' days');}});
+    const tkey='t_'+pid+'_'+job.replace(/[^a-z0-9]/gi,'_');
+    THREAD_MAP[tkey]=days.map(x=>({dk:x.dk,id:x.id}));
+    const dayLines=days.map((x,n)=>`<div class="thread-day"><span class="td-tag">Day ${n+1}</span>${turninLine(x.r,x.id,x.dk,x.kind)}</div>`).join('');
+    return `<div class="thread-box">
+        <div class="thread-head">
+            <div class="th-meta">&#128279; #${esc(job)}${cust?' · '+esc(cust):''} <span class="pill" style="color:#60a5fa;border-color:rgba(59,130,246,.4)">${days.length} days</span> <span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">${fmt$(totPay)}</span> <span class="pill">${totHrs?totHrs+' hrs · ':''}${totPcs} pieces</span> <span class="pill ${appr===days.length?'':'pend'}" style="color:${appr===days.length?'var(--green)':'var(--amber)'};border-color:${appr===days.length?'rgba(16,185,129,.5)':'rgba(245,158,11,.4)'}">${appr}/${days.length} ✓</span></div>
+            ${appr<days.length?`<button class="btn btn-red" onclick="approveThread('${tkey}')">Approve Thread</button>`:''}
+        </div>
+        ${dups.length?`<div class="thread-warn">⚠ Same piece claimed on multiple days: ${esc(dups.join(' · '))} — check before approving.</div>`:''}
+        ${dayLines}
+    </div>`;
+}
+function approveThread(tkey){
+    const entries=THREAD_MAP[tkey]||[];
+    const todo=entries.filter(e=>{const r=(logs[e.dk]||{})[e.id];return r&&!r.approved;});
+    if(!todo.length)return;
+    if(!confirm(`Approve all ${todo.length} day${todo.length>1?'s':''} of this job? Techs won't be able to edit them.`))return;
+    todo.forEach(e=>db.ref(`installLogs/${e.dk}/${e.id}`).update({approved:true,approvedTs:Date.now(),approvedBy:'manager'}));
+    toast(`Approved ${todo.length} ✓`);
+}
 
 // compact one-line summary of the work on a turn-in (no inline checklist)
 function workSummary(r){
@@ -933,6 +957,40 @@ function removeLogin(id,name){if(!confirm(`Remove login for ${name}? They won't 
 
 let _tt;function toast(msg,color){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color||'var(--green)';t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2400);}
 setTimeout(()=>document.getElementById('pinInput').focus(),100);
+</script>
+
+<style>
+#aitNav{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:rgba(10,10,10,.97);border-top:1px solid rgba(255,255,255,.1);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:4px;backdrop-filter:blur(10px);}
+#aitNav::-webkit-scrollbar{display:none;}
+html.light #aitNav{background:rgba(250,250,250,.97);border-top-color:rgba(0,0,0,.1);}
+#aitNav a{flex:1 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;padding:5px 8px;color:#777;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;}
+#aitNav a .ni{font-size:18px;line-height:1;}
+#aitNav a.cur{color:#dc2626;background:rgba(220,38,38,.1);}
+html.light #aitNav a{color:#666;}
+html.light #aitNav a.cur{color:#dc2626;}
+body{padding-bottom:74px !important;}
+.fab{bottom:84px !important;}
+</style>
+<nav id="aitNav"></nav>
+<script>
+(function(){
+    var es=(localStorage.getItem('aitLang')||'en')==='es';
+    var tabs=[
+        ['install_index.html','\ud83c\udfe0',es?'Tablero':'Home'],
+        ['install_log.html','\ud83d\udd27',es?'Registrar':'Log'],
+        ['install_recall.html','\u21a9\ufe0f',es?'Rellamadas':'Recalls'],
+        ['install_turnins.html','\ud83d\udccb',es?'Entregas':'Turn-In'],
+        ['install_lookup.html','\ud83d\udd0d',es?'Buscar':'Lookup'],
+        ['install_leaderboard.html','\ud83c\udfc6',es?'L\u00edderes':'Leaders'],
+        ['install_manager.html','\u2699\ufe0f',es?'Gerente':'Manager']
+    ];
+    var here=(location.pathname.split('/').pop()||'install_index.html');
+    document.getElementById('aitNav').innerHTML=tabs.map(function(t){
+        return '<a href="'+t[0]+'" class="'+(here===t[0]?'cur':'')+'"><span class="ni">'+t[1]+'</span>'+t[2]+'</a>';
+    }).join('');
+    var c=document.querySelector('#aitNav a.cur');if(c)c.scrollIntoView({inline:'center',block:'nearest'});
+    if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+})();
 </script>
 </body>
 </html>

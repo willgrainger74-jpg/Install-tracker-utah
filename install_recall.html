@@ -6,6 +6,7 @@
     <title>Log Recalls — Action Install Tracker</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="rates.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing:border-box;margin:0;padding:0; }
@@ -127,6 +128,14 @@
         .fault .f-icon{font-size:20px;display:block;margin-bottom:4px;}
         .fault .f-name{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);}
 </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#080808">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Installs">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
 </head>
 <body>
 <div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
@@ -248,50 +257,7 @@ const db=firebase.database();
 
 const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing Install',hvac:'HVAC Install',electrical:'Electrical Install'};
 
-const TIERS=[['helper1','Helper 1'],['helper2','Helper 2'],['helper3','Helper 3'],['lead1','Lead 1'],['lead2','Lead 2'],['lead3','Lead 3']];
-const HOURLY_TIERS={helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40};
-const RATE_SHEET={
-    hvac:[
-        {name:'Swap',helper1:120,helper2:160,helper3:200,lead1:220,lead2:240,lead3:280},
-        {name:'Full / Add',helper1:220,helper2:240,helper3:280,lead1:300,lead2:360,lead3:400},
-        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180}
-    ],
-    plumbing:[
-        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180},
-        {name:'Water/Drain Repipe > 800 sq ft',helper1:80,helper2:120,helper3:160,lead1:180,lead2:220,lead3:260},
-        {name:'Water/Drain Repipe \u2014 2 bath or less',helper1:280,helper2:320,helper3:360,lead1:400,lead2:440,lead3:480},
-        {name:'Water/Drain Repipe \u2014 2 bath or more',helper1:480,helper2:520,helper3:560,lead1:600,lead2:640,lead3:680},
-        {name:"Basement Breakup to 20' (incl. backfill)",helper1:240,helper2:280,helper3:320,lead1:360,lead2:400,lead3:440},
-        {name:'Floor Drain / Sump Pump Swap',helper1:60,helper2:80,helper3:100,lead1:120,lead2:140,lead3:160},
-        {name:'Stack Replacement',helper1:120,helper2:160,helper3:200,lead1:240,lead2:280,lead3:320},
-        {name:'Shower Valve / Toilet Flange',helper1:60,helper2:70,helper3:80,lead1:90,lead2:100,lead3:110},
-        {name:'Sump Pump System / Sewage Ejection Pump System',helper1:180,helper2:220,helper3:260,lead1:300,lead2:340,lead3:380},
-        {name:'Sewage Ejection Pump Swap',helper1:90,helper2:105,helper3:120,lead1:150,lead2:190,lead3:230},
-        {name:'Main Valve & PRV / Toilet / Angle Stop / Faucet / Disposal / Halo Ion / Hose Bib',helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40}
-    ],
-    electrical:[
-        {name:'SER Pull over 40 ft',helper1:90,helper2:90,helper3:90,lead1:150,lead2:150,lead3:150},
-        {name:'Circuit Restore',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
-        {name:'Basement Rough In',helper1:312,helper2:372,helper3:420,lead1:520,lead2:620,lead3:700},
-        {name:'Meter / Panel Combo',helper1:252,helper2:294,helper3:336,lead1:420,lead2:490,lead3:560},
-        {name:'Panel',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
-        {name:'Sub-panel',helper1:130,helper2:145,helper3:168,lead1:215,lead2:245,lead3:280},
-        {name:'Meter',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
-        {name:'Whole House Re-wire \u2014 up to 2500 sq ft',helper1:840,helper2:978,helper3:1104,lead1:1400,lead2:1630,lead3:1840},
-        {name:'Whole House Re-wire \u2014 2500\u20133500 sq ft',helper1:1700,helper2:1780,helper3:1830,lead1:2650,lead2:2850,lead3:3050},
-        {name:'Home Run',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
-        {name:'Generator',helper1:210,helper2:210,helper3:210,lead1:320,lead2:320,lead3:320}
-    ],
-    underground:[
-        {name:'Dig',helper1:100,helper2:120,helper3:140,lead1:160,lead2:180,lead3:210},
-        {name:'Non-typical Dig',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
-        {name:'Liner / ft',helper1:2,helper2:2.5,helper3:3,lead1:3.5,lead2:4,lead3:4.5},
-        {name:'Backfill',helper1:100,helper2:130,helper3:150,lead1:160,lead2:180,lead3:210},
-        {name:'Non-typical Backfill',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
-        {name:'Hand Dig',helper1:140,helper2:160,helper3:180,lead1:220,lead2:250,lead3:275}
-    ]
-};
-
+// piece-rate sheet now loads from shared rates.js
 const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
 let sess=null; try{sess=JSON.parse(localStorage.getItem(SESSION_KEY));}catch(e){}
 const selected=localStorage.getItem('installSelectedPerson');
@@ -407,6 +373,40 @@ function deleteRecall(id){if(lockedRec(id)){alert(t('locked_note'));return;}if(c
 function hideExtras(){document.getElementById('recallsSection').style.display='none';document.getElementById('fabAdd').style.display='none';document.getElementById('addBottom').style.display='none';if(recallsRef){recallsRef.off();recallsRef=null;}}
 document.getElementById('prevWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()-7*864e5);selectedDate=null;hideExtras();renderCalendar();};
 document.getElementById('nextWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()+7*864e5);selectedDate=null;hideExtras();renderCalendar();};
+</script>
+
+<style>
+#aitNav{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:rgba(10,10,10,.97);border-top:1px solid rgba(255,255,255,.1);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:4px;backdrop-filter:blur(10px);}
+#aitNav::-webkit-scrollbar{display:none;}
+html.light #aitNav{background:rgba(250,250,250,.97);border-top-color:rgba(0,0,0,.1);}
+#aitNav a{flex:1 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;padding:5px 8px;color:#777;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;}
+#aitNav a .ni{font-size:18px;line-height:1;}
+#aitNav a.cur{color:#dc2626;background:rgba(220,38,38,.1);}
+html.light #aitNav a{color:#666;}
+html.light #aitNav a.cur{color:#dc2626;}
+body{padding-bottom:74px !important;}
+.fab{bottom:84px !important;}
+</style>
+<nav id="aitNav"></nav>
+<script>
+(function(){
+    var es=(localStorage.getItem('aitLang')||'en')==='es';
+    var tabs=[
+        ['install_index.html','\ud83c\udfe0',es?'Tablero':'Home'],
+        ['install_log.html','\ud83d\udd27',es?'Registrar':'Log'],
+        ['install_recall.html','\u21a9\ufe0f',es?'Rellamadas':'Recalls'],
+        ['install_turnins.html','\ud83d\udccb',es?'Entregas':'Turn-In'],
+        ['install_lookup.html','\ud83d\udd0d',es?'Buscar':'Lookup'],
+        ['install_leaderboard.html','\ud83c\udfc6',es?'L\u00edderes':'Leaders'],
+        ['install_manager.html','\u2699\ufe0f',es?'Gerente':'Manager']
+    ];
+    var here=(location.pathname.split('/').pop()||'install_index.html');
+    document.getElementById('aitNav').innerHTML=tabs.map(function(t){
+        return '<a href="'+t[0]+'" class="'+(here===t[0]?'cur':'')+'"><span class="ni">'+t[1]+'</span>'+t[2]+'</a>';
+    }).join('');
+    var c=document.querySelector('#aitNav a.cur');if(c)c.scrollIntoView({inline:'center',block:'nearest'});
+    if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+})();
 </script>
 </body>
 </html>

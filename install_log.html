@@ -6,6 +6,7 @@
     <title>Log Installs — Action Install Tracker</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="rates.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing:border-box;margin:0;padding:0; }
@@ -77,6 +78,10 @@
         .pay-row .pr-qty input{width:56px;background:var(--s1);border:1px solid var(--wire2);color:var(--text);padding:8px 8px;font-size:14px;text-align:center;}
         .pay-row .pr-line{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.5px;color:var(--green);flex-shrink:0;min-width:74px;text-align:right;}
         .paytoggles{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;}
+        .thread-banner{border:1px solid rgba(59,130,246,.35);border-left:3px solid #3b82f6;background:rgba(59,130,246,.07);padding:11px 14px;margin:-6px 0 14px;}
+        .thread-banner .tb-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#60a5fa;margin-bottom:4px;}
+        .thread-banner .tb-row{font-size:12px;color:var(--muted);line-height:1.5;}
+        .claimed-tag{display:inline-block;margin-left:7px;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#60a5fa;border:1px solid rgba(59,130,246,.4);padding:1px 6px;vertical-align:middle;}
         .check-row.pay-toggle{background:var(--s3);}
         .check-row.pay-toggle input[type=checkbox]{accent-color:var(--green);}
         @media(max-width:560px){.paytoggles{grid-template-columns:1fr;}.pay-row{flex-wrap:wrap;}}
@@ -111,6 +116,14 @@
             .cal-nav-btn{padding:14px 22px;font-size:20px;}
         }
     </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#080808">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Installs">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
 </head>
 <body>
 <div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
@@ -165,6 +178,13 @@ const I18N={
  ph_hours:{en:'e.g. 6.5',es:'ej. 6.5'},
  lbl_rate:{en:'Rate ($/hr)',es:'Tarifa ($/hr)'},
  lbl_qty:{en:'Qty',es:'Cant.'},
+ thread_day:{en:'Day',es:'Día'},
+ thread_of_job:{en:'of this job',es:'de este trabajo'},
+ thread_first:{en:'First logged',es:'Registrado primero'},
+ thread_hrs:{en:'hrs',es:'hrs'},
+ thread_pieces:{en:'pieces',es:'piezas'},
+ thread_claimed:{en:'already claimed on other days',es:'ya reclamadas en otros días'},
+ claimed_hint:{en:'Already claimed on another day of this job — don\'t double-claim',es:'Ya reclamada en otro día de este trabajo — no reclamar dos veces'},
  piecerate_work:{en:'Piece-Rate Work',es:'Trabajo Por Pieza'},
  job_pay:{en:'Job Pay',es:'Pago del Trabajo'},
  install_label:{en:'Install',es:'Instalación'},
@@ -240,52 +260,7 @@ const db=firebase.database();
 const GROUP_NAMES={underground:'Underground',plumbing:'Plumbing Install',hvac:'HVAC Install',electrical:'Electrical Install'};
 const TRADE_NAMES={underground:'Underground',plumbing:'Plumbing',hvac:'HVAC',electrical:'Electrical'};
 // ════ TIERED PIECE-RATE SHEETS (from the printed Piece Rate Keys) ════
-const TIERS=[['helper1','Helper 1'],['helper2','Helper 2'],['helper3','Helper 3'],['lead1','Lead 1'],['lead2','Lead 2'],['lead3','Lead 3']];
-const TIER_LABEL={helper1:'Helper 1',helper2:'Helper 2',helper3:'Helper 3',lead1:'Lead 1',lead2:'Lead 2',lead3:'Lead 3'};
-const HOURLY_TIERS={helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40};
-const RATE_SHEET={
-    hvac:[
-        {name:'Swap',helper1:120,helper2:160,helper3:200,lead1:220,lead2:240,lead3:280},
-        {name:'Full / Add',helper1:220,helper2:240,helper3:280,lead1:300,lead2:360,lead3:400},
-        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180}
-    ],
-    plumbing:[
-        {name:'Water Heater / Water Softener',helper1:100,helper2:100,helper3:180,lead1:180,lead2:180,lead3:180},
-        {name:'Water/Drain Repipe > 800 sq ft',helper1:80,helper2:120,helper3:160,lead1:180,lead2:220,lead3:260},
-        {name:'Water/Drain Repipe — 2 bath or less',helper1:280,helper2:320,helper3:360,lead1:400,lead2:440,lead3:480},
-        {name:'Water/Drain Repipe — 2 bath or more',helper1:480,helper2:520,helper3:560,lead1:600,lead2:640,lead3:680},
-        {name:"Basement Breakup to 20' (incl. backfill)",helper1:240,helper2:280,helper3:320,lead1:360,lead2:400,lead3:440},
-        {name:'Floor Drain / Sump Pump Swap',helper1:60,helper2:80,helper3:100,lead1:120,lead2:140,lead3:160},
-        {name:'Stack Replacement',helper1:120,helper2:160,helper3:200,lead1:240,lead2:280,lead3:320},
-        {name:'Shower Valve / Toilet Flange',helper1:60,helper2:70,helper3:80,lead1:90,lead2:100,lead3:110},
-        {name:'Sump Pump System / Sewage Ejection Pump System',helper1:180,helper2:220,helper3:260,lead1:300,lead2:340,lead3:380},
-        {name:'Sewage Ejection Pump Swap',helper1:90,helper2:105,helper3:120,lead1:150,lead2:190,lead3:230},
-        {name:'Main Valve & PRV / Toilet / Angle Stop / Faucet / Disposal / Halo Ion / Hose Bib',helper1:20,helper2:24,helper3:28,lead1:30,lead2:35,lead3:40}
-    ],
-    electrical:[
-        {name:'SER Pull over 40 ft',helper1:90,helper2:90,helper3:90,lead1:150,lead2:150,lead3:150},
-        {name:'Circuit Restore',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
-        {name:'Basement Rough In',helper1:312,helper2:372,helper3:420,lead1:520,lead2:620,lead3:700},
-        {name:'Meter / Panel Combo',helper1:252,helper2:294,helper3:336,lead1:420,lead2:490,lead3:560},
-        {name:'Panel',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
-        {name:'Sub-panel',helper1:130,helper2:145,helper3:168,lead1:215,lead2:245,lead3:280},
-        {name:'Meter',helper1:150,helper2:168,helper3:192,lead1:250,lead2:280,lead3:320},
-        {name:'Whole House Re-wire — up to 2500 sq ft',helper1:840,helper2:978,helper3:1104,lead1:1400,lead2:1630,lead3:1840},
-        {name:'Whole House Re-wire — 2500–3500 sq ft',helper1:1700,helper2:1780,helper3:1830,lead1:2650,lead2:2850,lead3:3050},
-        {name:'Home Run',helper1:50,helper2:50,helper3:50,lead1:75,lead2:75,lead3:75},
-        {name:'Generator',helper1:210,helper2:210,helper3:210,lead1:320,lead2:320,lead3:320}
-    ],
-    underground:[
-        {name:'Dig',helper1:100,helper2:120,helper3:140,lead1:160,lead2:180,lead3:210},
-        {name:'Non-typical Dig',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
-        {name:'Liner / ft',helper1:2,helper2:2.5,helper3:3,lead1:3.5,lead2:4,lead3:4.5},
-        {name:'Backfill',helper1:100,helper2:130,helper3:150,lead1:160,lead2:180,lead3:210},
-        {name:'Non-typical Backfill',helper1:160,helper2:170,helper3:180,lead1:200,lead2:220,lead3:240},
-        {name:'Hand Dig',helper1:140,helper2:160,helper3:180,lead1:220,lead2:250,lead3:275}
-    ]
-};
-const TRADE_ITEMS={underground:[],plumbing:[],hvac:[],electrical:[]};
-Object.keys(RATE_SHEET).forEach(k=>{TRADE_ITEMS[k]=RATE_SHEET[k].map(x=>x.name);});
+// piece-rate sheet now loads from shared rates.js
 
 const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
 let sess=null; try{sess=JSON.parse(localStorage.getItem(SESSION_KEY));}catch(e){}
@@ -293,6 +268,28 @@ const selected=localStorage.getItem('installSelectedPerson');
 if(!sess||!selected||(Date.now()-(sess.lastActivity||0))>=TIMEOUT_MS){location.href='install_index.html';}
 
 let me=null, currentDate=new Date(), selectedDate=null, installsRef=null;
+// full log map for job-thread lookups (day 2+ of the same job number)
+let allLogs={}, redrawDay=null;
+db.ref('installLogs').on('value',s=>{allLogs=s.val()||{};if(redrawDay)redrawDay();});
+const normJob=j=>String(j||'').trim().toLowerCase();
+// all entries anywhere that share this job number, oldest first, excluding the given entry id
+function jobThread(jobNumber,excludeId){
+    const j=normJob(jobNumber);if(!j)return [];
+    const out=[];
+    Object.entries(allLogs).forEach(([d,day])=>Object.entries(day).forEach(([id,r])=>{
+        if(id!==excludeId&&normJob(r.jobNumber)===j)out.push({dk:d,id,r});
+    }));
+    return out.sort((a,b)=>(a.r.ts||0)-(b.r.ts||0));
+}
+// piece indexes already claimed on other days of this job (per trade) -> {idx:[dayLabels]}
+function threadClaims(thread,trade){
+    const claims={};
+    thread.forEach(({r,dk})=>{
+        if(r.trade!==trade||!r.pieceItems)return;
+        Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i]){(claims[i]=claims[i]||[]).push(new Date(r.ts||Date.parse(dk)).toLocaleDateString('en-US',{month:'short',day:'numeric'}));}});
+    });
+    return claims;
+}
 let RATES={items:{},hourlyTiers:{}};
 db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourlyTiers:v.hourlyTiers||{}};if(selectedDate&&installsRef)installsRef.once&&renderSelected();});
 function renderSelected(){/* re-render handled by installs listener; no-op safeguard */}
@@ -360,6 +357,7 @@ function renderInstalls(date){
         const c=document.getElementById('installsList');
         if(!arr.length){c.innerHTML='<p style="color:var(--muted);text-align:center;padding:32px;font-family:Oswald,sans-serif;letter-spacing:0.1em;text-transform:uppercase;font-size:13px;">'+t('none_day')+'</p>';}
         else{c.innerHTML=arr.map(cardHTML).join('');}
+        redrawDay=()=>{if(!arr.length)return;const el=document.getElementById('installsList');if(el)el.innerHTML=arr.map(cardHTML).join('');};
         renderCalendar();
     });
     const blank=()=>({personId:selected,installerName:me.name,group:me.group,tier:me.tier,customerName:'',jobNumber:'',soldBy:'',whatInstalled:'',systemInstalled:'',notes:'',askedReview:false,redCarpet:false,warrantyReview:false,scheduledQA:false,trade:me.group,hoursOn:false,pieceOn:false,hours:0,continuing:false,date:dk(date),ts:Date.now()});
@@ -375,7 +373,19 @@ function cardHTML(c){
     const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${c.trade===t?' selected':''}>${tradeName(t)}</option>`).join('');
     const hoursOn=c.hoursOn||c.payType==='hours';
     const pieceOn=c.pieceOn||c.payType==='piece';
-    const pieceBlock=pieceOn?`<div class="section-label" style="margin-top:14px;">${esc(tradeName(c.trade))} — ${t('piecerate_work')}</div><div class="piece-list">${(TRADE_ITEMS[c.trade]||[]).map((item,i)=>{const on=c.pieceItems&&c.pieceItems[i];const amt=(c.pieceAmounts&&c.pieceAmounts[i]!=null)?c.pieceAmounts[i]:'';const qty=(c.pieceQty&&c.pieceQty[i]!=null&&c.pieceQty[i]!=='')?c.pieceQty[i]:1;const lineTot=on?((parseFloat(qty)||0)*(parseFloat(amt)||0)):0;return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked,'${c.trade}')"><span class="pr-label">${esc(item)}</span>${on?`<span class="pr-qty">×<input type="number" step="1" min="0" value="${esc(qty)}"${dis} onchange="setPieceQty('${c.id}',${i},this.value)" title="${t('lbl_qty')}"></span><span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}"${dis} onchange="setPieceAmount('${c.id}',${i},this.value)" placeholder="0.00"></span><span class="pr-line">${fmt$(lineTot)}</span>`:''}</div>`;}).join('')}</div>`:'';
+    // job thread: other entries (any day, any tech) sharing this job number
+    const thread=jobThread(c.jobNumber,c.id);
+    const claims=thread.length?threadClaims(thread,c.trade):{};
+    let threadHtml='';
+    if(thread.length){
+        const first=thread[0];
+        const dayN=thread.filter(x=>(x.r.ts||0)<(c.ts||0)).length+1;
+        const totHrs=thread.reduce((s,x)=>s+(parseFloat(x.r.hours)||0),0);
+        const totPcs=thread.reduce((s,x)=>s+(x.r.pieceItems?Object.keys(x.r.pieceItems).filter(k=>x.r.pieceItems[k]).length:0),0);
+        const names=[...new Set(thread.map(x=>x.r.installerName).filter(Boolean))];
+        threadHtml=`<div class="thread-banner"><div class="tb-title">&#128279; ${t('thread_day')} ${dayN} — ${t('thread_of_job')}</div><div class="tb-row">${t('thread_first')} ${new Date(first.r.ts||Date.parse(first.dk)).toLocaleDateString('en-US',{month:'short',day:'numeric'})}${names.length?' · '+esc(names.join(', ')):''} · ${totHrs?totHrs+' '+t('thread_hrs')+' · ':''}${totPcs} ${t('thread_pieces')} ${t('thread_claimed')}</div></div>`;
+    }
+    const pieceBlock=pieceOn?`<div class="section-label" style="margin-top:14px;">${esc(tradeName(c.trade))} — ${t('piecerate_work')}</div><div class="piece-list">${(TRADE_ITEMS[c.trade]||[]).map((item,i)=>{const on=c.pieceItems&&c.pieceItems[i];const amt=(c.pieceAmounts&&c.pieceAmounts[i]!=null)?c.pieceAmounts[i]:'';const qty=(c.pieceQty&&c.pieceQty[i]!=null&&c.pieceQty[i]!=='')?c.pieceQty[i]:1;const lineTot=on?((parseFloat(qty)||0)*(parseFloat(amt)||0)):0;const claimed=claims[i]?`<span class="claimed-tag" title="${t('claimed_hint')}">&#10003; ${esc(claims[i].join(', '))}</span>`:'';return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked,'${c.trade}')"><span class="pr-label">${esc(item)}${claimed}</span>${on?`<span class="pr-qty">×<input type="number" step="1" min="0" value="${esc(qty)}"${dis} onchange="setPieceQty('${c.id}',${i},this.value)" title="${t('lbl_qty')}"></span><span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}"${dis} onchange="setPieceAmount('${c.id}',${i},this.value)" placeholder="0.00"></span><span class="pr-line">${fmt$(lineTot)}</span>`:''}</div>`;}).join('')}</div>`:'';
     const hoursBlock=hoursOn?`<div class="section-label" style="margin-top:14px;">${t('opt_hours')}</div><div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div class="field"><label>${t('lbl_hoursworked')}</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateInstall('${c.id}','hours',parseFloat(this.value)||0)" placeholder="${t('ph_hours')}" /></div><div class="field"><label>${t('lbl_rate')}</label><input type="number" step="0.01" min="0" value="${c.hourlyRate!=null&&c.hourlyRate!==''?esc(c.hourlyRate):''}"${dis} onchange="updateInstall('${c.id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${hourlyForTier()||'0.00'}" /></div></div>`:'';
     const pay=jobPay(c);
     const payLine=(hoursOn||pieceOn)?`<div class="job-pay">${t('job_pay')} <span>${fmt$(pay)}</span></div>`:'';
@@ -385,6 +395,7 @@ function cardHTML(c){
         ${locked?`<div class="lock-note">${t('lock_note')}</div>`:''}
         <div class="field"><label>${t('lbl_customer')}</label><input type="text" value="${esc(c.customerName)}"${dis} onchange="updateInstall('${c.id}','customerName',this.value)" placeholder="${t('ph_customer')}" /></div>
         <div class="field"><label>${t('lbl_job')}</label><input type="text" value="${esc(c.jobNumber)}"${dis} onchange="updateInstall('${c.id}','jobNumber',this.value)" placeholder="${t('ph_job')}" /></div>
+        ${threadHtml}
         <div class="field"><label>${t('lbl_sold')}</label><input type="text" value="${esc(c.soldBy)}"${dis} onchange="updateInstall('${c.id}','soldBy',this.value)" placeholder="${t('ph_sold')}" /></div>
         <div class="field"><label>${t('lbl_what')}</label><textarea rows="2"${dis} onchange="updateInstall('${c.id}','whatInstalled',this.value)" placeholder="${t('ph_what')}">${esc(c.whatInstalled)}</textarea></div>
         <div class="field"><label>${t('lbl_system')}</label><input type="text" value="${esc(c.systemInstalled)}"${dis} onchange="updateInstall('${c.id}','systemInstalled',this.value)" placeholder="${t('ph_system')}" /></div>
@@ -405,7 +416,22 @@ function cardHTML(c){
 }
 
 function curPath(){return 'installLogs/'+selectedDate;}
-function updateInstall(id,field,value){db.ref(`${curPath()}/${id}/${field}`).set(value);}
+function updateInstall(id,field,value){
+    db.ref(`${curPath()}/${id}/${field}`).set(value);
+    // typing a job number that already exists = day 2+ of that job: auto-flag continuing & prefill from day 1
+    if(field==='jobNumber'){
+        const thread=jobThread(value,id);
+        if(thread.length){
+            const first=thread[0].r;
+            db.ref(`${curPath()}/${id}`).once('value',s=>{
+                const cur=s.val()||{};const u={continuing:true};
+                if(!cur.customerName&&first.customerName)u.customerName=first.customerName;
+                if(first.trade&&cur.trade!==first.trade&&!(cur.pieceItems&&Object.keys(cur.pieceItems).length))u.trade=first.trade;
+                db.ref(`${curPath()}/${id}`).update(u);
+            });
+        }
+    }
+}
 function changeTrade(id,val){db.ref(`${curPath()}/${id}/trade`).set(val);db.ref(`${curPath()}/${id}/pieceItems`).remove();db.ref(`${curPath()}/${id}/pieceAmounts`).remove();db.ref(`${curPath()}/${id}/pieceQty`).remove();}
 function toggleHours(id,on){const base=`${curPath()}/${id}`;db.ref(`${base}/hoursOn`).set(!!on);if(on){db.ref(`${base}/hourlyRate`).once('value',s=>{if(s.val()==null||s.val()==='')db.ref(`${base}/hourlyRate`).set(hourlyForTier());});}else{db.ref(`${base}/hours`).set(0);}}
 function togglePieceSection(id,on){const base=`${curPath()}/${id}`;db.ref(`${base}/pieceOn`).set(!!on);if(!on){db.ref(`${base}/pieceItems`).remove();db.ref(`${base}/pieceAmounts`).remove();db.ref(`${base}/pieceQty`).remove();}}
@@ -414,10 +440,44 @@ function setPieceAmount(id,i,val){db.ref(`${curPath()}/${id}/pieceAmounts/${i}`)
 function setPieceQty(id,i,val){const q=val===''?1:(parseFloat(val)||0);db.ref(`${curPath()}/${id}/pieceQty/${i}`).set(q);}
 function deleteInstall(id){if(confirm(t('confirm_del')))db.ref(`${curPath()}/${id}`).remove();}
 
-function hideExtras(){document.getElementById('installsSection').style.display='none';document.getElementById('fabAdd').style.display='none';document.getElementById('addBottom').style.display='none';if(installsRef){installsRef.off();installsRef=null;}}
+function hideExtras(){document.getElementById('installsSection').style.display='none';document.getElementById('fabAdd').style.display='none';document.getElementById('addBottom').style.display='none';redrawDay=null;if(installsRef){installsRef.off();installsRef=null;}}
 
 document.getElementById('prevWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()-7*864e5);selectedDate=null;hideExtras();renderCalendar();};
 document.getElementById('nextWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()+7*864e5);selectedDate=null;hideExtras();renderCalendar();};
+</script>
+
+<style>
+#aitNav{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:rgba(10,10,10,.97);border-top:1px solid rgba(255,255,255,.1);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:4px;backdrop-filter:blur(10px);}
+#aitNav::-webkit-scrollbar{display:none;}
+html.light #aitNav{background:rgba(250,250,250,.97);border-top-color:rgba(0,0,0,.1);}
+#aitNav a{flex:1 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;padding:5px 8px;color:#777;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;}
+#aitNav a .ni{font-size:18px;line-height:1;}
+#aitNav a.cur{color:#dc2626;background:rgba(220,38,38,.1);}
+html.light #aitNav a{color:#666;}
+html.light #aitNav a.cur{color:#dc2626;}
+body{padding-bottom:74px !important;}
+.fab{bottom:84px !important;}
+</style>
+<nav id="aitNav"></nav>
+<script>
+(function(){
+    var es=(localStorage.getItem('aitLang')||'en')==='es';
+    var tabs=[
+        ['install_index.html','\ud83c\udfe0',es?'Tablero':'Home'],
+        ['install_log.html','\ud83d\udd27',es?'Registrar':'Log'],
+        ['install_recall.html','\u21a9\ufe0f',es?'Rellamadas':'Recalls'],
+        ['install_turnins.html','\ud83d\udccb',es?'Entregas':'Turn-In'],
+        ['install_lookup.html','\ud83d\udd0d',es?'Buscar':'Lookup'],
+        ['install_leaderboard.html','\ud83c\udfc6',es?'L\u00edderes':'Leaders'],
+        ['install_manager.html','\u2699\ufe0f',es?'Gerente':'Manager']
+    ];
+    var here=(location.pathname.split('/').pop()||'install_index.html');
+    document.getElementById('aitNav').innerHTML=tabs.map(function(t){
+        return '<a href="'+t[0]+'" class="'+(here===t[0]?'cur':'')+'"><span class="ni">'+t[1]+'</span>'+t[2]+'</a>';
+    }).join('');
+    var c=document.querySelector('#aitNav a.cur');if(c)c.scrollIntoView({inline:'center',block:'nearest'});
+    if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
+})();
 </script>
 </body>
 </html>
