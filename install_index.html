@@ -179,6 +179,8 @@ const I18N={
   nav_lookup_d:{en:'Search any job number or customer to pull the install and any recalls — fast warranty lookups',es:'Busca cualquier número de trabajo o cliente para ver la instalación y rellamadas — búsquedas rápidas de garantía'},
   nav_lb_t:{en:'Leaderboard',es:'Tabla de Líderes'},
   nav_lb_d:{en:'Reviews, red-carpet rate, QA scheduling, and lowest recall rate',es:'Reseñas, alfombra roja, programación de QA y menor tasa de rellamadas'},
+  nav_pay_t:{en:'Payroll',es:'Nómina'},
+  nav_pay_d:{en:'Password-protected — every installer’s week: piece rate, hourly, recall pay and totals',es:'Protegido con contraseña — la semana de cada instalador: pieza, hora, rellamadas y totales'},
   nav_mgr_t:{en:'Manager',es:'Gerente'},
   nav_mgr_d:{en:'PIN-protected — roster, divisions, logins, and recall reports',es:'Protegido con PIN — personal, divisiones, accesos y reportes de rellamadas'},
   div_underground:{en:'Underground',es:'Subterráneo'},
@@ -262,6 +264,12 @@ function applyStaticLang(){
                 <div class="nav-card-desc" data-i18n="nav_lb_d">Reviews, red-carpet rate, QA scheduling, and lowest recall rate</div>
                 <div class="nav-chips"><span class="chip">Rankings</span><span class="chip">Streaks</span></div>
             </a>
+            <a href="install_payroll.html" class="nav-card mgr-card fade-up">
+                <span class="nav-card-icon">💵</span>
+                <div class="nav-card-title" data-i18n="nav_pay_t">Payroll</div>
+                <div class="nav-card-desc" data-i18n="nav_pay_d">Password-protected — every installer's week: piece rate, hourly, recall pay and totals</div>
+                <div class="nav-chips"><span class="chip">Office</span><span class="chip">Print</span><span class="chip">Spreadsheet</span></div>
+            </a>
             <a href="install_manager.html" class="nav-card mgr-card fade-up">
                 <span class="nav-card-icon">🏢</span>
                 <div class="nav-card-title" data-i18n="nav_mgr_t">Manager</div>
@@ -332,6 +340,7 @@ function showLoginScreen(message){
             <p id="ai-err" style="font-size:12px;color:#ef4444;font-family:'Oswald',sans-serif;letter-spacing:.08em;margin-bottom:12px;min-height:18px;text-align:left"></p>
             <button id="ai-btn" style="width:100%;background:var(--red);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;padding:15px;border:none;cursor:pointer;transition:background .15s;margin-bottom:20px">${t('login_btn')}</button>
             <a href="install_manager.html" style="font-size:12px;color:var(--faint);text-decoration:none;font-family:'Oswald',sans-serif;letter-spacing:.1em;text-transform:uppercase">Manager Portal →</a>
+            <a href="install_payroll.html" style="display:block;margin-top:12px;font-size:12px;color:var(--faint);text-decoration:none;font-family:'Oswald',sans-serif;letter-spacing:.1em;text-transform:uppercase">Payroll →</a>
         </div>`;
     document.body.appendChild(overlay);
     const uEl=overlay.querySelector('#ai-u'),pEl=overlay.querySelector('#ai-p'),errEl=overlay.querySelector('#ai-err'),btn=overlay.querySelector('#ai-btn');

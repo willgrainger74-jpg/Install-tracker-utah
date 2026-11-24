@@ -14,6 +14,7 @@
         more:'<path d="M4 6h16M4 12h16M4 18h16"/>',
         lookup:'<circle cx="10" cy="10" r="7"/><path d="M21 21l-6-6"/>',
         leaders:'<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>',
+        payroll:'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v.01M18 15v.01"/>',
         manager:'<circle cx="12" cy="12" r="9"/><path d="M8 16l2-6 6-2-2 6z"/>'
     };
     var svg=function(k){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+I[k]+'</svg>';};
@@ -26,6 +27,7 @@
     var MORE=[
         ['install_lookup.html','lookup',es?'Buscar Trabajo':'Job Lookup'],
         ['install_leaderboard.html','leaders',es?'Líderes':'Leaderboard'],
+        ['install_payroll.html','payroll',es?'N\u00f3mina':'Payroll'],
         ['install_manager.html','manager',es?'Gerente':'Manager']
     ];
     var here=(location.pathname.split('/').pop()||'install_index.html');

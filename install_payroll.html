@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll — Action Install Tracker</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="rates.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing:border-box;margin:0;padding:0; }
+        :root{--red:#dc2626;--red2:#991b1b;--red3:#450a0a;--bg:#080808;--s1:#111111;--s2:#181818;--s3:#202020;--wire:rgba(255,255,255,0.06);--wire2:rgba(255,255,255,0.10);--muted:#aaa;--faint:#666;--text:#efefef;--green:#10b981;--amber:#f59e0b;--blue:#3b82f6;--purple:#a855f7;}
+        html.light{--bg:#f4f4f4;--s1:#ffffff;--s2:#ebebeb;--s3:#e0e0e0;--wire:rgba(0,0,0,0.08);--wire2:rgba(0,0,0,0.14);--muted:#555555;--faint:#999999;--text:#111111;--red3:#fde8e8;}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+        .page{max-width:1100px;margin:0 auto;padding:24px 20px 80px;}
+        .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--wire);}
+        .page-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,6vw,72px);line-height:0.9;letter-spacing:2px;}
+        .page-title em{font-style:normal;color:var(--red);}
+        .page-sub{font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
+        .back-btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);border:1px solid var(--wire2);padding:10px 18px;text-decoration:none;white-space:nowrap;margin-top:8px;display:inline-block;}
+        .card{background:var(--s1);border:1px solid var(--wire);padding:20px 22px;margin-bottom:20px;}
+        .cal-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+        .cal-nav-btn{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:var(--muted);background:var(--s2);border:1px solid var(--wire);padding:10px 20px;cursor:pointer;}
+        .cal-nav-btn:hover{color:var(--text);border-color:var(--red);}
+        .cal-range{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;}
+        .tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+        .btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;padding:11px 18px;border:1px solid var(--wire2);background:var(--s2);color:var(--text);cursor:pointer;flex:1;}
+        .btn:hover{border-color:var(--muted);}
+        .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+        .stat-block{background:var(--s1);border:1px solid var(--wire);border-top:2px solid var(--red);padding:18px 20px;position:relative;overflow:hidden;}
+        .stat-block::after{content:'';position:absolute;right:-30px;bottom:-30px;width:100px;height:100px;background:var(--red);opacity:.04;}
+        .stat-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+        .stat-strip .stat-num{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,4.2vw,44px)!important;line-height:1;letter-spacing:1px;}
+        .stat-meta{font-size:11px;color:var(--faint);margin-top:4px;letter-spacing:.06em;text-transform:uppercase;}
+        .tot .stat-num{color:var(--green);}
+        @media(max-width:760px){.stat-strip{grid-template-columns:1fr 1fr;}}
+
+        /* installer rows */
+        .pr{background:var(--s1);border:1px solid var(--wire);border-left:3px solid var(--wire2);margin-bottom:10px;border-radius:12px;overflow:hidden;}
+        .pr.has{border-left-color:var(--green);}
+        .pr.pend{border-left-color:var(--amber);}
+        .pr-head{display:flex;align-items:center;gap:12px;width:100%;padding:16px 18px;background:none;border:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+        .pr-head:hover{background:var(--s2);}
+        .pr-who{flex:1;min-width:0;}
+        .pr-name{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .pr-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+        .pr-split{font-family:'Oswald',sans-serif;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-top:3px;line-height:1.5;}
+        .pr-split b{font-weight:600;color:var(--text);}
+        .pr-right{flex:none;text-align:right;}
+        .pr-total{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1;letter-spacing:.5px;color:var(--green);font-variant-numeric:tabular-nums;}
+        .pr.zero .pr-total{color:var(--faint);}
+        .tag{display:inline-block;font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--wire2);color:var(--muted);margin-top:5px;white-space:nowrap;}
+        .tag.ok{color:var(--green);border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.1);}
+        .tag.wait{color:var(--amber);border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.1);}
+        .tag.rc{color:var(--red);border-color:rgba(220,38,38,.45);background:rgba(220,38,38,.1);margin:0 0 0 6px;}
+        .chev{flex:none;color:var(--muted);font-size:12px;transition:transform .15s;}
+        .pr.open .chev{transform:rotate(180deg);}
+        .pr-body{display:none;border-top:1px solid var(--wire);padding:6px 18px 16px;}
+        .pr.open .pr-body{display:block;}
+
+        /* job lines inside a dropdown */
+        .job{padding:13px 0;border-bottom:1px solid var(--wire);}
+        .job-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+        .job-cust{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+        .job-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+        .job-pay{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.5px;color:var(--green);font-variant-numeric:tabular-nums;white-space:nowrap;}
+        .job-desc{font-size:13px;color:var(--text);margin-top:6px;line-height:1.45;}
+        .job-desc.none{color:var(--faint);}
+        .lines{margin-top:8px;display:grid;gap:4px;}
+        .line{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:var(--muted);background:var(--s2);border:1px solid var(--wire);border-radius:8px;padding:7px 10px;}
+        .line span:last-child{color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;}
+        .pr-foot{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--wire);border:1px solid var(--wire);border-radius:10px;overflow:hidden;margin-top:14px;}
+        .pr-foot > div{background:var(--s2);padding:10px 12px;}
+        .pr-foot .l{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+        .pr-foot .v{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:.5px;font-variant-numeric:tabular-nums;}
+        .pr-foot .t .v{color:var(--green);}
+        @media(max-width:560px){.pr-foot{grid-template-columns:1fr 1fr;}.pr-total{font-size:25px;}.pr-head{padding:14px 14px;gap:9px;}.pr-body{padding:4px 14px 14px;}}
+        .empty-note{padding:28px;text-align:center;font-size:13px;color:var(--faint);letter-spacing:.06em;}
+        .sec-label{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:18px 0 10px;display:flex;align-items:center;gap:10px;}
+        .sec-label::before{content:'';width:18px;height:3px;border-radius:3px;background:var(--red);}
+
+        /* PIN gate */
+        #gate{position:fixed;inset:0;z-index:99980;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;}
+        .pin-box{background:var(--s1);border:1px solid var(--wire);border-top:3px solid var(--red);padding:44px 36px;width:100%;max-width:380px;text-align:center;}
+        .pin-title{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:3px;}
+        .pin-sub{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:4px 0 24px;}
+        .pin-input{width:100%;background:var(--s3);border:1px solid var(--wire2);color:var(--text);padding:16px;font-size:22px;letter-spacing:.5em;text-align:center;outline:none;margin-bottom:10px;}
+        .pin-input:focus{border-color:var(--red);}
+        .pin-btn{width:100%;background:var(--red);color:#fff;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;padding:15px;border:none;cursor:pointer;}
+        .pin-err{color:#ef4444;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;min-height:18px;margin-bottom:8px;}
+        .pin-back{display:inline-block;margin-top:18px;font-size:12px;color:var(--faint);text-decoration:none;font-family:'Oswald',sans-serif;letter-spacing:.1em;text-transform:uppercase;}
+
+        .print-head{display:none;}
+        @media print{
+            body{background:#fff;color:#000;--text:#000;--muted:#333;--faint:#555;--s1:#fff;--s2:#fff;--s3:#fff;--wire:#bbb;--wire2:#999;--green:#000;--amber:#000;}
+            .no-print,#gate,.chev,.back-btn{display:none!important;}
+            .page{padding:0;max-width:none;}
+            .print-head{display:block;font-family:Arial,sans-serif;font-size:18px;font-weight:700;margin-bottom:10px;}
+            .pr-body{display:block!important;}
+            .pr.zero{display:none;}
+            .pr{break-inside:avoid;border:1px solid #999;border-radius:0;}
+            .stat-block,.card{border:1px solid #999;box-shadow:none!important;background:#fff!important;}
+            .stat-block::after{display:none;}
+        }
+    </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#080808">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+<div class="no-print" style="position:fixed;top:12px;right:16px;z-index:99985;display:flex;gap:8px;">
+  <button onclick="toggleTheme()" style="background:var(--s2);border:1px solid var(--wire2);color:var(--muted);font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
+</div>
+<script>
+(function(){applyTheme(localStorage.getItem('aitTheme')||'dark');})();
+function applyTheme(t){localStorage.setItem('aitTheme',t);var i=document.getElementById('themeIcon'),l=document.getElementById('themeLabel');if(t==='light'){document.documentElement.classList.add('light');if(i)i.textContent='🌙';if(l)l.textContent='DARK';}else{document.documentElement.classList.remove('light');if(i)i.textContent='☀️';if(l)l.textContent='LIGHT';}}
+function toggleTheme(){applyTheme((localStorage.getItem('aitTheme')||'dark')==='dark'?'light':'dark');}
+</script>
+
+<div id="gate">
+    <div class="pin-box">
+        <div style="font-size:40px;margin-bottom:6px">💵</div>
+        <div class="pin-title">Payroll</div>
+        <div class="pin-sub">Enter password to continue</div>
+        <input class="pin-input" id="pinInput" type="password" inputmode="numeric" autocomplete="off" placeholder="····">
+        <div class="pin-err" id="pinErr"></div>
+        <button class="pin-btn" id="pinBtn">Unlock</button>
+        <a class="pin-back" href="install_index.html">← Back to dashboard</a>
+    </div>
+</div>
+
+<div class="page" id="page" style="display:none">
+    <div class="page-header no-print">
+        <div>
+            <div class="page-title">Pay<em>roll</em></div>
+            <div class="page-sub">Every installer · one week at a time</div>
+        </div>
+        <a href="install_index.html" class="back-btn">← Dashboard</a>
+    </div>
+    <div class="print-head" id="printHead"></div>
+
+    <div class="card no-print">
+        <div class="cal-nav">
+            <button class="cal-nav-btn" id="prevWeek">←</button>
+            <div id="weekRange" class="cal-range"></div>
+            <button class="cal-nav-btn" id="nextWeek">→</button>
+        </div>
+        <div class="tools">
+            <button class="btn" id="thisWeek">This Week</button>
+            <button class="btn" id="openAll">Open All</button>
+            <button class="btn" id="printBtn">🖨️ Print</button>
+            <button class="btn" id="csvBtn">⬇ Spreadsheet</button>
+        </div>
+    </div>
+
+    <div class="stat-strip">
+        <div class="stat-block tot"><div class="stat-label">Total Payroll</div><div class="stat-num" id="sTotal">$0</div><div class="stat-meta" id="sTotalMeta">—</div></div>
+        <div class="stat-block"><div class="stat-label">Piece Rate</div><div class="stat-num" id="sPiece">$0</div><div class="stat-meta">Installs</div></div>
+        <div class="stat-block"><div class="stat-label">Hourly</div><div class="stat-num" id="sHourly">$0</div><div class="stat-meta" id="sHourlyMeta">—</div></div>
+        <div class="stat-block"><div class="stat-label">Recall Pay</div><div class="stat-num" id="sRecall">$0</div><div class="stat-meta" id="sRecallMeta">—</div></div>
+    </div>
+
+    <div class="sec-label">Installers — tap a name for their jobs</div>
+    <div id="list"><div class="empty-note">Loading…</div></div>
+</div>
+
+<script>
+// ════ FIREBASE — Install Tracker project (same as the rest of the app) ════
+firebase.initializeApp({
+    apiKey: "AIzaSyBdTIdrCajlNM4_BYgJxZwFe0KXKgKw7yM",
+    authDomain: "install-tracker-30b1b.firebaseapp.com",
+    databaseURL: "https://install-tracker-30b1b-default-rtdb.firebaseio.com",
+    projectId: "install-tracker-30b1b",
+    storageBucket: "install-tracker-30b1b.firebasestorage.app",
+    messagingSenderId: "160965691779",
+    appId: "1:160965691779:web:c42baf2dd271a275994eb6"
+});
+const db=firebase.database();
+
+// ════ PASSWORD ════
+// Default is 1234. To change it, set the key "installPayrollPin" in Firebase (or edit DEFAULT_PIN here).
+const DEFAULT_PIN='1234';
+function unlock(){document.getElementById('gate').style.display='none';document.getElementById('page').style.display='';sessionStorage.setItem('aitPayrollOk','1');load();}
+function tryPin(){
+    const v=document.getElementById('pinInput').value.trim(),err=document.getElementById('pinErr');
+    db.ref('installPayrollPin').once('value',s=>{
+        const pin=String(s.val()||DEFAULT_PIN);
+        if(v===pin)unlock();else{err.textContent='Wrong password';document.getElementById('pinInput').value='';document.getElementById('pinInput').focus();}
+    });
+}
+document.getElementById('pinBtn').onclick=tryPin;
+document.getElementById('pinInput').addEventListener('keypress',e=>{if(e.key==='Enter')tryPin();});
+
+// ════ HELPERS ════
+const DIV={underground:['Underground','var(--amber)'],plumbing:['Plumbing','var(--blue)'],hvac:['HVAC','var(--green)'],electrical:['Electrical','var(--purple)']};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const $2=n=>'$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const $0=n=>'$'+Math.round(parseFloat(n)||0).toLocaleString('en-US');
+const dk=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+// Monday-start week, same as the Weekly Turn-In sheet
+function getWeek(date){const day=date.getDay(),mon=new Date(date);mon.setDate(date.getDate()-day+(day===0?-6:1));return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
+const qtyOf=(r,i)=>{const q=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?parseFloat(r.pieceQty[i]):1;return isNaN(q)?0:q;};
+// piece lines for one record: [{name, qty, rate, amt}] — same math as jobPay() on the other pages
+function pieceLines(r,trade){
+    if(!r.pieceItems)return [];
+    const sheet=RATE_SHEET[trade]||[];
+    return Object.keys(r.pieceItems).filter(i=>r.pieceItems[i]).map(i=>{
+        const qty=qtyOf(r,i),rate=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;
+        return {name:(sheet[i]&&sheet[i].name)||('Item '+(+i+1)),qty,rate,amt:qty*rate};
+    });
+}
+
+let currentDate=new Date(), people={}, rows=[], openSet={};
+
+function load(){
+    const week=getWeek(currentDate);
+    const range=`${week[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} — ${week[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+    document.getElementById('weekRange').textContent=range.toUpperCase();
+    document.getElementById('printHead').textContent='Action Install — Payroll · '+range;
+    document.getElementById('list').innerHTML='<div class="empty-note">Loading…</div>';
+    const token=load.token=Date.now()+Math.random();
+    Promise.all([db.ref('installPeople').once('value'),
+        ...week.map(d=>db.ref('installLogs/'+dk(d)).once('value')),
+        ...week.map(d=>db.ref('recalls/'+dk(d)).once('value'))
+    ]).then(res=>{
+        if(load.token!==token)return; // a newer week was requested
+        people=res[0].val()||{};
+        const by={};
+        const slot=pid=>by[pid]||(by[pid]={id:pid,jobs:[],piece:0,hourly:0,hours:0,recall:0,total:0,pending:0,nInst:0,nRec:0,instHours:0});
+        week.forEach((d,i)=>{
+            Object.entries(res[1+i].val()||{}).forEach(([id,r])=>{
+                if(!r.personId)return;
+                const trade=r.trade||r.group||'plumbing',lines=pieceLines(r,trade);
+                const piece=lines.reduce((a,l)=>a+l.amt,0),hrs=parseFloat(r.hours)||0,rate=parseFloat(r.hourlyRate)||0,hourly=hrs*rate;
+                const p=slot(r.personId);
+                p.jobs.push({kind:'install',d,ts:r.ts||0,id,r,trade,lines,piece,hrs,rate,hourly,pay:piece+hourly,desc:r.whatInstalled||r.systemInstalled||''});
+                p.piece+=piece;p.hourly+=hourly;p.hours+=hrs;p.instHours+=hrs;p.total+=piece+hourly;p.nInst++;if(!r.approved)p.pending+=piece+hourly;
+            });
+            Object.entries(res[8+i].val()||{}).forEach(([id,r])=>{
+                const pid=r.personId||r.loggedById;if(!pid)return;
+                const trade=r.division||r.payTrade||'plumbing',lines=pieceLines(r,trade);
+                const piece=lines.reduce((a,l)=>a+l.amt,0),hrs=parseFloat(r.hours)||0,rate=parseFloat(r.hourlyRate)||0,hourly=hrs*rate;
+                const p=slot(pid);
+                p.jobs.push({kind:'recall',d,ts:r.ts||0,id,r,trade,lines,piece,hrs,rate,hourly,pay:piece+hourly,desc:r.recallReason||''});
+                p.recall+=piece+hourly;p.hours+=hrs;p.total+=piece+hourly;p.nRec++;if(!r.approved)p.pending+=piece+hourly;
+            });
+        });
+        // every active installer shows, even at $0; archived people show only if they have pay this week
+        Object.keys(people).forEach(pid=>{if(!people[pid].archived)slot(pid);});
+        rows=Object.values(by).map(p=>{const m=people[p.id]||{};const first=p.jobs[0]&&p.jobs[0].r;
+            return {...p,name:m.name||(first&&first.installerName)||'Unknown installer',group:m.group||(first&&(first.group||first.division))||'',tier:m.tier||''};});
+        rows.forEach(p=>p.jobs.sort((a,b)=>(a.d-b.d)||(a.ts-b.ts)));
+        rows.sort((a,b)=>(b.total>0)-(a.total>0)||a.name.localeCompare(b.name));
+        render();
+    });
+}
+
+function jobHTML(j){
+    const r=j.r,num=j.kind==='recall'?r.originalJobNumber:r.jobNumber;
+    const meta=[j.d.toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'}),num&&'#'+esc(num),(DIV[j.trade]||[j.trade])[0],r.continuing&&'continuing'].filter(Boolean).join(' · ');
+    const lines=j.lines.map(l=>`<div class="line"><span>${esc(l.name)}${l.qty!==1?' × '+l.qty:''} @ ${$2(l.rate)}</span><span>${$2(l.amt)}</span></div>`).join('')+
+        (j.hourly||j.hrs?`<div class="line"><span>Hourly — ${j.hrs} hrs @ ${$2(j.rate)}</span><span>${$2(j.hourly)}</span></div>`:'');
+    return `<div class="job">
+        <div class="job-top"><div><span class="job-cust">${esc(r.customerName)||'No customer name'}</span>${j.kind==='recall'?'<span class="tag rc">Recall</span>':''}<div class="job-meta">${meta}</div></div>
+            <div style="text-align:right"><div class="job-pay">${$2(j.pay)}</div><span class="tag ${r.approved?'ok':'wait'}" style="margin-top:2px">${r.approved?'✓ Approved':'Pending'}</span></div></div>
+        <div class="job-desc${j.desc?'':' none'}">${esc(j.desc)||'No description entered'}</div>
+        ${lines?`<div class="lines">${lines}</div>`:''}
+    </div>`;
+}
+
+function render(){
+    const T=rows.reduce((a,p)=>({piece:a.piece+p.piece,hourly:a.hourly+p.hourly,hours:a.hours+p.instHours,recall:a.recall+p.recall,total:a.total+p.total,pending:a.pending+p.pending,nRec:a.nRec+p.nRec,nInst:a.nInst+p.nInst}),{piece:0,hourly:0,hours:0,recall:0,total:0,pending:0,nRec:0,nInst:0});
+    document.getElementById('sTotal').textContent=$2(T.total);
+    document.getElementById('sTotalMeta').textContent=T.pending?`${$2(T.pending)} not approved yet`:(T.total?'All approved':'Nothing logged');
+    document.getElementById('sPiece').textContent=$2(T.piece);
+    document.getElementById('sHourly').textContent=$2(T.hourly);
+    document.getElementById('sHourlyMeta').textContent=`${T.hours} hrs on installs`;
+    document.getElementById('sRecall').textContent=$2(T.recall);
+    document.getElementById('sRecallMeta').textContent=`${T.nRec} recall${T.nRec===1?'':'s'}`;
+    const el=document.getElementById('list');
+    if(!rows.length){el.innerHTML='<div class="empty-note">No installers on the roster yet.</div>';return;}
+    el.innerHTML=rows.map(p=>{
+        const d=DIV[p.group],tier=(typeof TIER_LABEL!=='undefined'&&TIER_LABEL[p.tier])||'';
+        const sub=[d&&d[0],tier,`${p.nInst} job${p.nInst===1?'':'s'}`,p.nRec&&`${p.nRec} recall${p.nRec===1?'':'s'}`].filter(Boolean).join(' · ');
+        const state=!p.jobs.length?'':(p.pending>0?`<span class="tag wait">${$2(p.pending)} pending</span>`:'<span class="tag ok">✓ Approved</span>');
+        return `<div class="pr ${p.total>0?(p.pending>0?'pend':'has'):'zero'}${openSet[p.id]?' open':''}" data-p="${esc(p.id)}">
+            <button type="button" class="pr-head" onclick="toggle('${esc(p.id)}')">
+                <div class="pr-who"><div class="pr-name">${esc(p.name)}</div><div class="pr-sub">${sub}</div>
+                    ${p.jobs.length?`<div class="pr-split">Piece <b>${$2(p.piece)}</b> · Hourly <b>${$2(p.hourly)}</b>${p.recall?` · Recalls <b>${$2(p.recall)}</b>`:''}</div>`:''}</div>
+                <div class="pr-right"><div class="pr-total">${$2(p.total)}</div>${state}</div>
+                <span class="chev">▾</span>
+            </button>
+            <div class="pr-body">${p.jobs.length?p.jobs.map(jobHTML).join(''):'<div class="empty-note">Nothing logged this week.</div>'}
+                ${p.jobs.length?`<div class="pr-foot"><div><div class="l">Piece Rate</div><div class="v">${$2(p.piece)}</div></div><div><div class="l">Hourly · ${p.instHours} hrs</div><div class="v">${$2(p.hourly)}</div></div><div><div class="l">Recall Pay</div><div class="v">${$2(p.recall)}</div></div><div class="t"><div class="l">Week Total</div><div class="v">${$2(p.total)}</div></div></div>`:''}
+            </div>
+        </div>`;
+    }).join('');
+}
+function toggle(id){openSet[id]=!openSet[id];const el=document.querySelector('.pr[data-p="'+CSS.escape(id)+'"]');if(el)el.classList.toggle('open',!!openSet[id]);}
+
+// spreadsheet: one row per job, plus a total row per installer — opens in Excel / Google Sheets
+function csv(){
+    const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+    const out=[['Installer','Division','Date','Type','Customer','Job #','Description','Piece Items','Piece Pay','Hours','Hourly Rate','Hourly Pay','Total Pay','Approved']];
+    rows.filter(p=>p.jobs.length).forEach(p=>{
+        p.jobs.forEach(j=>out.push([p.name,(DIV[j.trade]||[j.trade])[0],dk(j.d),j.kind==='recall'?'Recall':'Install',j.r.customerName||'',(j.kind==='recall'?j.r.originalJobNumber:j.r.jobNumber)||'',j.desc,j.lines.map(l=>l.name+(l.qty!==1?' x'+l.qty:'')).join('; '),j.piece.toFixed(2),j.hrs,j.rate.toFixed(2),j.hourly.toFixed(2),j.pay.toFixed(2),j.r.approved?'Yes':'No']));
+        out.push([p.name+' — TOTAL','','','','','','','',(p.piece+p.jobs.filter(j=>j.kind==='recall').reduce((a,j)=>a+j.piece,0)).toFixed(2),p.hours,'',(p.hourly+p.jobs.filter(j=>j.kind==='recall').reduce((a,j)=>a+j.hourly,0)).toFixed(2),p.total.toFixed(2),p.pending>0?'No':'Yes']);
+    });
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob(['﻿'+out.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv'}));
+    a.download='install-payroll-'+dk(getWeek(currentDate)[0])+'.csv';document.body.appendChild(a);a.click();a.remove();
+}
+
+document.getElementById('prevWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()-7*864e5);load();};
+document.getElementById('nextWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()+7*864e5);load();};
+document.getElementById('thisWeek').onclick=()=>{currentDate=new Date();load();};
+document.getElementById('openAll').onclick=()=>{const any=rows.some(p=>p.jobs.length&&!openSet[p.id]);rows.forEach(p=>{openSet[p.id]=any&&p.jobs.length>0;});render();};
+document.getElementById('printBtn').onclick=()=>window.print();
+document.getElementById('csvBtn').onclick=csv;
+
+if(sessionStorage.getItem('aitPayrollOk')==='1')unlock();else setTimeout(()=>document.getElementById('pinInput').focus(),80);
+</script>
+<script src="nav.js"></script>
+</body>
+</html>
