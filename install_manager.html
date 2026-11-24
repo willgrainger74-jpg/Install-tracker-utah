@@ -166,6 +166,7 @@
     <meta name="apple-mobile-web-app-title" content="Installs">
     <link rel="apple-touch-icon" href="icon-180.png">
     <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="stylesheet" href="ui.css">
 </head>
 <body>
 <div class="no-print" style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
@@ -959,38 +960,6 @@ let _tt;function toast(msg,color){const t=document.getElementById('toast');t.tex
 setTimeout(()=>document.getElementById('pinInput').focus(),100);
 </script>
 
-<style>
-#aitNav{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:rgba(10,10,10,.97);border-top:1px solid rgba(255,255,255,.1);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:4px;backdrop-filter:blur(10px);}
-#aitNav::-webkit-scrollbar{display:none;}
-html.light #aitNav{background:rgba(250,250,250,.97);border-top-color:rgba(0,0,0,.1);}
-#aitNav a{flex:1 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;padding:5px 8px;color:#777;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;}
-#aitNav a .ni{font-size:18px;line-height:1;}
-#aitNav a.cur{color:#dc2626;background:rgba(220,38,38,.1);}
-html.light #aitNav a{color:#666;}
-html.light #aitNav a.cur{color:#dc2626;}
-body{padding-bottom:74px !important;}
-.fab{bottom:84px !important;}
-</style>
-<nav id="aitNav"></nav>
-<script>
-(function(){
-    var es=(localStorage.getItem('aitLang')||'en')==='es';
-    var tabs=[
-        ['install_index.html','\ud83c\udfe0',es?'Tablero':'Home'],
-        ['install_log.html','\ud83d\udd27',es?'Registrar':'Log'],
-        ['install_recall.html','\u21a9\ufe0f',es?'Rellamadas':'Recalls'],
-        ['install_turnins.html','\ud83d\udccb',es?'Entregas':'Turn-In'],
-        ['install_lookup.html','\ud83d\udd0d',es?'Buscar':'Lookup'],
-        ['install_leaderboard.html','\ud83c\udfc6',es?'L\u00edderes':'Leaders'],
-        ['install_manager.html','\u2699\ufe0f',es?'Gerente':'Manager']
-    ];
-    var here=(location.pathname.split('/').pop()||'install_index.html');
-    document.getElementById('aitNav').innerHTML=tabs.map(function(t){
-        return '<a href="'+t[0]+'" class="'+(here===t[0]?'cur':'')+'"><span class="ni">'+t[1]+'</span>'+t[2]+'</a>';
-    }).join('');
-    var c=document.querySelector('#aitNav a.cur');if(c)c.scrollIntoView({inline:'center',block:'nearest'});
-    if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
-})();
-</script>
+<script src="nav.js"></script>
 </body>
 </html>

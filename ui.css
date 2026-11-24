@@ -1,0 +1,319 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ACTION INSTALL TRACKER — UI LAYER (ui.css)
+
+   Same look as the Action Group sales tracker: rounded cards, soft red
+   glow instead of scan lines, pill buttons, floating glass tab bar.
+   Linked last in the <head> of every page; every color comes from the
+   page's own variables so light/dark mode keeps working.
+
+   To switch it OFF: delete the ui.css <link> line from a page.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── tokens ── */
+html{
+  --ui-r:16px; --ui-r2:12px; --ui-r3:10px;
+  --ui-soft:color-mix(in srgb,var(--red) 13%,transparent);
+  --ui-line:color-mix(in srgb,var(--red) 55%,transparent);
+  --ui-glow:color-mix(in srgb,var(--red) 45%,transparent);
+  --ui-amb:color-mix(in srgb,var(--red) 17%,transparent);
+  --ui-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 22px 44px -28px rgba(0,0,0,.95);
+}
+html.light{
+  --ui-amb:color-mix(in srgb,var(--red) 9%,transparent);
+  --ui-shadow:0 1px 2px rgba(0,0,0,.05),0 18px 36px -24px rgba(0,0,0,.28);
+}
+
+/* ── backdrop: scan lines out, soft brand glow in ── */
+html body::after{
+  content:'';display:block;position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:
+    radial-gradient(70vw 460px at 105% -6%,var(--ui-amb),transparent 68%),
+    radial-gradient(55vw 380px at -12% 4%,color-mix(in srgb,var(--ui-amb) 55%,transparent),transparent 70%);
+}
+html ::selection{background:var(--ui-line);color:#fff}
+html *{scrollbar-width:thin;scrollbar-color:var(--wire2) transparent}
+html body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* ── surfaces ── */
+html .card{
+  border-radius:var(--ui-r);box-shadow:var(--ui-shadow);
+  background:linear-gradient(180deg,var(--s1),color-mix(in srgb,var(--s1) 72%,var(--bg)));
+}
+html .card-inner,html .lb-card,html .call-card,html .subsection,html .item-card,html .sess-card,
+html .money-owed-display,html .add-form,html .select-prompt,html .door-card,html .followup-card,
+html .cat-card,html .standings-card,html .tier-card,html .attn-card,html .owed-row,html .wl-entry,
+html .pr-block,html .streak-block,html .race-cat,html .wwi-card,html .team-setup-block,html .day-block,
+html .week-summary,html .log-form,html .pin-box,html .person-btn,html .cat,html .vid,html .modal-box,
+html .photo-drop,html .kpi-note,html .gam-badge,html .gam-lv,html .gam-stat,html .mini-stat,
+html #teamSplit .ts-sec,html .fin-rep-row{border-radius:var(--ui-r2)}
+html .cat,html .vid,html .modal-box,html #teamSplit .ts-sec{overflow:hidden}
+html .call-card{box-shadow:0 14px 30px -24px rgba(0,0,0,.9)}
+
+/* rows and bars the pages build with inline styles */
+html .card div[style*="border:1px solid var(--wire)"]{border-radius:var(--ui-r3)}
+html .card div[style*="gap:2px;background:var(--wire)"]{border-radius:var(--ui-r2);overflow:hidden}
+html .bar-track,html .bar-fill,html .tsm-bar,html .tsm-fill,
+html .card div[style*="height:4px"],html .card div[style*="height:5px"],html .card div[style*="height:6px"]{border-radius:99px}
+html .bar-track,html .card div[style*="height:4px;width:100%"],html .card div[style*="height:5px;width:100%"],html .card div[style*="height:6px;width:100%"]{overflow:hidden}
+
+/* ── stat tiles ── */
+html .stat-mosaic,html .nav-grid,
+html .g2:has(> .stat-block),html .g3:has(> .stat-block),html .g4:has(> .stat-block){
+  border-radius:14px;overflow:hidden;border:1px solid var(--wire);
+}
+html .stat-block::before{background:linear-gradient(90deg,var(--red),transparent 82%)}
+html .stat-num,html .stat-num-md,html .lb-rev,html .money-owed-val,html .cal-day-num,html .fin-rep-amt{font-variant-numeric:tabular-nums}
+
+/* dashboard hero tiles */
+html .stat-strip .stat-block{
+  border-radius:var(--ui-r);border:1px solid var(--wire);border-top:1px solid var(--wire2);
+  background:linear-gradient(155deg,var(--ui-soft),transparent 46%),var(--s1);box-shadow:var(--ui-shadow);
+  transition:transform .2s ease,border-color .2s ease;
+}
+html .stat-strip .stat-block:hover{transform:translateY(-2px);border-color:var(--ui-line)}
+html .stat-strip .stat-block::after{width:150px;height:150px;right:-50px;bottom:-60px;border-radius:50%;transform:none;opacity:.22;filter:blur(34px)}
+html .stat-strip .stat-num{font-size:clamp(34px,9.5vw,64px);letter-spacing:1px}
+
+/* dashboard tiles + roster */
+html .nav-card{transition:background .2s ease}
+html .nav-card-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:13px;font-size:23px;
+  background:var(--ui-soft);border:1px solid color-mix(in srgb,var(--red) 26%,transparent)}
+html .chip{border-radius:999px;padding:3px 10px}
+html .person-btn.selected{box-shadow:0 0 0 1px var(--ui-line),0 14px 28px -18px var(--ui-glow)}
+
+/* ── titles ── */
+html .pg-title em,html .page-title em,html .hero-title em{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--red) 72%,#fff),var(--red) 62%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+}
+html .sec-label::before{width:18px;height:3px;border-radius:3px}
+
+/* ── buttons ── */
+html .btn,html .back-btn,html .cal-nav-btn,html .del-call,html .filter-btn,html .hbtn,html .wl-week-btn,
+html .btn-print,html .change-btn,html .add-tm-btn,html .icon-btn,html .trade-btn{border-radius:var(--ui-r3)}
+html .btn-red,html .btn-primary,html .hbtn-red{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--red) 86%,#fff),var(--red));
+  box-shadow:0 10px 22px -12px var(--ui-glow),0 1px 0 rgba(255,255,255,.2) inset;
+}
+html .btn-red:hover,html .btn-primary:hover,html .hbtn-red:hover{background:linear-gradient(180deg,color-mix(in srgb,var(--red) 86%,#fff),var(--red));filter:brightness(1.1);transform:translateY(-1px)}
+html .btn-red:active,html .btn-primary:active{transform:scale(.97)}
+html .back-btn{background:color-mix(in srgb,var(--s2) 70%,transparent)}
+html .add-call-bottom{border-radius:var(--ui-r2)}
+html .company-seg{border-radius:var(--ui-r3);overflow:hidden}
+html .fab{border-radius:999px;right:16px;bottom:calc(90px + env(safe-area-inset-bottom));
+  box-shadow:0 14px 30px -10px var(--ui-glow),0 1px 0 rgba(255,255,255,.2) inset}
+
+/* top-right controls */
+html #themeToggleBtn,html #logoutBtn,html #ap-loc-chip{border-radius:999px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+html #ap-loc-chip{background:color-mix(in srgb,var(--s1) 80%,transparent)}
+
+/* ── forms ── */
+html input[type=text],html input[type=number],html input[type=tel],html input[type=password],html input[type=date],
+html input[type=search],html input[type=email],html input[type=url],html textarea,html select{border-radius:var(--ui-r3);transition:border-color .15s,box-shadow .15s}
+html input:focus,html textarea:focus,html select:focus{box-shadow:0 0 0 3px var(--ui-soft)}
+
+html .check-row{border-radius:var(--ui-r3);padding:12px 14px;min-height:46px;transition:border-color .15s,background .15s;-webkit-tap-highlight-color:transparent}
+html .check-row:has(input:checked){border-color:var(--ui-line);background:var(--ui-soft)}
+html .check-row:has(input:disabled){opacity:.5}
+html .check-row input[type=checkbox]{
+  -webkit-appearance:none;appearance:none;width:20px;height:20px;margin:0;flex:none;border-radius:6px;
+  border:1.5px solid var(--wire2);background:var(--s1);display:grid;place-content:center;cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+html .check-row input[type=checkbox]::after{content:'';width:10px;height:5px;margin-top:-2px;
+  border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) scale(0);transition:transform .14s ease}
+html .check-row input[type=checkbox]:checked{background:var(--red);border-color:var(--red)}
+html .check-row input[type=checkbox]:checked::after{transform:rotate(-45deg) scale(1)}
+
+/* ── week calendar ── */
+html .cal-day{border-radius:var(--ui-r2)}
+html .cal-day.selected{box-shadow:0 0 0 1px var(--red),0 14px 26px -16px var(--ui-glow)}
+
+/* ── sign-in card ── */
+html #ap-login-overlay > div{border-radius:22px;box-shadow:0 40px 80px -40px rgba(0,0,0,.9),0 0 0 1px var(--wire)}
+html #ap-login-overlay button{border-radius:var(--ui-r3)}
+
+/* ── entrance ── */
+@keyframes uiRise{from{opacity:0;transform:translateY(10px)}}
+html .page > .card,html .stat-strip .stat-block{animation:uiRise .45s cubic-bezier(.2,.7,.2,1) backwards}
+html .page > .card:nth-of-type(2),html .stat-strip .stat-block:nth-child(2){animation-delay:.05s}
+html .page > .card:nth-of-type(3),html .stat-strip .stat-block:nth-child(3){animation-delay:.1s}
+html .page > .card:nth-of-type(n+4),html .stat-strip .stat-block:nth-child(4){animation-delay:.15s}
+@media (prefers-reduced-motion:reduce){html *{animation:none!important;transition:none!important}}
+
+/* ── phones ── */
+@media (max-width:640px){
+  /* the fixed top-right controls used to sit on top of the page title */
+  html .pg-header,html .page-header{padding-top:40px}
+  html .hero{padding-top:44px}
+  html .page{padding-left:14px;padding-right:14px}
+  html .card{padding:18px 16px}
+  html .stat-strip{gap:10px}
+  html .stat-strip .stat-block{padding:18px 16px}
+  /* 16px inputs stop iPhones zooming the page on every tap into a field */
+  html input[type=text],html input[type=number],html input[type=tel],html input[type=password],html input[type=search],html textarea,html select{font-size:16px}
+  html .cal-grid,html .cal-days-header{gap:3px}
+  html .cal-day{padding:10px 4px}
+  html .cal-day-stat{font-size:10.5px;letter-spacing:0}
+}
+
+@media print{
+  html body::after{display:none!important}
+  html .card{box-shadow:none;animation:none;background:#fff}
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BOTTOM TAB BAR — floating glass pill (applies on every page,
+   including training.html)
+   ═══════════════════════════════════════════════════════════════════ */
+html body{padding-bottom:calc(92px + env(safe-area-inset-bottom))!important}
+html body #abn{
+  left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));padding:6px;
+  border-radius:22px;border:1px solid var(--wire2,rgba(255,255,255,.14));
+  background:color-mix(in srgb,var(--s1,#141414) 76%,transparent);
+  backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);
+  box-shadow:0 20px 44px -14px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.06) inset;
+}
+html.light body #abn{background:rgba(255,255,255,.8);border-color:rgba(0,0,0,.1);box-shadow:0 16px 36px -16px rgba(0,0,0,.35)}
+html body .abn-tab{border-radius:16px;padding:8px 2px 7px;transition:color .15s,background .15s}
+html body .abn-tab.on{color:var(--red,#dc2626);background:color-mix(in srgb,var(--red,#dc2626) 15%,transparent)}
+html body .abn-tab.on::before{display:none}
+html body #abn-scrim.open{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+html body #abn-sheet.open{
+  border-top:none;border-radius:24px 24px 0 0;background:var(--s1,#141414);
+  padding-top:26px;box-shadow:0 -24px 60px -20px rgba(0,0,0,.8);
+}
+html body #abn-sheet.open::before{content:'';position:absolute;top:10px;left:50%;width:38px;height:4px;margin-left:-19px;border-radius:4px;background:var(--wire2,rgba(255,255,255,.2))}
+html.light body #abn-sheet.open{background:#fff}
+html body .abn-item{border-radius:14px}
+html body .abn-item .i{color:var(--red,#dc2626)}
+@media (pointer:coarse) and (orientation:landscape){html body{padding-bottom:0!important}}
+@media print{html body #abn{display:none!important}html body{padding-bottom:0!important}}
+/* desktop: the tab bar becomes a centered dock instead of a full-width strip */
+@media (min-width:900px){html body #abn{left:50%;right:auto;width:560px;transform:translateX(-50%)}}
+/* days with calls used a hardcoded dark red that turned muddy in light mode and on the blue/navy brands */
+html .cal-day.has-calls{background:var(--ui-soft)}
+html .cal-day.selected{background:color-mix(in srgb,var(--red) 22%,var(--s2))}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ROUND 2 — leaderboards, manager portal tabs + tables
+   ═══════════════════════════════════════════════════════════════════ */
+/* manager tab strip: square blocks → pill tabs that scroll sideways on phones */
+html .tab-strip{gap:8px;background:none;padding:2px 0 6px}
+html .tab-btn{border-radius:999px;border:1px solid var(--wire);background:color-mix(in srgb,var(--s1) 85%,transparent);padding:9px 15px;font-size:12px}
+html .tab-btn:hover{border-color:var(--wire2)}
+html .tab-btn.active{border-color:transparent;color:#fff;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--red) 86%,#fff),var(--red));
+  box-shadow:0 10px 20px -12px var(--ui-glow),0 1px 0 rgba(255,255,255,.2) inset}
+html .tab-btn.active i{color:#fff!important}
+@media (max-width:760px){
+  html .tab-strip{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent)}
+  html .tab-strip::-webkit-scrollbar{display:none}
+  html .tab-btn{flex:none}
+}
+
+/* tables */
+html .dark-table{border-collapse:separate;border-spacing:0;border:1px solid var(--wire);border-radius:var(--ui-r2);overflow:hidden;background:var(--s1)}
+html .dark-table th{background:var(--s2);border-bottom:1px solid var(--wire2);padding-top:12px;padding-bottom:12px;font-size:11px}
+html .dark-table tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--s2) 45%,transparent)}
+html .dark-table tr:hover td{background:var(--ui-soft)}
+html .dark-table td{font-variant-numeric:tabular-nums}
+
+/* leaderboard rows */
+html .lb-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+html .lb-card:hover{transform:translateY(-1px);box-shadow:0 16px 30px -22px rgba(0,0,0,.9)}
+html .lb-card.first{background:linear-gradient(90deg,var(--ui-soft),transparent 65%),var(--s2);box-shadow:0 0 0 1px var(--ui-line),0 18px 36px -24px var(--ui-glow)}
+html .lb-rev{letter-spacing:.5px}
+html .pin-box{border-radius:22px;box-shadow:0 40px 80px -40px rgba(0,0,0,.9)}
+html .pin-input{border-radius:var(--ui-r2)}
+/* manager tab panels build their cards with inline styles too */
+html .tab-content div[style*="border:1px solid var(--wire)"],
+html .tab-content div[style*="border:1px solid var(--wire2)"]{border-radius:var(--ui-r2)}
+html .tab-content div[style*="gap:2px;background:var(--wire)"]{border-radius:var(--ui-r3);overflow:hidden}
+html .tab-content div[style*="height:4px"],html .tab-content div[style*="height:5px"],html .tab-content div[style*="height:6px"]{border-radius:99px}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   BOTTOM TAB BAR — base layout (nav.js injects the markup)
+   ═══════════════════════════════════════════════════════════════════ */
+#abn-sheet,#abn-scrim{display:none}
+#abn{display:flex;position:fixed;z-index:99990}
+.abn-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#8a8a8a;position:relative;background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;font:inherit}
+html.light .abn-tab{color:#666}
+.abn-ico{line-height:1;display:grid;place-items:center;height:21px}
+.abn-ico svg,.abn-item .i svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.abn-lab{font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+#abn-scrim.open{display:block;position:fixed;inset:0;z-index:99991;background:rgba(0,0,0,.55)}
+#abn-sheet.open{display:block;position:fixed;left:0;right:0;bottom:0;z-index:99992;padding:18px 16px calc(20px + env(safe-area-inset-bottom))}
+.abn-sh{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:#7a7a7a;margin-bottom:12px}
+.abn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.abn-item{display:flex;align-items:center;gap:10px;padding:13px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);text-decoration:none;color:#e8e8e8}
+html.light .abn-item{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.08);color:#111}
+.abn-item .i{display:grid;place-items:center}
+.abn-item .t{font-family:'Oswald',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+@media (pointer:coarse) and (orientation:landscape){#abn,#abn-sheet.open,#abn-scrim.open{display:none!important}}
+@media (min-width:900px){html body #abn-sheet.open{left:50%;right:auto;width:560px;transform:translateX(-50%);bottom:86px;border-radius:24px}}
+
+/* ═══════════════════════════════════════════════════════════════════
+   INSTALL TRACKER PIECES
+   ═══════════════════════════════════════════════════════════════════ */
+/* installed to the home screen the page runs under the status bar */
+html body{padding-top:env(safe-area-inset-top)}
+html body > div[style*="position:fixed;top:12px"]{top:calc(12px + env(safe-area-inset-top))!important}
+html body > div[style*="position:fixed;top:12px"] button{border-radius:999px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+
+html .inst-card,html .res-card,html .recall-card,html .recall-item,html .board,html .scorecard,html .summary-bar,html .summary-stat,
+html .thread-banner,html .thread-box,html .thread-warn,html .job-pay,html .pay-row,html .lock-note,html .person-row,html .search-wrap,
+html .modal-box,html .turnin-header,html .work-list,html .filters,html .totals,html .empty-state,html .div-card,html .ti-table-wrap,
+html .day-pay,html .wk-pay,html .me-card{border-radius:var(--ui-r2)}
+html .inst-card,html .board,html .res-card,html .ti-table-wrap,html .scorecard{overflow:hidden}
+html .lock-badge,html .claimed-tag,html .pill,html .badge,html .cont-tag,html .td-tag,html .pay-tag{border-radius:999px}
+html .pay-row .pr-amt input,html .pay-row .pr-qty input{border-radius:8px}
+html .pay-row .pr-line,html .job-pay span,html .summary-stat-val,html .sc-pay,html .ti-pay{font-variant-numeric:tabular-nums}
+html .job-pay{background:linear-gradient(90deg,rgba(16,185,129,.16),rgba(16,185,129,.05))}
+html .pay-row input[type=checkbox]{border-radius:6px}
+html .div-grid{border-radius:14px;overflow:hidden;border:1px solid var(--wire);gap:1px}
+html .section-divider .sdl{color:var(--text)}
+html .section-divider::before{content:'';width:18px;height:3px;border-radius:3px;background:var(--red);flex:none}
+html .call-card.approved{border-left-color:var(--green,#10b981)}
+html .call-card.continuing{border-left-color:var(--amber,#f59e0b)}
+
+/* ── collapsed job rows (Log Installs + Log Recall) ── */
+.cc-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;color:var(--text);padding:14px 16px!important;font:inherit;-webkit-tap-highlight-color:transparent}
+.cc-row:hover{background:var(--s3)}
+.cc-n{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:var(--s3);border:1px solid var(--wire2);font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:var(--muted)}
+.cc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cc-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-split{font-family:'Oswald',sans-serif;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);line-height:1.45}
+.cc-split b{font-weight:600;color:var(--green,#10b981)}
+.cc-pill{flex:none;font-family:'Oswald',sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:5px 11px;border-radius:999px;border:1px solid var(--wire2);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cc-paid{border-left-color:#10b981!important}.cc-paid .cc-pill{color:#10b981;border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.1)}
+.cc-nopay{border-left-color:#f59e0b!important}.cc-nopay .cc-pill{color:#f59e0b;border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.1)}
+.cc-chev{flex:none;color:var(--muted);font-size:12px}
+.cc-fold{background:var(--s3);border:1px solid var(--wire2);color:var(--muted);width:34px;height:32px;border-radius:10px;cursor:pointer;font-size:12px}
+.cc-fold:hover{color:var(--text)}
+.cc-done{width:100%;margin-top:12px;background:var(--s3);border:1px solid var(--wire2);color:var(--text);border-radius:10px;font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;padding:13px;cursor:pointer}
+.cc-done:hover{border-color:var(--muted)}
+@media(max-width:420px){.cc-pill{font-size:11.5px;padding:4px 9px}.cc-row{gap:9px;padding:13px 12px!important}}
+
+/* ── pay strips: day total on the log pages, week total under the calendar ── */
+.day-pay{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--wire);border:1px solid var(--wire);overflow:hidden;margin-bottom:16px}
+.day-pay > div{background:var(--s2);padding:12px 14px;min-width:0}
+.day-pay .dp-l{font-family:'Oswald',sans-serif;font-size:10.5px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day-pay .dp-v{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1.1;letter-spacing:.5px;color:var(--text);font-variant-numeric:tabular-nums}
+.day-pay .dp-tot{background:linear-gradient(155deg,rgba(16,185,129,.16),transparent 70%),var(--s2)}
+.day-pay .dp-tot .dp-v{color:#10b981}
+@media(max-width:560px){.day-pay{grid-template-columns:1fr 1fr}.day-pay .dp-v{font-size:23px}}
+.wk-pay{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px;padding:12px 16px;background:var(--s2);border:1px solid var(--wire);font-family:'Oswald',sans-serif;font-size:12px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.wk-pay b{font-family:'Bebas Neue',sans-serif;font-size:24px;font-weight:400;letter-spacing:.5px;color:#10b981;margin-left:8px;font-variant-numeric:tabular-nums}
+.cal-day-pay{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:#10b981;margin-top:2px;font-variant-numeric:tabular-nums}
+@media(max-width:640px){.cal-day-pay{font-size:10.5px}}
+
+/* ── small fixes ── */
+html .cal-nav .cal-range{flex:1;text-align:center;font-size:clamp(13px,3.9vw,18px);min-width:0}
+@media(max-width:640px){html .cal-nav .btn-print{flex:1 0 100%}}
+html #toast{bottom:calc(104px + env(safe-area-inset-bottom));border-radius:999px}
+html .pin-btn{border-radius:var(--ui-r3)}

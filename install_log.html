@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="rates.js"></script>
+    <script src="cards.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing:border-box;margin:0;padding:0; }
@@ -124,6 +125,7 @@
     <meta name="apple-mobile-web-app-title" content="Installs">
     <link rel="apple-touch-icon" href="icon-180.png">
     <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="stylesheet" href="ui.css">
 </head>
 <body>
 <div style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
@@ -230,6 +232,7 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
             <div class="cal-day-label" data-i18n="d_mon">Mon</div><div class="cal-day-label" data-i18n="d_tue">Tue</div><div class="cal-day-label" data-i18n="d_wed">Wed</div><div class="cal-day-label" data-i18n="d_thu">Thu</div><div class="cal-day-label" data-i18n="d_fri">Fri</div><div class="cal-day-label" data-i18n="d_sat">Sat</div><div class="cal-day-label" data-i18n="d_sun">Sun</div>
         </div>
         <div class="cal-grid" id="calendarDays"></div>
+        <div class="wk-pay" id="wkPay"></div>
     </div>
     <div id="installsSection" style="display:none;">
         <div class="card">
@@ -327,16 +330,17 @@ db.ref('installPeople/'+selected).once('value',snap=>{
 function renderCalendar(){
     const week=getWeek(currentDate);
     document.getElementById('weekRange').textContent=`${week[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} — ${week[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`.toUpperCase();
-    const grid=document.getElementById('calendarDays');grid.innerHTML='';
+    const grid=document.getElementById('calendarDays');grid.innerHTML='';const wk=[];AIT_CC.weekStrip('wkPay',wk,t('installs_word'));
     week.forEach(()=>{const slot=document.createElement('button');slot.className='cal-day';slot.innerHTML='<div class="cal-day-num" style="opacity:.2">—</div>';grid.appendChild(slot);});
     week.forEach((d,i)=>{
         db.ref('installLogs/'+dk(d)).once('value',snap=>{
             const all=snap.val();const arr=all?Object.values(all).filter(r=>r.personId===selected):[];
             const n=arr.length, cont=arr.filter(r=>r.continuing).length;
+            const pay=arr.reduce((a,r)=>a+jobPay(r),0);wk[i]={n,pay};AIT_CC.weekStrip('wkPay',wk,t('installs_word'));
             const dateKey=dk(d),isSel=selectedDate===dateKey;
             const btn=grid.children[i];
             btn.className='cal-day'+(n>0?' has-calls':'')+(isSel?' selected':'');
-            btn.innerHTML=`<div class="cal-day-num">${d.getDate()}</div>${n>0?`<div class="cal-day-stat">${n} ${n>1?t('installs_word'):t('install_word')}${cont?` · ${cont}&#8635;`:''}</div>`:`<div class="cal-day-empty">—</div>`}`;
+            btn.innerHTML=`<div class="cal-day-num">${d.getDate()}</div>${n>0?`<div class="cal-day-stat">${n} ${n>1?t('installs_word'):t('install_word')}${cont?` · ${cont}&#8635;`:''}</div>${pay?`<div class="cal-day-pay">$${Math.round(pay).toLocaleString()}</div>`:''}`:`<div class="cal-day-empty">—</div>`}`;
             btn.onclick=()=>{selectedDate=isSel?null:dateKey;renderCalendar();if(selectedDate)renderInstalls(d);else hideExtras();};
         });
     });
@@ -349,25 +353,30 @@ function renderInstalls(date){
     document.getElementById('dayTitle').textContent=date.toLocaleDateString(LANG==='es'?'es-ES':'en-US',{weekday:'long',month:'short',day:'numeric'})+' — '+t('day_installs');
     const path='installLogs/'+dk(date);
     if(installsRef)installsRef.off();
+    AIT_CC.reset();
     installsRef=db.ref(path);
     installsRef.on('value',snap=>{
         const all=snap.val();
         const arr=all?Object.keys(all).map(id=>({id,...all[id]})).filter(r=>r.personId===selected):[];
         arr.sort((a,b)=>(a.ts||0)-(b.ts||0));
-        const c=document.getElementById('installsList');
-        if(!arr.length){c.innerHTML='<p style="color:var(--muted);text-align:center;padding:32px;font-family:Oswald,sans-serif;letter-spacing:0.1em;text-transform:uppercase;font-size:13px;">'+t('none_day')+'</p>';}
-        else{c.innerHTML=arr.map(cardHTML).join('');}
-        redrawDay=()=>{if(!arr.length)return;const el=document.getElementById('installsList');if(el)el.innerHTML=arr.map(cardHTML).join('');};
+        AIT_CC.draw(arr);
+        redrawDay=()=>AIT_CC.redraw();
         renderCalendar();
     });
     const blank=()=>({personId:selected,installerName:me.name,group:me.group,tier:me.tier,customerName:'',jobNumber:'',soldBy:'',whatInstalled:'',systemInstalled:'',notes:'',askedReview:false,redCarpet:false,warrantyReview:false,scheduledQA:false,trade:me.group,hoursOn:false,pieceOn:false,hours:0,continuing:false,date:dk(date),ts:Date.now()});
-    const doAdd=()=>{db.ref(path).push().set(blank()).then(()=>{setTimeout(()=>{const cards=document.querySelectorAll('.call-card');if(cards.length)cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'center'});},200);});};
+    const doAdd=()=>{AIT_CC.foldAll();db.ref(path).push().set(blank()).then(()=>{setTimeout(()=>{const cards=document.querySelectorAll('.call-card');if(cards.length)cards[cards.length-1].scrollIntoView({behavior:'smooth',block:'start'});},200);});};
     document.getElementById('addTop').onclick=doAdd;
     document.getElementById('addBottom').onclick=doAdd;
     document.getElementById('fabAdd').onclick=doAdd;
 }
 
-function cardHTML(c){
+AIT_CC.init({
+    list:'installsList',
+    full:(c,i)=>cardHTML(c,i),
+    meta:c=>[c.jobNumber&&'#'+c.jobNumber,tradeName(c.trade),c.whatInstalled,c.continuing&&'\u21bb '+t('continuing_tag')],
+    empty:()=>'<p style="color:var(--muted);text-align:center;padding:32px;font-family:Oswald,sans-serif;letter-spacing:0.1em;text-transform:uppercase;font-size:13px;">'+t('none_day')+'</p>'
+});
+function cardHTML(c,i){
     const locked=!!c.approved;
     const dis=locked?' disabled':'';
     const tradeSel=['underground','plumbing','hvac','electrical'].map(t=>`<option value="${t}"${c.trade===t?' selected':''}>${tradeName(t)}</option>`).join('');
@@ -389,9 +398,9 @@ function cardHTML(c){
     const hoursBlock=hoursOn?`<div class="section-label" style="margin-top:14px;">${t('opt_hours')}</div><div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div class="field"><label>${t('lbl_hoursworked')}</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateInstall('${c.id}','hours',parseFloat(this.value)||0)" placeholder="${t('ph_hours')}" /></div><div class="field"><label>${t('lbl_rate')}</label><input type="number" step="0.01" min="0" value="${c.hourlyRate!=null&&c.hourlyRate!==''?esc(c.hourlyRate):''}"${dis} onchange="updateInstall('${c.id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${hourlyForTier()||'0.00'}" /></div></div>`:'';
     const pay=jobPay(c);
     const payLine=(hoursOn||pieceOn)?`<div class="job-pay">${t('job_pay')} <span>${fmt$(pay)}</span></div>`:'';
-    const headRight=locked?`<span class="lock-badge">${t('locked_badge')}</span>`:`<button class="del-call" onclick="deleteInstall('${c.id}')">${t('del')}</button>`;
-    return `<div class="call-card${c.continuing?' continuing':''}${locked?' approved':''}">
-        <div class="call-card-header"><div class="call-label">${t('install_label')}${c.continuing?' · &#8635; '+t('continuing_tag'):''}</div>${headRight}</div>
+    const headRight=`<div style="display:flex;gap:8px;align-items:center">${locked?`<span class="lock-badge">${t('locked_badge')}</span>`:`<button class="del-call" onclick="deleteInstall('${c.id}')">${t('del')}</button>`}${AIT_CC.foldBtn(c.id)}</div>`;
+    return `<div class="call-card${c.continuing?' continuing':''}${locked?' approved':''}" data-cc="${c.id}">
+        <div class="call-card-header"><div class="call-label">${t('install_label')} ${i+1}${c.continuing?' · &#8635; '+t('continuing_tag'):''}</div>${headRight}</div>
         ${locked?`<div class="lock-note">${t('lock_note')}</div>`:''}
         <div class="field"><label>${t('lbl_customer')}</label><input type="text" value="${esc(c.customerName)}"${dis} onchange="updateInstall('${c.id}','customerName',this.value)" placeholder="${t('ph_customer')}" /></div>
         <div class="field"><label>${t('lbl_job')}</label><input type="text" value="${esc(c.jobNumber)}"${dis} onchange="updateInstall('${c.id}','jobNumber',this.value)" placeholder="${t('ph_job')}" /></div>
@@ -412,6 +421,7 @@ function cardHTML(c){
         <div class="field"><label>${t('lbl_trade')}</label><select${dis} onchange="changeTrade('${c.id}',this.value)">${tradeSel}</select></div>
         <div class="paytoggles"><label class="check-row pay-toggle"><input type="checkbox" ${hoursOn?'checked':''}${dis} onchange="toggleHours('${c.id}',this.checked)"><span>💵 ${t('opt_hours')}</span></label><label class="check-row pay-toggle"><input type="checkbox" ${pieceOn?'checked':''}${dis} onchange="togglePieceSection('${c.id}',this.checked)"><span>🔧 ${t('opt_piece')}</span></label></div>
         ${hoursBlock}${pieceBlock}${payLine}
+        ${AIT_CC.doneBtn(c.id)}
     </div>`;
 }
 
@@ -446,38 +456,6 @@ document.getElementById('prevWeek').onclick=()=>{currentDate=new Date(currentDat
 document.getElementById('nextWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()+7*864e5);selectedDate=null;hideExtras();renderCalendar();};
 </script>
 
-<style>
-#aitNav{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:rgba(10,10,10,.97);border-top:1px solid rgba(255,255,255,.1);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:4px;backdrop-filter:blur(10px);}
-#aitNav::-webkit-scrollbar{display:none;}
-html.light #aitNav{background:rgba(250,250,250,.97);border-top-color:rgba(0,0,0,.1);}
-#aitNav a{flex:1 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;padding:5px 8px;color:#777;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;}
-#aitNav a .ni{font-size:18px;line-height:1;}
-#aitNav a.cur{color:#dc2626;background:rgba(220,38,38,.1);}
-html.light #aitNav a{color:#666;}
-html.light #aitNav a.cur{color:#dc2626;}
-body{padding-bottom:74px !important;}
-.fab{bottom:84px !important;}
-</style>
-<nav id="aitNav"></nav>
-<script>
-(function(){
-    var es=(localStorage.getItem('aitLang')||'en')==='es';
-    var tabs=[
-        ['install_index.html','\ud83c\udfe0',es?'Tablero':'Home'],
-        ['install_log.html','\ud83d\udd27',es?'Registrar':'Log'],
-        ['install_recall.html','\u21a9\ufe0f',es?'Rellamadas':'Recalls'],
-        ['install_turnins.html','\ud83d\udccb',es?'Entregas':'Turn-In'],
-        ['install_lookup.html','\ud83d\udd0d',es?'Buscar':'Lookup'],
-        ['install_leaderboard.html','\ud83c\udfc6',es?'L\u00edderes':'Leaders'],
-        ['install_manager.html','\u2699\ufe0f',es?'Gerente':'Manager']
-    ];
-    var here=(location.pathname.split('/').pop()||'install_index.html');
-    document.getElementById('aitNav').innerHTML=tabs.map(function(t){
-        return '<a href="'+t[0]+'" class="'+(here===t[0]?'cur':'')+'"><span class="ni">'+t[1]+'</span>'+t[2]+'</a>';
-    }).join('');
-    var c=document.querySelector('#aitNav a.cur');if(c)c.scrollIntoView({inline:'center',block:'nearest'});
-    if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
-})();
-</script>
+<script src="nav.js"></script>
 </body>
 </html>

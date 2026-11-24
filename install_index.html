@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#dc2626">
-    <link rel="manifest" href="install_manifest.json">
+    <link rel="manifest" href="manifest.json">
     <title>Action Plumbing — Install Tracker</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="cards.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -111,6 +112,10 @@
         .nav-card.mgr-card .chip{color:var(--faint);border-color:var(--wire2);}
         .nav-card.mgr-card .nav-card-title{color:var(--muted);}
 
+        .pay-block .stat-num{color:#10b981;}
+        .chip.live{color:#10b981;border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.08);}
+        .team-strip .stat-block{padding:18px 22px;}.team-strip .stat-num{font-size:40px!important;}
+        #actions{margin-bottom:8px;}
         .select-prompt{border:1px solid var(--wire);border-left:3px solid var(--red);padding:20px 28px;font-family:'Oswald',sans-serif;font-size:15px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
         .fade-up{animation:fadeUp .4s ease both;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
@@ -124,6 +129,7 @@
             .btn-primary{min-height:56px;font-size:15px;padding:16px 22px;}
         }
     </style>
+    <link rel="stylesheet" href="ui.css">
 </head>
 <body>
 <div id="themeToggleWrap" style="position:fixed;top:12px;right:16px;z-index:9999;display:flex;gap:8px;">
@@ -146,10 +152,23 @@ const I18N={
   stat_last30:{en:'Last 30 days',es:'Últimos 30 días'},
   stat_recall_rate:{en:'Recall Rate',es:'Tasa de Rellamadas'},
   stat_recall_div:{en:'Recalls ÷ installs',es:'Rellamadas ÷ instalaciones'},
+  my_week:{en:"This Week's Pay",es:'Pago de Esta Semana'},
+  my_today:{en:"Today's Pay",es:'Pago de Hoy'},
+  my_pending:{en:'Awaiting Approval',es:'Pendiente de Aprobación'},
+  my_pending_meta:{en:'This week · not approved yet',es:'Esta semana · sin aprobar'},
+  jobs_word:{en:'jobs',es:'trabajos'},
+  recalls_word:{en:'recalls',es:'rellamadas'},
+  piece_word:{en:'Piece',es:'Pieza'},
+  hourly_word:{en:'Hourly',es:'Hora'},
+  sec_pay:{en:'My Pay',es:'Mi Pago'},
+  sec_work:{en:'Log Work',es:'Registrar Trabajo'},
+  sec_team:{en:'Team',es:'Equipo'},
+  today_chip:{en:'today',es:'hoy'},
+  week_chip:{en:'this week',es:'esta semana'},
   pick_division:{en:'Choose Your Division',es:'Elige Tu División'},
   pick_name:{en:'Choose Your Name',es:'Elige Tu Nombre'},
   roster_empty:{en:'No installers assigned to this division yet. Add them in the Manager portal.',es:'Aún no hay instaladores asignados a esta división. Agrégalos en el portal de Gerente.'},
-  select_prompt:{en:'↑ Pick a division, then choose your name to continue',es:'↑ Elige una división, luego elige tu nombre para continuar'},
+  select_prompt:{en:'This login is not linked to an installer yet — ask a manager to link it in the Manager portal',es:'Este acceso aún no está vinculado a un instalador — pide a un gerente que lo vincule en el portal de Gerente'},
   nav_log_t:{en:'Log Install',es:'Registrar Instalación'},
   nav_log_d:{en:'Record a completed installation and the customer-experience checklist',es:'Registra una instalación completada y la lista de experiencia del cliente'},
   nav_recall_t:{en:'Log Recall',es:'Registrar Rellamada'},
@@ -202,35 +221,22 @@ function applyStaticLang(){
         </div>
     </div>
 
-    <div class="stat-strip">
-        <div class="stat-block"><div class="stat-label" data-i18n="stat_today">Today's Installs</div><div id="todayInstalls" class="stat-num">0</div><div class="stat-meta" data-i18n="stat_alldiv">All divisions</div></div>
-        <div class="stat-block"><div class="stat-label" data-i18n="stat_open_recalls">Open Recalls</div><div id="openRecalls" class="stat-num">0</div><div class="stat-meta" data-i18n="stat_last30">Last 30 days</div></div>
-        <div class="stat-block"><div class="stat-label" data-i18n="stat_recall_rate">Recall Rate</div><div id="recallRate" class="stat-num">0%</div><div class="stat-meta" data-i18n="stat_recall_div">Recalls ÷ installs</div></div>
-    </div>
-
-    <!-- DIVISIONS -->
-    <div class="section-divider"><span class="sdl">Select Division</span></div>
-    <div class="div-grid" id="divGrid"></div>
-
-    <!-- ROSTER (after picking division) -->
-    <div class="card" id="rosterCard" style="display:none;">
-        <div class="card-header">
-            <div class="card-title">Crew — <span class="pin" id="rosterDivName" style="color:var(--accent)">—</span></div>
-            <button class="btn btn-outline" id="clearDivBtn">← All Divisions</button>
-        </div>
-        <div class="people-grid" id="peopleList"></div>
-        <div class="empty-note" id="rosterEmpty" data-i18n="roster_empty" style="display:none;">No installers assigned to this division yet. Add them in the Manager portal.</div>
+    <div class="section-divider"><span class="sdl" data-i18n="sec_pay">My Pay</span></div>
+    <div class="stat-strip" id="payStrip">
+        <div class="stat-block pay-block"><div class="stat-label" data-i18n="my_week">This Week's Pay</div><div id="myWeekPay" class="stat-num">$0</div><div id="myWeekMeta" class="stat-meta">—</div></div>
+        <div class="stat-block"><div class="stat-label" data-i18n="my_today">Today's Pay</div><div id="myTodayPay" class="stat-num">$0</div><div id="myTodayMeta" class="stat-meta">—</div></div>
+        <div class="stat-block"><div class="stat-label" data-i18n="my_pending">Awaiting Approval</div><div id="myPendingPay" class="stat-num">$0</div><div class="stat-meta" data-i18n="my_pending_meta">This week · not approved yet</div></div>
     </div>
 
     <!-- ACTIONS (after picking person) -->
     <div id="actions" style="display:none;">
-        <div class="section-divider"><span class="sdl">Log Work</span></div>
+        <div class="section-divider"><span class="sdl" data-i18n="sec_work">Log Work</span></div>
         <div class="nav-grid">
             <a href="install_log.html" class="nav-card fade-up">
                 <span class="nav-card-icon">🔧</span>
                 <div class="nav-card-title" data-i18n="nav_log_t">Log Install</div>
                 <div class="nav-card-desc" data-i18n="nav_log_d">Record a completed installation and the customer-experience checklist</div>
-                <div class="nav-chips"><span class="chip">Job #</span><span class="chip">Checklist</span><span class="chip">Sold By</span></div>
+                <div class="nav-chips"><span class="chip">Job #</span><span class="chip">Piece Rate</span><span class="chip">Hourly</span><span class="chip live" id="chipToday" style="display:none"></span></div>
             </a>
             <a href="install_recall.html" class="nav-card fade-up">
                 <span class="nav-card-icon">↩️</span>
@@ -242,7 +248,7 @@ function applyStaticLang(){
                 <span class="nav-card-icon">📄</span>
                 <div class="nav-card-title" data-i18n="nav_turnin_t">Weekly Turn-In</div>
                 <div class="nav-card-desc" data-i18n="nav_turnin_d">Printable weekly sheet of every install you did — jobs, hours, and piece-rate work</div>
-                <div class="nav-chips"><span class="chip">Printable</span><span class="chip">Auto-filled</span></div>
+                <div class="nav-chips"><span class="chip">Printable</span><span class="chip">Auto-filled</span><span class="chip live" id="chipWeek" style="display:none"></span></div>
             </a>
             <a href="install_lookup.html" class="nav-card fade-up">
                 <span class="nav-card-icon">🔍</span>
@@ -263,6 +269,13 @@ function applyStaticLang(){
                 <div class="nav-chips"><span class="chip">Reports</span><span class="chip">Recall Rate</span></div>
             </a>
         </div>
+    </div>
+
+    <div class="section-divider" style="margin-top:32px"><span class="sdl" data-i18n="sec_team">Team</span></div>
+    <div class="stat-strip team-strip">
+        <div class="stat-block"><div class="stat-label" data-i18n="stat_today">Today's Installs</div><div id="todayInstalls" class="stat-num">0</div><div class="stat-meta" data-i18n="stat_alldiv">All divisions</div></div>
+        <div class="stat-block"><div class="stat-label" data-i18n="stat_open_recalls">Open Recalls</div><div id="openRecalls" class="stat-num">0</div><div class="stat-meta" data-i18n="stat_last30">Last 30 days</div></div>
+        <div class="stat-block"><div class="stat-label" data-i18n="stat_recall_rate">Recall Rate</div><div id="recallRate" class="stat-num">0%</div><div class="stat-meta" data-i18n="stat_recall_div">Recalls ÷ installs</div></div>
     </div>
 
     <div id="selectMsg" style="display:none;" class="select-prompt" data-i18n="select_prompt">↑ Pick a division, then choose your name to continue</div>
@@ -362,11 +375,10 @@ function initApp(){
         tag.innerHTML=`${t('signed_in_as')} <strong style="color:var(--text)">${s.name}</strong>`;
         document.querySelector('.hero-sub').insertAdjacentElement('afterend',tag);
     }
-    document.getElementById('clearDivBtn').onclick=()=>{activeDiv=null;localStorage.removeItem('installActiveDiv');render();};
 
     db.ref('installPeople').on('value',snap=>{
         const data=snap.val();
-        people=data?Object.keys(data).filter(k=>!data[k].archived).map(k=>({id:k,name:data[k].name,group:data[k].group||'plumbing'})):[];
+        people=data?Object.keys(data).filter(k=>!data[k].archived).map(k=>({id:k,name:data[k].name,group:data[k].group||'plumbing',tier:data[k].tier||''})):[];
         if(selected&&!people.find(p=>p.id===selected)&&people.length){/* keep selection cleared rather than auto-jump */}
         // restore active division for the signed-in person
         if(activeDiv===null){const me=people.find(p=>p.id===selected);if(me)activeDiv=me.group;}
@@ -379,6 +391,7 @@ function initApp(){
 function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 
 function renderStats(){
+    renderMyPay();
     const today=dkOf(new Date());
     let installs=0;
     const day=logs[today]||{};installs=Object.keys(day).length;
@@ -391,78 +404,47 @@ function renderStats(){
     document.getElementById('recallRate').textContent=totalInstalls?Math.round(totalRecalls/totalInstalls*100)+'%':'0%';
 }
 
-function render(){renderDivisions();renderRoster();renderActions();}
+function render(){renderMe();renderActions();renderStats();}
 
-function renderDivisions(){
-    const grid=document.getElementById('divGrid');
-    grid.innerHTML=DIVISIONS.map(d=>{
-        const count=people.filter(p=>p.group===d.key).length;
-        return `<button class="div-card ${activeDiv===d.key?'active':''}" style="--accent:${d.accent}" data-div="${d.key}">
-            <span class="div-icon">${d.icon}</span>
-            <div class="div-name">${t('div_'+d.key)}</div>
-            <div class="div-count">${count}</div>
-            <div class="div-count-lbl">Installers</div>
-            <span class="corner">${d.icon}</span>
-        </button>`;
-    }).join('');
-    grid.querySelectorAll('.div-card').forEach(b=>b.onclick=()=>{activeDiv=b.dataset.div;localStorage.setItem('installActiveDiv',activeDiv);render();});
+const TIER_NAMES={helper1:'Helper 1',helper2:'Helper 2',helper3:'Helper 3',lead1:'Lead 1',lead2:'Lead 2',lead3:'Lead 3'};
+// who is signed in: name · division · tier (each tech only ever sees their own pay)
+function renderMe(){
+    const me=people.find(p=>p.id===selected),tag=document.getElementById('loggedInName'),s=getSession();
+    if(!tag||!s)return;
+    const d=me&&DIVISIONS.find(x=>x.key===me.group);
+    tag.innerHTML=`${t('signed_in_as')} <strong style="color:var(--text)">${me?me.name:s.name}</strong>`+(d?` · <span style="color:${d.accent}">${d.icon} ${t('div_'+d.key)}</span>`:'')+(me&&TIER_NAMES[me.tier]?` · ${TIER_NAMES[me.tier]}`:'');
 }
 
-function renderRoster(){
-    const card=document.getElementById('rosterCard');
-    if(!activeDiv){card.style.display='none';return;}
-    card.style.display='';
-    const d=DIVISIONS.find(x=>x.key===activeDiv);
-    document.getElementById('rosterDivName').textContent=t('div_'+d.key);
-    document.getElementById('rosterDivName').style.color=d.accent;
-    card.style.setProperty('--accent',d.accent);
-    const crew=people.filter(p=>p.group===activeDiv);
-    const list=document.getElementById('peopleList'),empty=document.getElementById('rosterEmpty');
-    if(!crew.length){list.innerHTML='';empty.style.display='block';return;}
-    empty.style.display='none';
-    list.innerHTML=crew.map(p=>`<button class="person-btn ${selected===p.id?'selected':''}" data-id="${p.id}">${p.name}${selected===p.id?`<span class="person-check">${t('active')}</span>`:''}</button>`).join('');
-    list.querySelectorAll('.person-btn').forEach(b=>b.onclick=()=>{selected=b.dataset.id;localStorage.setItem('installSelectedPerson',selected);render();});
+// Monday-start week, same as the Weekly Turn-In sheet
+function weekKeys(){const now=new Date(),day=now.getDay(),mon=new Date(now);mon.setDate(now.getDate()-day+(day===0?-6:1));return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return dkOf(d);});}
+function renderMyPay(){
+    const $=n=>'$'+Math.round(n).toLocaleString();
+    const today=dkOf(new Date());
+    let wk=0,piece=0,hourly=0,pending=0,jobs=0,rcl=0,td=0,tdJobs=0;
+    weekKeys().forEach(k=>{
+        const mine=[];
+        Object.values(logs[k]||{}).forEach(r=>{if(r.personId===selected){mine.push(r);jobs++;if(k===today)tdJobs++;}});
+        Object.values(recalls[k]||{}).forEach(r=>{if((r.personId||r.loggedById)===selected){mine.push(r);rcl++;}});
+        mine.forEach(r=>{const p=AIT_CC.split(r);wk+=p.total;piece+=p.piece;hourly+=p.hourly;if(!r.approved)pending+=p.total;if(k===today)td+=p.total;});
+    });
+    document.getElementById('myWeekPay').textContent=$(wk);
+    document.getElementById('myWeekMeta').textContent=`${t('piece_word')} ${$(piece)} · ${t('hourly_word')} ${$(hourly)} · ${jobs} ${t('jobs_word')}`+(rcl?` · ${rcl} ${t('recalls_word')}`:'');
+    document.getElementById('myTodayPay').textContent=$(td);
+    document.getElementById('myTodayMeta').textContent=`${tdJobs} ${t('jobs_word')} ${t('today_chip')}`;
+    document.getElementById('myPendingPay').textContent=$(pending);
+    const c1=document.getElementById('chipToday'),c2=document.getElementById('chipWeek');
+    c1.style.display=tdJobs?'':'none';c1.textContent=`${tdJobs} ${t('today_chip')}`;
+    c2.style.display=wk?'':'none';c2.textContent=`${$(wk)} ${t('week_chip')}`;
 }
 
 function renderActions(){
     const show=!!selected&&!!people.find(p=>p.id===selected);
     document.getElementById('actions').style.display=show?'block':'none';
+    document.getElementById('payStrip').style.display=show?'':'none';
     document.getElementById('selectMsg').style.display=!show?'block':'none';
 }
 </script>
 
-<style>
-#aitNav{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:rgba(10,10,10,.97);border-top:1px solid rgba(255,255,255,.1);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));gap:4px;backdrop-filter:blur(10px);}
-#aitNav::-webkit-scrollbar{display:none;}
-html.light #aitNav{background:rgba(250,250,250,.97);border-top-color:rgba(0,0,0,.1);}
-#aitNav a{flex:1 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;padding:5px 8px;color:#777;font-family:'Oswald',sans-serif;font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border-radius:6px;}
-#aitNav a .ni{font-size:18px;line-height:1;}
-#aitNav a.cur{color:#dc2626;background:rgba(220,38,38,.1);}
-html.light #aitNav a{color:#666;}
-html.light #aitNav a.cur{color:#dc2626;}
-body{padding-bottom:74px !important;}
-.fab{bottom:84px !important;}
-</style>
-<nav id="aitNav"></nav>
-<script>
-(function(){
-    var es=(localStorage.getItem('aitLang')||'en')==='es';
-    var tabs=[
-        ['install_index.html','\ud83c\udfe0',es?'Tablero':'Home'],
-        ['install_log.html','\ud83d\udd27',es?'Registrar':'Log'],
-        ['install_recall.html','\u21a9\ufe0f',es?'Rellamadas':'Recalls'],
-        ['install_turnins.html','\ud83d\udccb',es?'Entregas':'Turn-In'],
-        ['install_lookup.html','\ud83d\udd0d',es?'Buscar':'Lookup'],
-        ['install_leaderboard.html','\ud83c\udfc6',es?'L\u00edderes':'Leaders'],
-        ['install_manager.html','\u2699\ufe0f',es?'Gerente':'Manager']
-    ];
-    var here=(location.pathname.split('/').pop()||'install_index.html');
-    document.getElementById('aitNav').innerHTML=tabs.map(function(t){
-        return '<a href="'+t[0]+'" class="'+(here===t[0]?'cur':'')+'"><span class="ni">'+t[1]+'</span>'+t[2]+'</a>';
-    }).join('');
-    var c=document.querySelector('#aitNav a.cur');if(c)c.scrollIntoView({inline:'center',block:'nearest'});
-    if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){});}
-})();
-</script>
+<script src="nav.js"></script>
 </body>
 </html>
