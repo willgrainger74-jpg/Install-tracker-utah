@@ -187,7 +187,7 @@ const I18N={
   div_plumbing:{en:'Plumbing Install',es:'Instalación de Plomería'},
   div_hvac:{en:'HVAC Install',es:'Instalación de HVAC'},
   div_electrical:{en:'Electrical Install',es:'Instalación Eléctrica'},
-  login_title:{en:'Tech Login',es:'Acceso de Técnico'},
+  login_title:{en:'Sign In',es:'Entrar'},
   login_sub:{en:'Enter your username and password',es:'Ingresa tu usuario y contraseña'},
   login_user:{en:'Username',es:'Usuario'},
   login_pass:{en:'Password',es:'Contraseña'},
@@ -354,7 +354,15 @@ function showLoginScreen(message){
             const logins=snap.val()||{};let matched=null;
             Object.entries(logins).forEach(([id,rec])=>{if(!rec.disabled&&rec.username&&rec.username.toLowerCase()===user&&rec.password===pass){matched={loginId:id,personId:rec.personId,name:rec.name||rec.username,username:rec.username};}});
             if(matched){const session={...matched,lastActivity:Date.now()};saveSession(session);localStorage.setItem('installSelectedPerson',matched.personId);selected=matched.personId;overlay.remove();document.querySelector('.page').style.display='';bindActivityTracking();resetLogoutTimer();initApp();}
-            else{errEl.textContent='Incorrect username or password.';btn.textContent='UNLOCK';btn.disabled=false;pEl.value='';pEl.focus();}
+            else{
+                // not a tech — try the manager logins; a manager goes straight to the Manager Portal
+                db.ref('installManagerLogins').once('value',ms=>{
+                    const mgrs=ms.val()||{};let mgr=null;
+                    Object.entries(mgrs).forEach(([id,rec])=>{if(!rec.disabled&&rec.username&&rec.username.toLowerCase()===user&&rec.password===pass){mgr={role:'manager',loginId:id,name:rec.name||rec.username,username:rec.username};}});
+                    if(mgr){localStorage.removeItem('installSelectedPerson');saveSession({...mgr,lastActivity:Date.now()});location.replace('install_manager.html');}
+                    else{errEl.textContent=t('login_err');btn.textContent=t('login_btn');btn.disabled=false;pEl.value='';pEl.focus();}
+                });
+            }
         });
     };
     btn.onclick=doLogin;[uEl,pEl].forEach(el=>el.addEventListener('keypress',e=>{if(e.key==='Enter')doLogin();}));
@@ -363,6 +371,8 @@ function showLoginScreen(message){
 (function boot(){
     applyStaticLang();
     const s=getSession();
+    // a signed-in manager has no installer dashboard — their home is the Manager Portal
+    if(s&&s.role==='manager'&&(Date.now()-(s.lastActivity||0))<TIMEOUT_MS){location.replace('install_manager.html');return;}
     if(s&&s.personId&&(Date.now()-(s.lastActivity||0))<TIMEOUT_MS){selected=s.personId;localStorage.setItem('installSelectedPerson',selected);bindActivityTracking();resetLogoutTimer();initApp();}
     else{clearSession();showLoginScreen();}
 })();

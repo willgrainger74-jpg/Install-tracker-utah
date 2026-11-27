@@ -230,6 +230,18 @@ const I18N={
  lbl_username:{en:'Username',es:'Usuario'},
  lbl_password:{en:'Password',es:'Contraseña'},
  btn_save:{en:'Save',es:'Guardar'},
+ st_mgrlogins:{en:'Manager Logins',es:'Accesos de Gerentes'},
+ mgr_desc:{en:'Managers are not installers. They sign in on the same sign-in screen as the techs and land straight in this Manager Portal — no PIN needed.',es:'Los gerentes no son instaladores. Entran en la misma pantalla que los técnicos y llegan directo a este Portal de Gerente — sin PIN.'},
+ mgr_add:{en:'+ Add Manager',es:'+ Agregar Gerente'},
+ mgr_none:{en:'No manager logins yet.',es:'Aún no hay accesos de gerente.'},
+ mgr_new:{en:'Add Manager',es:'Agregar Gerente'},
+ mgr_edit:{en:'Edit Manager',es:'Editar Gerente'},
+ lbl_name:{en:'Name',es:'Nombre'},
+ mgr_pwkeep:{en:'Leave the password blank to keep the current one.',es:'Deja la contraseña en blanco para conservar la actual.'},
+ mgr_you:{en:'You',es:'Tú'},
+ signed_in_as:{en:'Signed in as',es:'Sesión de'},
+ logout:{en:'🔒 Log Out',es:'🔒 Salir'},
+ or_pin:{en:'Managers: sign in on the main screen',es:'Gerentes: entren en la pantalla principal'},
  th_installer:{en:'Installer',es:'Instalador'},
  th_division:{en:'Division',es:'División'},
  th_installs:{en:'Installs',es:'Instalaciones'},
@@ -273,6 +285,7 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
         <button class="pin-btn" onclick="checkPin()">Unlock</button>
         <p id="pinError" class="pin-err hidden" data-i18n="pin_err">Incorrect PIN — try again</p>
         <a href="install_index.html" class="pin-back">← Back to dashboard</a>
+        <p style="font-size:11px;color:var(--faint,var(--muted));font-family:'Oswald',sans-serif;letter-spacing:.08em;text-transform:uppercase;margin:-12px 0 20px" data-i18n="or_pin">Managers: sign in on the main screen</p>
         <div class="change-pin-section">
             <div class="change-pin-lbl" data-i18n="changepin">Change PIN</div>
             <input id="currentPinInput" type="password" data-i18n-ph="ph_curpin" placeholder="Current PIN" />
@@ -288,9 +301,13 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
 <!-- PORTAL -->
 <div id="managerPortal" class="hidden"><div class="page">
     <div class="hero">
-        <a href="install_index.html" class="back" data-i18n="back">← Dashboard</a>
+        <a href="install_index.html" class="back" id="portalBack" data-i18n="back">← Dashboard</a>
         <div class="eyebrow" style="margin-top:14px">Install Manager</div>
         <h1><span data-i18n="h1a">Manager </span><em data-i18n="h1b">Portal</em></h1>
+        <div id="mgrWho" class="hidden" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">
+            <span><span data-i18n="signed_in_as">Signed in as</span> <strong id="mgrWhoName" style="color:var(--text)"></strong></span>
+            <button class="btn btn-outline" style="padding:7px 12px;font-size:11px" onclick="mgrLogout()" data-i18n="logout">🔒 Log Out</button>
+        </div>
     </div>
 
     <div class="tab-strip">
@@ -415,6 +432,13 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
         </div>
         <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6">Each active installer needs a username and password to sign in. Sessions auto-expire after 30 minutes of inactivity.</p>
         <div id="loginsBody"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:34px 0 8px">
+            <div class="sec-title" data-i18n="st_mgrlogins">Manager Logins</div>
+            <button class="btn btn-red" onclick="openMgrLogin('')" data-i18n="mgr_add">+ Add Manager</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6" data-i18n="mgr_desc">Managers are not installers. They sign in on the same sign-in screen as the techs and land straight in this Manager Portal — no PIN needed.</p>
+        <div id="mgrLoginsBody"></div>
     </div>
 
     <!-- ARCHIVED -->
@@ -433,6 +457,23 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
             <button class="btn btn-outline" onclick="closeEdit()">Done</button>
         </div>
         <div id="editModalBody"></div>
+    </div>
+</div>
+
+<!-- MANAGER LOGIN MODAL -->
+<div id="mgrLoginModal" class="modal">
+    <div class="modal-box">
+        <div class="m-title" id="mgrLoginModalTitle">Add Manager</div>
+        <input type="hidden" id="editMgrLoginId" />
+        <label data-i18n="lbl_name">Name</label><input id="mgrLoginName" type="text" placeholder="Full name" />
+        <label data-i18n="lbl_username">Username</label><input id="mgrLoginUsername" type="text" placeholder="username" autocapitalize="none" autocomplete="off" />
+        <label data-i18n="lbl_password">Password</label><input id="mgrLoginPassword" type="text" placeholder="password" autocapitalize="none" autocomplete="off" />
+        <p id="mgrLoginHint" class="hidden" style="font-size:11px;color:var(--muted);margin-top:6px" data-i18n="mgr_pwkeep">Leave the password blank to keep the current one.</p>
+        <p id="mgrLoginModalErr" style="color:#ef4444;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.06em;min-height:16px;margin-top:8px"></p>
+        <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-red" style="flex:1" onclick="saveMgrLogin()" data-i18n="btn_save">Save</button>
+            <button class="btn btn-outline" onclick="document.getElementById('mgrLoginModal').style.display='none'">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -488,7 +529,7 @@ function changePin(){
 }
 
 // ── DATA ──
-let people={},logs={},recalls={},logins={},RATES={items:{},hourlyTiers:{}},currentTab='roster';
+let people={},logs={},recalls={},logins={},mgrLogins={},RATES={items:{},hourlyTiers:{}},currentTab='roster';
 let expandedInstaller=null, editOpen=null;
 function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function initPortal(){
@@ -496,6 +537,7 @@ function initPortal(){
     db.ref('installLogs').on('value',s=>{logs=s.val()||{};renderCurrent();if(editOpen)renderEditModal();});
     db.ref('recalls').on('value',s=>{recalls=s.val()||{};renderCurrent();if(editOpen)renderEditModal();});
     db.ref('installTechLogins').on('value',s=>{logins=s.val()||{};if(currentTab==='logins')renderLogins();});
+    db.ref('installManagerLogins').on('value',s=>{mgrLogins=s.val()||{};if(currentTab==='logins')renderLogins();mgrSessionStillValid();});
     db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourlyTiers:v.hourlyTiers||{}};if(!v.items||!Object.keys(v.items).length){seedStandardRates(true);}if(currentTab==='rates'||currentTab==='turnins'||currentTab==='scorecards')renderCurrent();});
 }
 function showTab(name){
@@ -925,6 +967,7 @@ function confirmSeedRates(){if(confirm('Load the standard piece rates from the p
 
 // ── LOGINS ──
 function renderLogins(){
+    renderMgrLogins();
     const el=document.getElementById('loginsBody');const act=activePeople();
     if(!act.length){el.innerHTML='<div class="empty-note">Add installers first.</div>';return;}
     const byPerson={};Object.entries(logins).forEach(([id,r])=>{byPerson[r.personId]={...r,_id:id};});
@@ -949,12 +992,78 @@ function saveLogin(){
     if(!username){err.textContent='Enter a username.';return;}
     if(!editId&&!password){err.textContent='Enter a password.';return;}
     if(password&&password.length<3){err.textContent='Password must be at least 3 characters.';return;}
-    const taken=Object.entries(logins).some(([id,r])=>r.username&&r.username.toLowerCase()===username&&id!==editId);if(taken){err.textContent='That username is taken.';return;}
+    const taken=Object.entries(logins).some(([id,r])=>r.username&&r.username.toLowerCase()===username&&id!==editId);if(taken||mgrUsernameTaken(username,'')){err.textContent='That username is taken.';return;}
     const p=people[pid];const data={personId:pid,name:p?p.name:'',username,disabled:false};if(password)data.password=password;
     if(editId){db.ref('installTechLogins/'+editId).once('value',s=>{db.ref('installTechLogins/'+editId).set({...(s.val()||{}),...data});document.getElementById('loginModal').style.display='none';toast('Login updated ✓');});}
     else{db.ref('installTechLogins').push(data);document.getElementById('loginModal').style.display='none';toast('Login created ✓');}
 }
 function removeLogin(id,name){if(!confirm(`Remove login for ${name}? They won't be able to sign in.`))return;db.ref('installTechLogins/'+id).remove();toast('Login removed');}
+
+// ── MANAGER LOGINS (not installers — they land straight in this portal) ──
+const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
+function getSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY));}catch(e){return null;}}
+function mgrSession(){const s=getSession();return (s&&s.role==='manager'&&(Date.now()-(s.lastActivity||0))<TIMEOUT_MS)?s:null;}
+function mgrUsernameTaken(username,exceptId){return Object.entries(mgrLogins).some(([id,r])=>r.username&&r.username.toLowerCase()===username&&id!==exceptId);}
+function renderMgrLogins(){
+    const el=document.getElementById('mgrLoginsBody');if(!el)return;
+    const me=mgrSession();const rows=Object.entries(mgrLogins).map(([id,r])=>({id,...r})).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    if(!rows.length){el.innerHTML=`<div class="empty-note">${t('mgr_none')}</div>`;return;}
+    el.innerHTML=rows.map(r=>`<div class="person-row"><div class="pr-name">${esc(r.name||r.username)} <span class="pill" style="color:var(--red);border-color:rgba(220,38,38,.4)">${t('pin_title')}</span>${me&&me.loginId===r.id?` <span class="pill">${t('mgr_you')}</span>`:''}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill">@${esc(r.username)}</span><button class="btn btn-outline" onclick="openMgrLogin('${r.id}')">Edit</button><button class="btn btn-outline" style="color:#ef4444;border-color:rgba(220,38,38,.3)" onclick="removeMgrLogin('${r.id}')">Remove</button></div></div>`).join('');
+}
+function openMgrLogin(id){
+    const r=id?mgrLogins[id]:null;
+    document.getElementById('editMgrLoginId').value=id||'';
+    document.getElementById('mgrLoginModalTitle').textContent=t(id?'mgr_edit':'mgr_new');
+    document.getElementById('mgrLoginName').value=r?(r.name||''):'';
+    document.getElementById('mgrLoginUsername').value=r?(r.username||''):'';
+    document.getElementById('mgrLoginPassword').value='';
+    document.getElementById('mgrLoginHint').classList.toggle('hidden',!id);
+    document.getElementById('mgrLoginModalErr').textContent='';
+    document.getElementById('mgrLoginModal').style.display='flex';setTimeout(()=>document.getElementById('mgrLoginName').focus(),60);
+}
+function saveMgrLogin(){
+    const editId=document.getElementById('editMgrLoginId').value;
+    const name=document.getElementById('mgrLoginName').value.trim();
+    const username=document.getElementById('mgrLoginUsername').value.trim().toLowerCase();
+    const password=document.getElementById('mgrLoginPassword').value.trim();
+    const err=document.getElementById('mgrLoginModalErr');err.textContent='';
+    if(!name){err.textContent='Enter a name.';return;}
+    if(!username){err.textContent='Enter a username.';return;}
+    if(!editId&&!password){err.textContent='Enter a password.';return;}
+    if(password&&password.length<3){err.textContent='Password must be at least 3 characters.';return;}
+    const techTaken=Object.values(logins).some(r=>r.username&&r.username.toLowerCase()===username);
+    if(techTaken||mgrUsernameTaken(username,editId)){err.textContent='That username is taken.';return;}
+    const close=()=>{document.getElementById('mgrLoginModal').style.display='none';};
+    if(editId){
+        const data={...(mgrLogins[editId]||{}),name,username,disabled:false};if(password)data.password=password;
+        db.ref('installManagerLogins/'+editId).set(data);
+        const s=getSession();if(s&&s.role==='manager'&&s.loginId===editId){s.name=name;s.username=username;localStorage.setItem(SESSION_KEY,JSON.stringify(s));showMgrWho();}
+        close();toast('Manager login updated ✓');
+    }else{db.ref('installManagerLogins').push({name,username,password,disabled:false,created:Date.now()});close();toast('Manager login created ✓');}
+}
+function removeMgrLogin(id){
+    const r=mgrLogins[id];if(!r)return;const me=mgrSession();
+    const mine=me&&me.loginId===id;
+    if(!confirm(mine?`Remove YOUR OWN manager login (${r.name||r.username})? You will be signed out.`:`Remove manager login for ${r.name||r.username}? They won't be able to sign in.`))return;
+    db.ref('installManagerLogins/'+id).remove();toast('Manager login removed');
+}
+// portal open/close for a signed-in manager
+let _mgrTimer=null,_mgrLastWrite=0;
+function showMgrWho(){const s=mgrSession();const w=document.getElementById('mgrWho');if(!s){w.classList.add('hidden');w.style.display='none';return;}document.getElementById('mgrWhoName').textContent=s.name||s.username;w.classList.remove('hidden');w.style.display='flex';const b=document.getElementById('portalBack');if(b)b.style.display='none';}
+function mgrLogout(msg){clearTimeout(_mgrTimer);localStorage.removeItem(SESSION_KEY);localStorage.removeItem('installSelectedPerson');location.replace('install_index.html');}
+function mgrTouch(){const s=getSession();if(!s||s.role!=='manager')return;clearTimeout(_mgrTimer);_mgrTimer=setTimeout(mgrLogout,TIMEOUT_MS);if(Date.now()-_mgrLastWrite>5000){_mgrLastWrite=Date.now();s.lastActivity=Date.now();localStorage.setItem(SESSION_KEY,JSON.stringify(s));}}
+// if this manager's login is removed or disabled while they're in the portal, sign them out
+function mgrSessionStillValid(){const s=getSession();if(!s||s.role!=='manager')return;const r=mgrLogins[s.loginId];if(!r||r.disabled)mgrLogout();}
+(function mgrBoot(){
+    const s=mgrSession();
+    if(!s){const raw=getSession();if(raw&&raw.role==='manager'){localStorage.removeItem(SESSION_KEY);}return;}
+    document.getElementById('pinScreen').classList.add('hidden');
+    document.getElementById('managerPortal').classList.remove('hidden');
+    showMgrWho();
+    ['mousemove','keydown','click','touchstart','scroll'].forEach(e=>document.addEventListener(e,mgrTouch,{passive:true}));
+    mgrTouch();initPortal();
+})();
 
 let _tt;function toast(msg,color){const t=document.getElementById('toast');t.textContent=msg;t.style.background=color||'var(--green)';t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2400);}
 setTimeout(()=>document.getElementById('pinInput').focus(),100);
