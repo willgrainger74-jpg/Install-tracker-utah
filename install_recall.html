@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="rates.js"></script>
     <script src="cards.js"></script>
+    <script src="audit.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing:border-box;margin:0;padding:0; }
@@ -187,7 +188,9 @@ const I18N={
  opt_piece:{en:'Piece Rate',es:'Por Pieza'},
  lbl_hoursworked:{en:'Hours Worked',es:'Horas Trabajadas'},
  ph_hours:{en:'e.g. 2.5',es:'ej. 2.5'},
- lbl_rate:{en:'Rate ($/hr)',es:'Tarifa ($/hr)'},
+ lbl_rate:{en:'Your Rate ($/hr)',es:'Tu Tarifa ($/hr)'},
+ rate_locked:{en:'Set by your manager',es:'Fijada por tu gerente'},
+ piece_locked:{en:'🔒 Piece rates are set by management — you choose the items and the quantity.',es:'🔒 Las tarifas por pieza las fija la gerencia — tú eliges las piezas y la cantidad.'},
  lbl_qty:{en:'Qty',es:'Cant.'},
  piecerate_work:{en:'Piece-Rate Work',es:'Trabajo Por Pieza'},
  job_pay:{en:'Recall Pay',es:'Pago de Rellamada'},
@@ -278,7 +281,15 @@ function getWeek(date){const day=date.getDay(),diff=date.getDate()-day+(day===0?
 function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 const myTier=()=>(me&&me.tier)||'lead1';
 function rateFor(trade,i){const tier=myTier();const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];if(saved&&saved[tier]!=null&&saved[tier]!=='')return parseFloat(saved[tier])||0;const def=RATE_SHEET[trade]&&RATE_SHEET[trade][i];return def&&def[tier]!=null?parseFloat(def[tier])||0:null;}
-function hourlyForTier(){const tier=myTier();const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tier]!=null&&RATES.hourlyTiers[tier]!=='')?RATES.hourlyTiers[tier]:HOURLY_TIERS[tier];return parseFloat(v)||0;}
+// this person's own hourly rate (set by a manager on the roster); falls back to their tier's rate if none is set
+let MY_RATE=null;
+db.ref('installPeople/'+selected+'/hourlyRate').on('value',s=>{const v=s.val();MY_RATE=(v==null||v==='')?null:(parseFloat(v)||0);});
+function hourlyForTier(){if(MY_RATE!=null)return MY_RATE;const tier=myTier();const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tier]!=null&&RATES.hourlyTiers[tier]!=='')?RATES.hourlyTiers[tier]:HOURLY_TIERS[tier];return parseFloat(v)||0;}
+// ── change history: pay-affecting edits by the tech are written to installAudit ──
+function entryCache(){return recCache;}
+function aud(id,action,detail){const r=entryCache()[id]||{};AIT_AUDIT.log(action,AIT_AUDIT.ctx('recalls',selectedDate,id,r,me&&me.name),detail);}
+function itemName(r,i){const tr=(r.payTrade||r.division);const row=(RATE_SHEET[tr]||[])[i];return row?row.name:('Item '+(parseInt(i)+1));}
+function numOr(v,d){return (v==null||v==='')?d:(parseFloat(v)||0);}
 function jobPay(c){let p=0;if(c.pieceItems){Object.keys(c.pieceItems).forEach(i=>{if(c.pieceItems[i]){const q=(c.pieceQty&&c.pieceQty[i]!=null&&c.pieceQty[i]!=='')?parseFloat(c.pieceQty[i]):1;const a=parseFloat((c.pieceAmounts&&c.pieceAmounts[i])||0)||0;p+=(isNaN(q)?0:q)*a;}});}p+=(parseFloat(c.hours)||0)*(parseFloat(c.hourlyRate)||0);return p;}
 
 function findInstallByJob(job){const j=(job||'').trim().toLowerCase();if(!j)return null;let hit=null;Object.entries(allLogs).forEach(([d,day])=>Object.entries(day).forEach(([id,r])=>{if((r.jobNumber||'').trim().toLowerCase()===j){if(!hit||(r.ts||0)<(hit.ts||0))hit={...r,_id:id,_dk:d};}}));return hit;}
@@ -345,8 +356,8 @@ function recallCard(c,i){
     const faultBtns=[['install','\ud83d\udee0\ufe0f','f_install'],['manufacturer','\ud83c\udfed','f_manufacturer'],['other','\u2754','f_other']].map(([k,ic,lbl])=>`<div class="fault${c.faultType===k?' on':''}" onclick="updateRec('${c.id}','faultType','${k}')"><span class="f-icon">${ic}</span><div class="f-name">${t(lbl)}</div></div>`).join('');
     let matchHtml='';
     if(c.originalJobNumber){matchHtml = c.linked ? `<div class="match found"><div class="m-title">${t('m_found')}</div><div class="m-row">${t('m_by')} <b>${esc(c.originalInstallerName||'\u2014')}</b></div></div>` : `<div class="match none"><div class="m-title">${t('m_none')}</div></div>`;}
-    const pieceBlock=pieceOn?`<div class="section-label" style="margin-top:14px;">${esc(tradeName(trade))} \u2014 ${t('piecerate_work')}</div><div class="piece-list">${(RATE_SHEET[trade]||[]).map((row,i)=>{const on=c.pieceItems&&c.pieceItems[i];const amt=(c.pieceAmounts&&c.pieceAmounts[i]!=null)?c.pieceAmounts[i]:'';const qty=(c.pieceQty&&c.pieceQty[i]!=null&&c.pieceQty[i]!=='')?c.pieceQty[i]:1;const lineTot=on?((parseFloat(qty)||0)*(parseFloat(amt)||0)):0;return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked,'${trade}')"><span class="pr-label">${esc(row.name)}</span>${on?`<span class="pr-qty">\u00d7<input type="number" step="1" min="0" value="${esc(qty)}"${dis} onchange="setPieceQty('${c.id}',${i},this.value)"></span><span class="pr-amt">$<input type="number" step="0.01" min="0" value="${amt}"${dis} onchange="setPieceAmount('${c.id}',${i},this.value)" placeholder="0.00"></span><span class="pr-line">${fmt$(lineTot)}</span>`:''}</div>`;}).join('')}</div>`:'';
-    const hoursBlock=hoursOn?`<div class="section-label" style="margin-top:14px;">${t('opt_hours')}</div><div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div class="field"><label>${t('lbl_hoursworked')}</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateRec('${c.id}','hours',parseFloat(this.value)||0)" placeholder="${t('ph_hours')}" /></div><div class="field"><label>${t('lbl_rate')}</label><input type="number" step="0.01" min="0" value="${c.hourlyRate!=null&&c.hourlyRate!==''?esc(c.hourlyRate):''}"${dis} onchange="updateRec('${c.id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${hourlyForTier()||'0.00'}" /></div></div>`:'';
+    const pieceBlock=pieceOn?`<div class="section-label" style="margin-top:14px;">${esc(tradeName(trade))} \u2014 ${t('piecerate_work')}</div><div style="font-size:10px;color:var(--muted);margin:-4px 0 8px;letter-spacing:.04em">${t('piece_locked')}</div><div class="piece-list">${(RATE_SHEET[trade]||[]).map((row,i)=>{const on=c.pieceItems&&c.pieceItems[i];const amt=(c.pieceAmounts&&c.pieceAmounts[i]!=null)?c.pieceAmounts[i]:'';const qty=(c.pieceQty&&c.pieceQty[i]!=null&&c.pieceQty[i]!=='')?c.pieceQty[i]:1;const lineTot=on?((parseFloat(qty)||0)*(parseFloat(amt)||0)):0;return `<div class="pay-row${on?' on':''}"><input type="checkbox" ${on?'checked':''}${dis} onchange="togglePiece('${c.id}',${i},this.checked,'${trade}')"><span class="pr-label">${esc(row.name)}</span>${on?`<span class="pr-qty">\u00d7<input type="number" step="1" min="0" value="${esc(qty)}"${dis} onchange="setPieceQty('${c.id}',${i},this.value)"></span><span class="pr-amt" title="${t('rate_locked')}">$<input type="text" value="${amt===''?'0.00':(parseFloat(amt)||0).toFixed(2)}" readonly disabled style="opacity:.75;cursor:not-allowed"></span><span class="pr-line">${fmt$(lineTot)}</span>`:''}</div>`;}).join('')}</div>`:'';
+    const hoursBlock=hoursOn?`<div class="section-label" style="margin-top:14px;">${t('opt_hours')}</div><div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div class="field"><label>${t('lbl_hoursworked')}</label><input type="number" step="0.25" min="0" value="${c.hours?esc(c.hours):''}"${dis} onchange="updateRec('${c.id}','hours',parseFloat(this.value)||0)" placeholder="${t('ph_hours')}" /></div><div class="field"><label>${t('lbl_rate')} 🔒</label><input type="text" value="$${(parseFloat((c.hourlyRate!=null&&c.hourlyRate!=='')?c.hourlyRate:hourlyForTier())||0).toFixed(2)}" readonly disabled title="${t('rate_locked')}" style="opacity:.75;cursor:not-allowed" /><div style="font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.04em">${t('rate_locked')}</div></div></div>`:'';
     const pay=jobPay(c);
     const payLine=(hoursOn||pieceOn)?`<div class="job-pay">${t('job_pay')} <span>${fmt$(pay)}</span></div>`:'';
     const headRight=`<div style="display:flex;gap:8px;align-items:center">${locked?`<span class="lock-badge">${t('locked_badge')}</span>`:`<button class="del-call" onclick="deleteRecall('${c.id}')">${t('del')}</button>`}${AIT_CC.foldBtn(c.id)}</div>`;
@@ -369,15 +380,15 @@ function recallCard(c,i){
 }
 
 function curPath(){return 'recalls/'+selectedDate;}
-function updateRec(id,field,value){if(lockedRec(id))return;db.ref(`${curPath()}/${id}/${field}`).set(value);}
+function updateRec(id,field,value){if(lockedRec(id))return;if(field==='hourlyRate')return;if(field==='hours'){const o=numOr((recCache[id]||{}).hours,0);if(o!==value)aud(id,'edit','Hours '+o+' → '+value);}db.ref(`${curPath()}/${id}/${field}`).set(value);}
 function setOrigJob(id,val){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/originalJobNumber`).set(val);const hit=findInstallByJob(val);if(hit){const u={linked:true,originalPersonId:hit.personId,originalInstallerName:hit.installerName||null,originalCallId:hit._id,originalDateKey:hit._dk};db.ref(base).once('value',s=>{const r=s.val()||{};if(!r.customerName&&hit.customerName)u.customerName=hit.customerName;db.ref(base).update(u);});}else{db.ref(base).update({linked:false,originalPersonId:null,originalInstallerName:null,originalCallId:null,originalDateKey:null});}}
 function changeDivision(id,val){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/division`).set(val);db.ref(`${base}/payTrade`).set(val);db.ref(`${base}/pieceItems`).remove();db.ref(`${base}/pieceAmounts`).remove();db.ref(`${base}/pieceQty`).remove();}
-function toggleHours(id,on){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/hoursOn`).set(!!on);if(on){db.ref(`${base}/hourlyRate`).once('value',s=>{if(s.val()==null||s.val()==='')db.ref(`${base}/hourlyRate`).set(hourlyForTier());});}else{db.ref(`${base}/hours`).set(0);}}
-function togglePieceSection(id,on){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/pieceOn`).set(!!on);if(!on){db.ref(`${base}/pieceItems`).remove();db.ref(`${base}/pieceAmounts`).remove();db.ref(`${base}/pieceQty`).remove();}}
-function togglePiece(id,i,checked,trade){if(lockedRec(id))return;const base=`${curPath()}/${id}`;db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const r=rateFor(trade,i);if(r!=null)db.ref(`${base}/pieceAmounts/${i}`).set(r);db.ref(`${base}/pieceQty/${i}`).once('value',s=>{if(s.val()==null)db.ref(`${base}/pieceQty/${i}`).set(1);});}else{db.ref(`${base}/pieceAmounts/${i}`).remove();db.ref(`${base}/pieceQty/${i}`).remove();}}
-function setPieceAmount(id,i,val){if(lockedRec(id))return;db.ref(`${curPath()}/${id}/pieceAmounts/${i}`).set(parseFloat(val)||0);}
-function setPieceQty(id,i,val){if(lockedRec(id))return;const q=val===''?1:(parseFloat(val)||0);db.ref(`${curPath()}/${id}/pieceQty/${i}`).set(q);}
-function deleteRecall(id){if(lockedRec(id)){alert(t('locked_note'));return;}if(confirm(t('confirm_del')))db.ref(`${curPath()}/${id}`).remove();}
+function toggleHours(id,on){if(lockedRec(id))return;const base=`${curPath()}/${id}`;const was=!!(entryCache()[id]||{}).hoursOn;db.ref(`${base}/hoursOn`).set(!!on);if(on){const rate=hourlyForTier();db.ref(`${base}/hourlyRate`).set(rate);if(!was)aud(id,'edit','Hourly pay turned on at '+AIT_AUDIT.money(rate)+'/hr');}else{const h=numOr((entryCache()[id]||{}).hours,0);db.ref(`${base}/hours`).set(0);if(was)aud(id,'edit','Hourly pay turned off'+(h?' (was '+h+' hrs)':''));}}
+function togglePieceSection(id,on){if(lockedRec(id))return;const base=`${curPath()}/${id}`;const r=entryCache()[id]||{};db.ref(`${base}/pieceOn`).set(!!on);if(!on){const n=r.pieceItems?Object.keys(r.pieceItems).filter(i=>r.pieceItems[i]).length:0;if(n)aud(id,'edit','Piece rate turned off ('+n+' item'+(n>1?'s':'')+' cleared)');db.ref(`${base}/pieceItems`).remove();db.ref(`${base}/pieceAmounts`).remove();db.ref(`${base}/pieceQty`).remove();}}
+function togglePiece(id,i,checked,trade){if(lockedRec(id))return;const base=`${curPath()}/${id}`;const r0=entryCache()[id]||{};db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const r=rateFor(trade,i);if(r!=null)db.ref(`${base}/pieceAmounts/${i}`).set(r);db.ref(`${base}/pieceQty/${i}`).once('value',s=>{if(s.val()==null)db.ref(`${base}/pieceQty/${i}`).set(1);});aud(id,'edit','Added piece item: '+itemName(r0,i)+(r!=null?' @ '+AIT_AUDIT.money(r):''));}else{aud(id,'edit','Removed piece item: '+itemName(r0,i));db.ref(`${base}/pieceAmounts/${i}`).remove();db.ref(`${base}/pieceQty/${i}`).remove();}}
+function setPieceAmount(id,i,val){/* piece-rate dollar amounts are set by management (Manager Portal → Rates, or Edit on a turn-in) — techs can only change the quantity */}
+function setPieceQty(id,i,val){if(lockedRec(id))return;const r=entryCache()[id]||{};const o=numOr(r.pieceQty&&r.pieceQty[i],1);const q=val===''?1:(parseFloat(val)||0);db.ref(`${curPath()}/${id}/pieceQty/${i}`).set(q);if(o!==q)aud(id,'edit',itemName(r,i)+' qty '+o+' → '+q);}
+function deleteRecall(id){if(lockedRec(id)){alert(t('locked_note'));return;}if(confirm(t('confirm_del'))){const r=recCache[id]||{};aud(id,'delete','Deleted recall entry (pay was '+AIT_AUDIT.money(AIT_CC.split(r).total)+')');db.ref(`${curPath()}/${id}`).remove();}}
 
 function hideExtras(){document.getElementById('recallsSection').style.display='none';document.getElementById('fabAdd').style.display='none';document.getElementById('addBottom').style.display='none';if(recallsRef){recallsRef.off();recallsRef=null;}}
 document.getElementById('prevWeek').onclick=()=>{currentDate=new Date(currentDate.getTime()-7*864e5);selectedDate=null;hideExtras();renderCalendar();};

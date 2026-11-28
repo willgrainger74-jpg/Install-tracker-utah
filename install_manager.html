@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="rates.js"></script>
+    <script src="audit.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -44,6 +45,14 @@
         .tab-btn:hover{color:var(--text);background:var(--s2);}
         .tab-btn.active{background:var(--red);color:#fff;}
         .sec-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);}
+        .hist-row{display:flex;gap:12px;background:var(--s2);border:1px solid var(--wire);border-left:3px solid var(--wire2);padding:11px 14px;margin-bottom:6px;align-items:flex-start;}
+        .hist-row.approve{border-left-color:var(--green);} .hist-row.unapprove{border-left-color:var(--amber,#f59e0b);} .hist-row.delete{border-left-color:#ef4444;} .hist-row.rate{border-left-color:#3b82f6;}
+        .hist-when{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);min-width:92px;line-height:1.5;}
+        .hist-main{flex:1;min-width:0;font-size:13px;color:var(--text);line-height:1.5;word-break:break-word;}
+        .hist-ctx{font-size:11px;color:var(--muted);margin-top:2px;font-family:'Oswald',sans-serif;letter-spacing:.05em;text-transform:uppercase;}
+        .hist-act{font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+        .rate-in{display:inline-flex;align-items:center;gap:3px;font-family:'Oswald',sans-serif;font-size:12px;color:var(--muted);}
+        .rate-in input{max-width:82px;text-align:right;padding:7px 8px;font-size:13px;}
         .sec-label{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:24px 0 12px;}
         .btn{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:9px 16px;border:none;cursor:pointer;transition:all .15s;}
         .btn-red{background:var(--red);color:#fff;}.btn-red:hover{background:var(--red2);}
@@ -202,6 +211,38 @@ const I18N={
  tab_rates:{en:'💲 Rates',es:'💲 Tarifas'},
  tab_logins:{en:'🔑 Logins',es:'🔑 Accesos'},
  tab_archived:{en:'🗄️ Archived',es:'🗄️ Archivados'},
+ tab_history:{en:'🕘 History',es:'🕘 Historial'},
+ tab_pay:{en:'💰 Pay',es:'💰 Pago'},
+ st_pay:{en:'Pay — Year to Date',es:'Pago — Acumulado del Año'},
+ pay_intro:{en:'What each installer has earned so far in the year, from every install and recall logged. Approved is what has been signed off; Pending still needs approval. Tap a name for the month-by-month breakdown.',es:'Lo que cada instalador ha ganado en el año, de cada instalación y rellamada registrada. Aprobado es lo ya autorizado; Pendiente aún necesita aprobación. Toca un nombre para ver el desglose por mes.'},
+ pay_none:{en:'No pay logged for this year.',es:'No hay pago registrado para este año.'},
+ pay_csv:{en:'⬇ Export CSV',es:'⬇ Exportar CSV'},
+ pay_archived:{en:'Archived',es:'Archivado'},
+ p_total:{en:'Total YTD',es:'Total del Año'},p_month:{en:'This Month',es:'Este Mes'},p_piece:{en:'Piece',es:'Pieza'},p_hourly:{en:'Hourly',es:'Hora'},p_recall:{en:'Recalls',es:'Rellamadas'},p_hours:{en:'Hours',es:'Horas'},p_jobs:{en:'Installs',es:'Instal.'},p_appr:{en:'Approved',es:'Aprobado'},p_pend:{en:'Pending',es:'Pendiente'},p_all:{en:'All installers',es:'Todos'},
+ due_lbl:{en:'⏰ Turn-in deadline',es:'⏰ Fecha límite de entregas'},
+ due_remind:{en:'remind techs',es:'recordar a los técnicos'},
+ due_before:{en:'before',es:'antes'},
+ due_note:{en:'Techs see a reminder on their dashboard when the deadline is close and they have weekdays with nothing logged.',es:'Los técnicos ven un recordatorio en su panel cuando la fecha límite está cerca y tienen días sin registros.'},
+ a_setting:{en:'Setting',es:'Ajuste'},
+ st_history:{en:'Change History',es:'Historial de Cambios'},
+ hist_intro:{en:'Every approval, pay edit, deleted entry and rate change — who did it and when. Newest first.',es:'Cada aprobación, edición de pago, registro eliminado y cambio de tarifa — quién lo hizo y cuándo. Lo más reciente primero.'},
+ hist_all:{en:'All activity',es:'Toda la actividad'},
+ hist_appr:{en:'Approvals',es:'Aprobaciones'},
+ hist_edit:{en:'Edits',es:'Ediciones'},
+ hist_del:{en:'Deleted entries',es:'Registros eliminados'},
+ hist_rate:{en:'Rates & roster',es:'Tarifas y personal'},
+ hist_everyone:{en:'All installers',es:'Todos los instaladores'},
+ hist_search:{en:'Search job #, customer, name…',es:'Buscar trabajo, cliente, nombre…'},
+ hist_none:{en:'No history yet. Changes made from now on will show here.',es:'Aún no hay historial. Los cambios a partir de ahora aparecerán aquí.'},
+ hist_more:{en:'Show more',es:'Mostrar más'},
+ hist_entry:{en:'History of this turn-in',es:'Historial de esta entrega'},
+ hist_entry_none:{en:'No changes recorded yet.',es:'Aún no hay cambios registrados.'},
+ a_approve:{en:'Approved',es:'Aprobó'},a_unapprove:{en:'Unapproved',es:'Desaprobó'},a_edit:{en:'Edited',es:'Editó'},a_delete:{en:'Deleted',es:'Eliminó'},a_rate:{en:'Rate change',es:'Cambio de tarifa'},a_roster:{en:'Roster',es:'Personal'},
+ role_manager:{en:'Manager',es:'Gerente'},role_tech:{en:'Tech',es:'Técnico'},
+ per_hr:{en:'/hr',es:'/hr'},
+ ph_newrate:{en:'$/hr (optional)',es:'$/hr (opcional)'},
+ rate_note:{en:'A personal hourly rate set on the Roster tab always wins. The tier rates below are only used for installers with no personal rate.',es:'La tarifa por hora personal fijada en la pestaña Personal siempre manda. Las tarifas por nivel de abajo solo se usan para instaladores sin tarifa personal.'},
+ roster_rate_note:{en:'Hourly rate: set each installer’s $/hr here. When they pick Hourly on a job it fills in automatically and they can’t change it. Leave blank to use their tier rate.',es:'Tarifa por hora: fija aquí el $/hr de cada instalador. Cuando elige Por Hora en un trabajo se llena sola y no puede cambiarla. Déjala en blanco para usar la tarifa de su nivel.'},
  st_roster:{en:'Installer Roster',es:'Personal de Instaladores'},
  st_recall:{en:'Recall Report',es:'Reporte de Rellamadas'},
  st_install:{en:'Install Report',es:'Reporte de Instalaciones'},
@@ -224,7 +265,7 @@ const I18N={
  ph_newname:{en:'Installer name',es:'Nombre del instalador'},
  add_installer:{en:'+ Add Installer',es:'+ Agregar Instalador'},
  approve_all:{en:'✓ Approve All Shown',es:'✓ Aprobar Todos los Mostrados'},
- rates_intro:{en:'Set the dollar amount per piece-rate item and the default hourly rate. These pre-fill on the turn-in when a tech logs work — they can still adjust the amount per job. Changing a rate here only affects new entries, not pay already logged.',es:'Define el monto en dólares por cada pieza y la tarifa por hora predeterminada. Estos se rellenan automáticamente en el reporte cuando un técnico registra trabajo — aún pueden ajustar el monto por trabajo. Cambiar una tarifa aquí solo afecta entradas nuevas, no el pago ya registrado.'},
+ rates_intro:{en:'Set the dollar amount per piece-rate item for each tier (Helper 1–3, Lead 1–3) and the hourly rate per tier. When a tech logs work, the rate for their tier fills in automatically and is locked — techs pick the items and the quantity but cannot change a rate. Only management can change a rate, here or with Edit on a turn-in. Changing a rate here only affects new entries, not pay already logged.',es:'Define el monto en dólares por pieza para cada nivel (Ayudante 1–3, Líder 1–3) y la tarifa por hora por nivel. Cuando un técnico registra trabajo, la tarifa de su nivel se llena sola y queda bloqueada — el técnico elige las piezas y la cantidad pero no puede cambiar una tarifa. Solo la gerencia puede cambiarla, aquí o con Editar en una entrega. Cambiar una tarifa aquí solo afecta entradas nuevas, no el pago ya registrado.'},
  default_hourly:{en:'Default Hourly Rate',es:'Tarifa por Hora Predeterminada'},
  archived_note:{en:"Archived installers are hidden from active views and can't sign in, but all their install and recall history is preserved and still counts in reports.",es:'Los instaladores archivados se ocultan de las vistas activas y no pueden iniciar sesión, pero todo su historial de instalaciones y rellamadas se conserva y sigue contando en los reportes.'},
  lbl_username:{en:'Username',es:'Usuario'},
@@ -319,6 +360,8 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
         <button class="tab-btn" id="tab-scorecards" onclick="showTab('scorecards')" data-i18n="tab_scorecards">📋 Scorecards</button>
         <button class="tab-btn" id="tab-rates" onclick="showTab('rates')" data-i18n="tab_rates">💲 Rates</button>
         <button class="tab-btn" id="tab-logins" onclick="showTab('logins')" data-i18n="tab_logins">🔑 Logins</button>
+        <button class="tab-btn" id="tab-pay" onclick="showTab('pay')" data-i18n="tab_pay">💰 Pay</button>
+        <button class="tab-btn" id="tab-history" onclick="showTab('history')" data-i18n="tab_history">🕘 History</button>
         <button class="tab-btn" id="tab-archived" onclick="showTab('archived')" data-i18n="tab_archived">🗄️ Archived</button>
     </div>
 
@@ -330,9 +373,11 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
                 <input id="newName" type="text" data-i18n-ph="ph_newname" placeholder="Installer name" style="min-width:180px" />
                 <select id="newGroup"><option value="underground">Underground</option><option value="plumbing">Plumbing Install</option><option value="hvac">HVAC Install</option><option value="electrical">Electrical Install</option></select>
                 <select id="newTier"><option value="helper1">Helper 1</option><option value="helper2">Helper 2</option><option value="helper3">Helper 3</option><option value="lead1" selected>Lead 1</option><option value="lead2">Lead 2</option><option value="lead3">Lead 3</option></select>
+                <input id="newRate" type="number" step="0.01" min="0" data-i18n-ph="ph_newrate" placeholder="$/hr (optional)" style="max-width:150px" />
                 <button class="btn btn-red" onclick="addPerson()" data-i18n="add_installer">+ Add Installer</button>
             </div>
         </div>
+        <p style="font-size:12px;color:var(--muted);margin:-4px 0 14px;line-height:1.6" data-i18n="roster_rate_note">Hourly rate: set each installer’s $/hr here. When they pick Hourly on a job it fills in automatically and they can’t change it. Leave blank to use their tier rate.</p>
         <div id="rosterBody"></div>
     </div>
 
@@ -378,6 +423,17 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
                 <button class="btn btn-red" onclick="approveAllFiltered()" data-i18n="approve_all">✓ Approve All Shown</button>
             </div>
         </div>
+        <div class="card" style="padding:12px 14px;margin-bottom:16px">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">
+                <span style="color:var(--text);font-weight:600" data-i18n="due_lbl">⏰ Turn-in deadline</span>
+                <select id="dueDay" onchange="saveCutoff()"></select>
+                <select id="dueHour" onchange="saveCutoff()"></select>
+                <span>· <span data-i18n="due_remind">remind techs</span></span>
+                <select id="dueWarn" onchange="saveCutoff()"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option></select>
+                <span data-i18n="due_before">before</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5" data-i18n="due_note">Techs see a reminder on their dashboard when the deadline is close and they have weekdays with nothing logged.</div>
+        </div>
         <div class="g4" id="turninStats" style="margin-bottom:8px"></div>
         <div class="sec-label" data-i18n="sl_byinst">By Installer</div>
         <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table"><thead><tr><th data-i18n="th_installer">Installer</th><th data-i18n="th_division">Division</th><th class="r" data-i18n="th_installs">Installs</th><th class="r" data-i18n="th_hours">Hours</th><th class="r" data-i18n="th_piece">Piece Items</th><th class="r" data-i18n="th_pay">Pay</th><th class="r" data-i18n="th_approved">Approved</th></tr></thead><tbody id="turninByPerson"></tbody></table></div>
@@ -419,8 +475,9 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
             <div class="sec-title" data-i18n="st_rates">Pay Rates</div>
             <button class="btn btn-outline" onclick="confirmSeedRates()">⟳ Load Standard Rates</button>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6" data-i18n="rates_intro">Set the dollar amount per piece-rate item for each tier (Helper 1–3, Lead 1–3) and the hourly rate per tier. When a tech logs work, the rate for their tier pre-fills automatically — they can still adjust the amount and quantity per job. Changing a rate here only affects new entries, not pay already logged.</div>
+        <div style="font-size:12px;color:var(--muted);margin:6px 0 16px;line-height:1.6" data-i18n="rates_intro">Set the dollar amount per piece-rate item for each tier (Helper 1–3, Lead 1–3) and the hourly rate per tier. When a tech logs work, the rate for their tier fills in automatically and is locked — techs pick the items and the quantity but cannot change a rate. Only management can change a rate, here or with Edit on a turn-in. Changing a rate here only affects new entries, not pay already logged.</div>
         <div class="sec-label" style="margin-top:0" data-i18n="default_hourly">Hourly Rate by Tier ($/hr)</div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.6" data-i18n="rate_note">A personal hourly rate set on the Roster tab always wins. The tier rates below are only used for installers with no personal rate.</p>
         <div id="hourlyEditor" style="margin-bottom:18px"></div>
         <div id="rateEditor"></div>
     </div>
@@ -442,6 +499,30 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
     </div>
 
     <!-- ARCHIVED -->
+    <div id="tab-pay-content" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+            <div class="sec-title" data-i18n="st_pay">Pay — Year to Date</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select id="payYear" onchange="payOpen=null;renderPay()"></select>
+                <button class="btn btn-outline" onclick="exportPayCSV()" data-i18n="pay_csv">⬇ Export CSV</button>
+            </div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0 0 14px;line-height:1.6" data-i18n="pay_intro">What each installer has earned so far in the year, from every install and recall logged. Approved is what has been signed off; Pending still needs approval. Tap a name for the month-by-month breakdown.</p>
+        <div class="g4" id="payStats" style="margin-bottom:16px"></div>
+        <div class="card" style="padding:0;overflow-x:auto"><table class="dark-table" id="payTable"><thead><tr><th data-i18n="th_installer">Installer</th><th class="r" data-i18n="p_total">Total YTD</th><th class="r" data-i18n="p_month">This Month</th><th class="r" data-i18n="p_piece">Piece</th><th class="r" data-i18n="p_hourly">Hourly</th><th class="r" data-i18n="p_recall">Recalls</th><th class="r" data-i18n="p_hours">Hours</th><th class="r" data-i18n="p_jobs">Installs</th><th class="r" data-i18n="p_appr">Approved</th><th class="r" data-i18n="p_pend">Pending</th></tr></thead><tbody id="payBody"></tbody></table></div>
+    </div>
+
+    <div id="tab-history-content" class="hidden">
+        <div class="sec-title" data-i18n="st_history">Change History</div>
+        <p style="font-size:12px;color:var(--muted);margin:6px 0 14px;line-height:1.6" data-i18n="hist_intro">Every approval, pay edit, deleted entry and rate change — who did it and when. Newest first.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            <select id="histType" onchange="histLimit=150;renderHistory()"><option value="all" data-i18n="hist_all">All activity</option><option value="appr" data-i18n="hist_appr">Approvals</option><option value="edit" data-i18n="hist_edit">Edits</option><option value="delete" data-i18n="hist_del">Deleted entries</option><option value="rate" data-i18n="hist_rate">Rates &amp; roster</option></select>
+            <select id="histPerson" onchange="histLimit=150;renderHistory()"></select>
+            <input id="histSearch" type="text" data-i18n-ph="hist_search" placeholder="Search job #, customer, name…" oninput="histLimit=150;renderHistory()" style="flex:1;min-width:180px" />
+        </div>
+        <div id="historyBody"></div>
+    </div>
+
     <div id="tab-archived-content" class="hidden">
         <div class="sec-title" data-i18n="st_archived">Archived Installers</div>
         <p style="font-size:12px;color:var(--muted);margin:8px 0 16px;line-height:1.6" data-i18n="archived_note">Archived installers are hidden from active views and can't sign in, but all their install and recall history is preserved and still counts in reports.</p>
@@ -529,7 +610,7 @@ function changePin(){
 }
 
 // ── DATA ──
-let people={},logs={},recalls={},logins={},mgrLogins={},RATES={items:{},hourlyTiers:{}},currentTab='roster';
+let people={},logs={},recalls={},logins={},mgrLogins={},audit=[],histLimit=150,payOpen=null,cutoff={day:0,hour:20,warnDays:2},RATES={items:{},hourlyTiers:{}},currentTab='roster';
 let expandedInstaller=null, editOpen=null;
 function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function initPortal(){
@@ -537,6 +618,8 @@ function initPortal(){
     db.ref('installLogs').on('value',s=>{logs=s.val()||{};renderCurrent();if(editOpen)renderEditModal();});
     db.ref('recalls').on('value',s=>{recalls=s.val()||{};renderCurrent();if(editOpen)renderEditModal();});
     db.ref('installTechLogins').on('value',s=>{logins=s.val()||{};if(currentTab==='logins')renderLogins();});
+    db.ref('installAudit').limitToLast(3000).on('value',s=>{const v=s.val()||{};audit=Object.entries(v).map(([k,a])=>({k,...a})).sort((a,b)=>(b.ts||0)-(a.ts||0));if(currentTab==='history')renderHistory();if(editOpen)renderEditModal();});
+    db.ref('installSettings/turninCutoff').on('value',s=>{const v=s.val()||{};cutoff={day:v.day!=null?+v.day:0,hour:v.hour!=null?+v.hour:20,warnDays:v.warnDays!=null?+v.warnDays:2};fillCutoff();});
     db.ref('installManagerLogins').on('value',s=>{mgrLogins=s.val()||{};if(currentTab==='logins')renderLogins();mgrSessionStillValid();});
     db.ref('installRates').on('value',s=>{const v=s.val()||{};RATES={items:v.items||{},hourlyTiers:v.hourlyTiers||{}};if(!v.items||!Object.keys(v.items).length){seedStandardRates(true);}if(currentTab==='rates'||currentTab==='turnins'||currentTab==='scorecards')renderCurrent();});
 }
@@ -547,22 +630,44 @@ function showTab(name){
     document.getElementById('tab-'+name).classList.add('active');
     currentTab=name;renderCurrent();
 }
-function renderCurrent(){({roster:renderRoster,recalls:renderRecalls,installs:renderInstalls,turnins:renderTurnins,trends:renderTrends,scorecards:renderScorecards,rates:renderRates,logins:renderLogins,archived:renderArchived}[currentTab]||(()=>{}))();}
+function renderCurrent(){({roster:renderRoster,recalls:renderRecalls,installs:renderInstalls,turnins:renderTurnins,trends:renderTrends,scorecards:renderScorecards,rates:renderRates,logins:renderLogins,history:renderHistory,pay:renderPay,archived:renderArchived}[currentTab]||(()=>{}))();}
 
 function activePeople(){return Object.entries(people).filter(([id,p])=>!p.archived).map(([id,p])=>({id,...p}));}
 function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 
 // ── ROSTER ──
+// ── history helpers ──
+const $m=n=>AIT_AUDIT.money(n);
+function entryOf(col,dk,id){return ((col==='recalls'?recalls:logs)[dk]||{})[id];}
+function ectx(col,dk,id){const r=entryOf(col,dk,id)||{};const pid=r.personId||r.loggedById;return AIT_AUDIT.ctx(col,dk,id,r,(people[pid]||{}).name);}
+function pctx(id){return {personId:id,personName:(people[id]||{}).name||''};}
+function approverName(){return AIT_AUDIT.who().by;}
+function tierRate(tier){const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tier]!=null&&RATES.hourlyTiers[tier]!=='')?RATES.hourlyTiers[tier]:HOURLY_TIERS[tier];return parseFloat(v)||0;}
+// an installer's hourly rate: their personal rate if a manager set one, else their tier's rate
+function personRate(pid,fallbackTier){const p=people[pid]||{};if(p.hourlyRate!=null&&p.hourlyRate!=='')return parseFloat(p.hourlyRate)||0;return tierRate(p.tier||fallbackTier||'lead1');}
+
 function addPerson(){
     const name=document.getElementById('newName').value.trim();const group=document.getElementById('newGroup').value;const tier=document.getElementById('newTier').value;
+    const rv=document.getElementById('newRate').value;
     if(!name){toast('Enter a name','#dc2626');return;}
-    db.ref('installPeople').push({name,group,tier,archived:false});
-    document.getElementById('newName').value='';toast('Installer added ✓');
+    const rec={name,group,tier,archived:false};if(rv!==''&&!isNaN(parseFloat(rv)))rec.hourlyRate=parseFloat(rv);
+    const ref=db.ref('installPeople').push(rec);
+    AIT_AUDIT.log('roster',{personId:ref.key,personName:name},'Added installer — '+(GNAME[group]||group)+', '+TIER_LABEL[tier]+(rec.hourlyRate!=null?', '+$m(rec.hourlyRate)+'/hr':''));
+    document.getElementById('newName').value='';document.getElementById('newRate').value='';toast('Installer added ✓');
 }
-function setGroup(id,g){db.ref('installPeople/'+id+'/group').set(g);toast('Division updated ✓');}
-function setTier(id,tr){db.ref('installPeople/'+id+'/tier').set(tr);toast('Tier updated ✓');}
-function archivePerson(id,name){if(!confirm(`Archive ${name}? Their history is preserved and still counts in reports, but they'll be hidden and can't sign in.`))return;db.ref('installPeople/'+id+'/archived').set(true);Object.entries(logins).forEach(([lid,r])=>{if(r.personId===id)db.ref('installTechLogins/'+lid+'/disabled').set(true);});toast(name+' archived');}
-function reactivatePerson(id,name){if(!confirm(`Reactivate ${name}?`))return;db.ref('installPeople/'+id+'/archived').set(false);Object.entries(logins).forEach(([lid,r])=>{if(r.personId===id)db.ref('installTechLogins/'+lid+'/disabled').set(false);});toast(name+' reactivated ✓');}
+function setGroup(id,g){const o=(people[id]||{}).group;if(o!==g)AIT_AUDIT.log('roster',pctx(id),'Division '+(GNAME[o]||o||'—')+' → '+(GNAME[g]||g));db.ref('installPeople/'+id+'/group').set(g);toast('Division updated ✓');}
+function setTier(id,tr){const o=(people[id]||{}).tier||'lead1';if(o!==tr)AIT_AUDIT.log('roster',pctx(id),'Tier '+TIER_LABEL[o]+' → '+TIER_LABEL[tr]);db.ref('installPeople/'+id+'/tier').set(tr);toast('Tier updated ✓');}
+function setPersonRate(id,v){
+    const p=people[id]||{};const had=(p.hourlyRate!=null&&p.hourlyRate!=='');const o=had?(parseFloat(p.hourlyRate)||0):null;
+    const n=(v===''||isNaN(parseFloat(v)))?null:Math.max(0,parseFloat(v));
+    if(o===n)return;
+    const txt=x=>x==null?('tier rate ('+$m(tierRate(p.tier||'lead1'))+')'):$m(x);
+    AIT_AUDIT.log('rate',pctx(id),'Hourly rate '+txt(o)+' → '+txt(n));
+    if(n==null)db.ref('installPeople/'+id+'/hourlyRate').remove();else db.ref('installPeople/'+id+'/hourlyRate').set(n);
+    toast(n==null?'Using tier rate':'Hourly rate saved ✓');
+}
+function archivePerson(id,name){if(!confirm(`Archive ${name}? Their history is preserved and still counts in reports, but they'll be hidden and can't sign in.`))return;AIT_AUDIT.log('roster',pctx(id),'Archived installer');db.ref('installPeople/'+id+'/archived').set(true);Object.entries(logins).forEach(([lid,r])=>{if(r.personId===id)db.ref('installTechLogins/'+lid+'/disabled').set(true);});toast(name+' archived');}
+function reactivatePerson(id,name){if(!confirm(`Reactivate ${name}?`))return;AIT_AUDIT.log('roster',pctx(id),'Reactivated installer');db.ref('installPeople/'+id+'/archived').set(false);Object.entries(logins).forEach(([lid,r])=>{if(r.personId===id)db.ref('installTechLogins/'+lid+'/disabled').set(false);});toast(name+' reactivated ✓');}
 
 function renderRoster(){
     const el=document.getElementById('rosterBody');const act=activePeople();
@@ -579,6 +684,7 @@ function renderRoster(){
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                     <select onchange="setGroup('${p.id}',this.value)" style="padding:7px 10px;font-size:13px">${opts}</select>
                     <select onchange="setTier('${p.id}',this.value)" style="padding:7px 10px;font-size:13px">${tierOpts}</select>
+                    <span class="rate-in" title="Hourly rate">$<input type="number" step="0.01" min="0" value="${(p.hourlyRate!=null&&p.hourlyRate!=='')?p.hourlyRate:''}" placeholder="${tierRate(p.tier||'lead1')}" onchange="setPersonRate('${p.id}',this.value)" />${t('per_hr')}</span>
                     <button class="btn btn-outline" onclick="archivePerson('${p.id}','${p.name.replace(/'/g,"\\'")}')">Archive</button>
                 </div></div>`;
         });
@@ -786,7 +892,8 @@ function approveThread(tkey){
     const todo=entries.filter(e=>{const r=(logs[e.dk]||{})[e.id];return r&&!r.approved;});
     if(!todo.length)return;
     if(!confirm(`Approve all ${todo.length} day${todo.length>1?'s':''} of this job? Techs won't be able to edit them.`))return;
-    todo.forEach(e=>db.ref(`installLogs/${e.dk}/${e.id}`).update({approved:true,approvedTs:Date.now(),approvedBy:'manager'}));
+    const who=approverName();
+    todo.forEach(e=>{AIT_AUDIT.log('approve',ectx('installLogs',e.dk,e.id),'Approved (whole job thread) — pay '+$m(installPay(entryOf('installLogs',e.dk,e.id)||{})));db.ref(`installLogs/${e.dk}/${e.id}`).update({approved:true,approvedTs:Date.now(),approvedBy:who});});
     toast(`Approved ${todo.length} ✓`);
 }
 
@@ -809,7 +916,7 @@ function turninLine(r,id,dk,kind){
     const pay=installPay(r);
     return `<div class="ti-line ${ap?'ap':'pend'}">
         <div class="ti-line-main">
-            <div class="ti-line-meta">${dateTxt} · #${esc(job)}${r.customerName?' · '+esc(r.customerName):''} <span class="pill ${trade}">${TRADE_NAMES[trade]||trade||''}</span>${isR?'<span class="pill" style="color:var(--red);border-color:rgba(220,38,38,.4)">&#8617; Recall</span>':''}${ap?'<span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">✓</span>':'<span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Pending</span>'}</div>
+            <div class="ti-line-meta">${dateTxt} · #${esc(job)}${r.customerName?' · '+esc(r.customerName):''} <span class="pill ${trade}">${TRADE_NAMES[trade]||trade||''}</span>${isR?'<span class="pill" style="color:var(--red);border-color:rgba(220,38,38,.4)">&#8617; Recall</span>':''}${ap?`<span class="pill" style="color:var(--green);border-color:rgba(16,185,129,.5)">✓${r.approvedBy&&r.approvedBy!=='manager'?' '+esc(r.approvedBy):''}${r.approvedTs?' · '+new Date(r.approvedTs).toLocaleDateString('en-US',{month:'short',day:'numeric'}):''}</span>`:'<span class="pill" style="color:var(--amber);border-color:rgba(245,158,11,.4)">Pending</span>'}</div>
             <div class="ti-line-work">${esc((isR&&r.recallReason?r.recallReason+' — ':'')+workSummary(rr))}</div>
         </div>
         <div class="ti-line-right">
@@ -838,7 +945,7 @@ function editorHTML(r,id,dk,col){
     const hoursOn=r.hoursOn||r.payType==='hours';
     const pieceOn=r.pieceOn||r.payType==='piece';
     const tier=(people[r.personId||r.loggedById]||{}).tier||r.workerTier||'lead1';
-    const hoursEdit=hoursOn?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><div class="field" style="margin:0"><label class="ti-lbl">Hours</label><input type="number" step="0.25" min="0" value="${r.hours?esc(r.hours):''}" onchange="mUpdate('${col}','${dk}','${id}','hours',parseFloat(this.value)||0)" placeholder="Hours" /></div><div class="field" style="margin:0"><label class="ti-lbl">Rate $/hr</label><input type="number" step="0.01" min="0" value="${r.hourlyRate!=null&&r.hourlyRate!==''?esc(r.hourlyRate):''}" onchange="mUpdate('${col}','${dk}','${id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${(RATES.hourlyTiers&&RATES.hourlyTiers[tier])||HOURLY_TIERS[tier]}" /></div></div>`:'';
+    const hoursEdit=hoursOn?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><div class="field" style="margin:0"><label class="ti-lbl">Hours</label><input type="number" step="0.25" min="0" value="${r.hours?esc(r.hours):''}" onchange="mUpdate('${col}','${dk}','${id}','hours',parseFloat(this.value)||0)" placeholder="Hours" /></div><div class="field" style="margin:0"><label class="ti-lbl">Rate $/hr</label><input type="number" step="0.01" min="0" value="${r.hourlyRate!=null&&r.hourlyRate!==''?esc(r.hourlyRate):''}" onchange="mUpdate('${col}','${dk}','${id}','hourlyRate',parseFloat(this.value)||0)" placeholder="${personRate(r.personId||r.loggedById,tier)}" /></div></div>`:'';
     const pieceEdit=pieceOn?`<div style="margin-top:10px">${(RATE_SHEET[trade]||[]).map((row,i)=>{const on=r.pieceItems&&r.pieceItems[i];const qty=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?r.pieceQty[i]:1;const amt=(r.pieceAmounts&&r.pieceAmounts[i]!=null)?r.pieceAmounts[i]:'';return `<label class="check-row" style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><input type="checkbox" ${on?'checked':''} onchange="mTogglePiece('${col}','${dk}','${id}',${i},this.checked,'${trade}','${tier}')"><span style="flex:1">${esc(row.name)}</span>${on?`<span style="color:var(--muted);font-size:12px">×</span><input type="number" step="1" min="0" value="${esc(qty)}" onchange="mUpdate('${col}','${dk}','${id}','pieceQty/${i}',parseFloat(this.value)||0)" style="max-width:56px;text-align:center" /><span style="color:var(--green)">$</span><input type="number" step="0.01" min="0" value="${amt}" onchange="mUpdate('${col}','${dk}','${id}','pieceAmounts/${i}',parseFloat(this.value)||0)" style="max-width:80px;text-align:right" />`:''}</label>`;}).join('')}</div>`:'';
     const ap=!!r.approved;
     return `<div class="ti-edit" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
@@ -850,15 +957,26 @@ function editorHTML(r,id,dk,col){
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--wire)">
             <div style="font-family:'Oswald',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-size:13px">Pay <span style="color:var(--green);font-weight:700">${fmt$(installPay(r))}</span></div>
             <button class="btn ${ap?'btn-outline':'btn-red'}" onclick="mApprove('${col}','${dk}','${id}',${ap?'false':'true'})">${ap?'Unapprove':'Approve'}</button>
-        </div>`;
+        </div>
+        <div class="sec-label" style="margin:18px 0 8px">${t('hist_entry')}</div>
+        <div style="max-height:220px;overflow-y:auto">${entryHistoryHTML(col,id)}</div>`;
 }
 
-function mUpdate(col,dk,id,f,v){db.ref(`${col}/${dk}/${id}/${f}`).set(v);}
-function mChangeTrade(col,dk,id,v){const base=`${col}/${dk}/${id}`;if(col==='recalls'){db.ref(base+'/division').set(v);db.ref(base+'/payTrade').set(v);}else{db.ref(base+'/trade').set(v);}db.ref(base+'/pieceItems').remove();db.ref(base+'/pieceAmounts').remove();db.ref(base+'/pieceQty').remove();}
-function mToggleHours(col,dk,id,on,tier){const base=`${col}/${dk}/${id}`;db.ref(base+'/hoursOn').set(!!on);if(on){db.ref(base+'/hourlyRate').once('value',s=>{if(s.val()==null||s.val()===''){const v=(RATES.hourlyTiers&&RATES.hourlyTiers[tier])||HOURLY_TIERS[tier];db.ref(base+'/hourlyRate').set(parseFloat(v)||0);}});}else{db.ref(base+'/hours').set(0);}}
-function mTogglePieceSection(col,dk,id,on){const base=`${col}/${dk}/${id}`;db.ref(base+'/pieceOn').set(!!on);if(!on){db.ref(base+'/pieceItems').remove();db.ref(base+'/pieceAmounts').remove();db.ref(base+'/pieceQty').remove();}}
-function mTogglePiece(col,dk,id,i,checked,trade,tier){const base=`${col}/${dk}/${id}`;db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];let rate=(saved&&saved[tier]!=null&&saved[tier]!=='')?saved[tier]:((RATE_SHEET[trade]&&RATE_SHEET[trade][i])?RATE_SHEET[trade][i][tier]:null);if(rate!=null)db.ref(`${base}/pieceAmounts/${i}`).set(parseFloat(rate)||0);db.ref(`${base}/pieceQty/${i}`).once('value',s=>{if(s.val()==null)db.ref(`${base}/pieceQty/${i}`).set(1);});}else{db.ref(`${base}/pieceAmounts/${i}`).remove();db.ref(`${base}/pieceQty/${i}`).remove();}}
-function mApprove(col,dk,id,val){db.ref(`${col}/${dk}/${id}`).update({approved:val,approvedTs:val?Date.now():null,approvedBy:val?'manager':null});toast(val?'Approved ✓ — locked':'Unapproved');}
+function mUpdate(col,dk,id,f,v){
+    const r=entryOf(col,dk,id)||{};const trade=col==='recalls'?(r.payTrade||r.division):r.trade;let o,label,fm=x=>x;
+    const pm=f.match(/^(pieceQty|pieceAmounts)\/(\d+)$/);
+    if(pm){const i=pm[2];const nm=((RATE_SHEET[trade]||[])[i]||{}).name||('Item '+(parseInt(i)+1));if(pm[1]==='pieceQty'){o=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?parseFloat(r.pieceQty[i]):1;label=nm+' qty';}else{o=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;label=nm+' rate';fm=$m;}}
+    else if(f==='hours'){o=parseFloat(r.hours)||0;label='Hours';}
+    else if(f==='hourlyRate'){o=parseFloat(r.hourlyRate)||0;label='Hourly rate';fm=$m;}
+    else{o=r[f];label=f;}
+    if(o!==v)AIT_AUDIT.log('edit',ectx(col,dk,id),label+' '+fm(o)+' → '+fm(v));
+    db.ref(`${col}/${dk}/${id}/${f}`).set(v);
+}
+function mChangeTrade(col,dk,id,v){const base=`${col}/${dk}/${id}`;const r=entryOf(col,dk,id)||{};const o=col==='recalls'?(r.payTrade||r.division):r.trade;if(o!==v)AIT_AUDIT.log('edit',ectx(col,dk,id),'Trade '+(TRADE_NAMES[o]||o||'—')+' → '+(TRADE_NAMES[v]||v)+' (piece items cleared)');if(col==='recalls'){db.ref(base+'/division').set(v);db.ref(base+'/payTrade').set(v);}else{db.ref(base+'/trade').set(v);}db.ref(base+'/pieceItems').remove();db.ref(base+'/pieceAmounts').remove();db.ref(base+'/pieceQty').remove();}
+function mToggleHours(col,dk,id,on,tier){const base=`${col}/${dk}/${id}`;const r=entryOf(col,dk,id)||{};db.ref(base+'/hoursOn').set(!!on);if(on){const cur=r.hourlyRate;const rate=(cur==null||cur==='')?personRate(r.personId||r.loggedById,tier):(parseFloat(cur)||0);if(cur==null||cur==='')db.ref(base+'/hourlyRate').set(rate);AIT_AUDIT.log('edit',ectx(col,dk,id),'Hourly pay turned on at '+$m(rate)+'/hr');}else{const h=parseFloat(r.hours)||0;AIT_AUDIT.log('edit',ectx(col,dk,id),'Hourly pay turned off'+(h?' (was '+h+' hrs)':''));db.ref(base+'/hours').set(0);}}
+function mTogglePieceSection(col,dk,id,on){const base=`${col}/${dk}/${id}`;const r=entryOf(col,dk,id)||{};const n=pieceCount(r);AIT_AUDIT.log('edit',ectx(col,dk,id),on?'Piece rate turned on':('Piece rate turned off'+(n?' ('+n+' item'+(n>1?'s':'')+' cleared)':'')));db.ref(base+'/pieceOn').set(!!on);if(!on){db.ref(base+'/pieceItems').remove();db.ref(base+'/pieceAmounts').remove();db.ref(base+'/pieceQty').remove();}}
+function mTogglePiece(col,dk,id,i,checked,trade,tier){const base=`${col}/${dk}/${id}`;AIT_AUDIT.log('edit',ectx(col,dk,id),(checked?'Added':'Removed')+' piece item: '+(((RATE_SHEET[trade]||[])[i]||{}).name||('Item '+(i+1))));db.ref(`${base}/pieceItems/${i}`).set(checked?true:null);if(checked){const saved=RATES.items&&RATES.items[trade]&&RATES.items[trade][i];let rate=(saved&&saved[tier]!=null&&saved[tier]!=='')?saved[tier]:((RATE_SHEET[trade]&&RATE_SHEET[trade][i])?RATE_SHEET[trade][i][tier]:null);if(rate!=null)db.ref(`${base}/pieceAmounts/${i}`).set(parseFloat(rate)||0);db.ref(`${base}/pieceQty/${i}`).once('value',s=>{if(s.val()==null)db.ref(`${base}/pieceQty/${i}`).set(1);});}else{db.ref(`${base}/pieceAmounts/${i}`).remove();db.ref(`${base}/pieceQty/${i}`).remove();}}
+function mApprove(col,dk,id,val){const r=entryOf(col,dk,id)||{};AIT_AUDIT.log(val?'approve':'unapprove',ectx(col,dk,id),(val?'Approved':'Unapproved')+' — pay '+$m(installPay(r)));db.ref(`${col}/${dk}/${id}`).update({approved:val,approvedTs:val?Date.now():null,approvedBy:val?approverName():null});toast(val?'Approved ✓ — locked':'Unapproved');}
 function approveAllFiltered(){
     const cutoff=cutoffFrom(document.getElementById('turninRange').value);
     const updates=[];
@@ -866,7 +984,8 @@ function approveAllFiltered(){
     eachRecallPay((r,id,dk)=>{if(!r.approved)updates.push({col:'recalls',dk,id});},cutoff);
     if(!updates.length){toast('Nothing to approve','#dc2626');return;}
     if(!confirm(`Approve and lock ${updates.length} turn-in${updates.length>1?'s':''}? Techs won't be able to edit them.`))return;
-    updates.forEach(u=>db.ref(`${u.col}/${u.dk}/${u.id}`).update({approved:true,approvedTs:Date.now(),approvedBy:'manager'}));
+    const who=approverName();
+    updates.forEach(u=>{AIT_AUDIT.log('approve',ectx(u.col,u.dk,u.id),'Approved (Approve All) — pay '+$m(installPay(entryOf(u.col,u.dk,u.id)||{})));db.ref(`${u.col}/${u.dk}/${u.id}`).update({approved:true,approvedTs:Date.now(),approvedBy:who});});
     toast(`Approved ${updates.length} ✓`);
 }
 // ── TRENDS ──
@@ -954,14 +1073,14 @@ function renderRates(){
         ${(RATE_SHEET[k]||[]).map((row,i)=>`<tr><td>${esc(row.name)}</td>${TIERS.map(([tk])=>{const saved=RATES.items[k]&&RATES.items[k][i];const v=(saved&&saved[tk]!=null&&saved[tk]!=='')?saved[tk]:'';return `<td class="r"><div style="display:flex;align-items:center;gap:2px;justify-content:flex-end"><span style="color:var(--green);font-size:12px">$</span><input type="number" step="0.01" min="0" value="${v}" onchange="saveItemRate('${k}',${i},'${tk}',this.value)" style="max-width:76px;text-align:right;padding:8px 6px" placeholder="${row[tk]}"></div></td>`;}).join('')}</tr>`).join('')}
         </tbody></table></div>`).join('');
 }
-function saveHourlyTier(tier,v){db.ref('installRates/hourlyTiers/'+tier).set(parseFloat(v)||0);toast('Hourly rate saved ✓');}
-function saveItemRate(trade,i,tier,v){db.ref(`installRates/items/${trade}/${i}/${tier}`).set(parseFloat(v)||0);}
+function saveHourlyTier(tier,v){const o=tierRate(tier),n=parseFloat(v)||0;if(o!==n)AIT_AUDIT.log('rate',{},'Tier hourly rate — '+TIER_LABEL[tier]+' '+$m(o)+' → '+$m(n));db.ref('installRates/hourlyTiers/'+tier).set(n);toast('Hourly rate saved ✓');}
+function saveItemRate(trade,i,tier,v){const row=(RATE_SHEET[trade]||[])[i]||{};const sv=RATES.items[trade]&&RATES.items[trade][i];const o=parseFloat((sv&&sv[tier]!=null&&sv[tier]!=='')?sv[tier]:row[tier])||0,n=parseFloat(v)||0;if(o!==n)AIT_AUDIT.log('rate',{},'Piece rate — '+(GNAME[trade]||trade)+' · '+(row.name||'item')+' · '+TIER_LABEL[tier]+' '+$m(o)+' → '+$m(n));db.ref(`installRates/items/${trade}/${i}/${tier}`).set(n);}
 // write the full printed rate sheet into Firebase. silent=true only fills when empty (first-run seed)
 function seedStandardRates(silent){
     const items={};Object.keys(RATE_SHEET).forEach(k=>{items[k]=RATE_SHEET[k].map(row=>({helper1:row.helper1,helper2:row.helper2,helper3:row.helper3,lead1:row.lead1,lead2:row.lead2,lead3:row.lead3}));});
     db.ref('installRates/items').set(items);
     db.ref('installRates/hourlyTiers').once('value',s=>{if(!silent||s.val()==null)db.ref('installRates/hourlyTiers').set({...HOURLY_TIERS});});
-    if(!silent)toast('Standard rates loaded ✓');
+    if(!silent){AIT_AUDIT.log('rate',{},'Reloaded the standard rate sheet (all piece and tier rates reset)');toast('Standard rates loaded ✓');}
 }
 function confirmSeedRates(){if(confirm('Load the standard piece rates from the printed sheet? This overwrites every rate in the table with the sheet values.'))seedStandardRates(false);}
 
@@ -998,6 +1117,97 @@ function saveLogin(){
     else{db.ref('installTechLogins').push(data);document.getElementById('loginModal').style.display='none';toast('Login created ✓');}
 }
 function removeLogin(id,name){if(!confirm(`Remove login for ${name}? They won't be able to sign in.`))return;db.ref('installTechLogins/'+id).remove();toast('Login removed');}
+
+// ── TURN-IN DEADLINE (drives the reminder banner on each tech's dashboard) ──
+const DAY_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function hourLabel(h){return (h%12===0?12:h%12)+':00 '+(h<12?'AM':'PM');}
+function fillCutoff(){
+    const d=document.getElementById('dueDay'),h=document.getElementById('dueHour'),w=document.getElementById('dueWarn');if(!d)return;
+    d.innerHTML=DAY_NAMES.map((n,i)=>`<option value="${i}"${cutoff.day===i?' selected':''}>${n}</option>`).join('');
+    h.innerHTML=Array.from({length:24},(_,i)=>`<option value="${i}"${cutoff.hour===i?' selected':''}>${hourLabel(i)}</option>`).join('');
+    w.value=String(cutoff.warnDays);
+}
+function saveCutoff(){
+    const n={day:+document.getElementById('dueDay').value,hour:+document.getElementById('dueHour').value,warnDays:+document.getElementById('dueWarn').value};
+    const txt=c=>DAY_NAMES[c.day]+' '+hourLabel(c.hour)+', remind '+c.warnDays+' day'+(c.warnDays>1?'s':'')+' before';
+    if(n.day===cutoff.day&&n.hour===cutoff.hour&&n.warnDays===cutoff.warnDays)return;
+    AIT_AUDIT.log('setting',{},'Turn-in deadline: '+txt(cutoff)+' → '+txt(n));
+    db.ref('installSettings/turninCutoff').set(n);toast('Deadline saved ✓');
+}
+
+// ── PAY (year to date, per installer) ──
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function payYears(){const ys=new Set([String(new Date().getFullYear())]);Object.keys(logs).concat(Object.keys(recalls)).forEach(k=>{if(/^\d{4}-/.test(k))ys.add(k.slice(0,4));});return [...ys].sort().reverse();}
+function payData(year){
+    const by={},nowM=new Date().getMonth(),isThisYear=String(new Date().getFullYear())===year;
+    const slot=pid=>by[pid]||(by[pid]={id:pid,name:(people[pid]||{}).name||'—',group:(people[pid]||{}).group||'',archived:!!(people[pid]||{}).archived,total:0,month:0,piece:0,hourly:0,recall:0,hours:0,jobs:0,recalls:0,appr:0,pend:0,m:Array.from({length:12},()=>({total:0,appr:0,jobs:0}))});
+    const add=(pid,r,key,isR)=>{if(!pid)return;const pay=installPay(r),h=parseFloat(r.hours)||0,hp=h*(parseFloat(r.hourlyRate)||0),mi=parseInt(key.slice(5,7))-1;const p=slot(pid);
+        p.total+=pay;p.hours+=h;if(isR){p.recall+=pay;p.recalls++;}else{p.hourly+=hp;p.piece+=pay-hp;p.jobs++;}
+        if(r.approved)p.appr+=pay;else p.pend+=pay;if(isThisYear&&mi===nowM)p.month+=pay;
+        if(p.m[mi]){p.m[mi].total+=pay;if(r.approved)p.m[mi].appr+=pay;if(!isR)p.m[mi].jobs++;}};
+    Object.entries(logs).forEach(([key,day])=>{if(key.slice(0,4)!==year)return;Object.values(day||{}).forEach(r=>add(r.personId,r,key,false));});
+    Object.entries(recalls).forEach(([key,day])=>{if(key.slice(0,4)!==year)return;Object.values(day||{}).forEach(r=>{if(r.hoursOn||r.pieceOn)add(r.personId||r.loggedById,r,key,true);});});
+    // every active installer is listed, even at $0, so nobody is missing from the sheet
+    activePeople().forEach(p=>slot(p.id));
+    return Object.values(by).filter(p=>!p.archived||p.total>0).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
+}
+function togglePay(pid){payOpen=payOpen===pid?null:pid;renderPay();}
+function renderPay(){
+    const sel=document.getElementById('payYear');const cur=sel.value||String(new Date().getFullYear());
+    const ys=payYears();sel.innerHTML=ys.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}</option>`).join('');
+    const year=sel.value,rows=payData(year);
+    const T=rows.reduce((a,p)=>{['total','month','piece','hourly','recall','hours','jobs','appr','pend'].forEach(k=>a[k]+=p[k]);return a;},{total:0,month:0,piece:0,hourly:0,recall:0,hours:0,jobs:0,appr:0,pend:0});
+    document.getElementById('payStats').innerHTML=`
+        <div class="stat-block"><div class="stat-lbl">${t('p_total')} · ${year}</div><div class="stat-num" style="color:var(--green)">${fmt$(T.total)}</div><div class="stat-meta">${t('p_all')}</div></div>
+        <div class="stat-block"><div class="stat-lbl">${t('p_appr')}</div><div class="stat-num">${fmt$(T.appr)}</div><div class="stat-meta">${fmt$(T.pend)} ${t('p_pend').toLowerCase()}</div></div>
+        <div class="stat-block"><div class="stat-lbl">${t('p_month')}</div><div class="stat-num">${fmt$(T.month)}</div><div class="stat-meta">${MONTHS[new Date().getMonth()]}</div></div>
+        <div class="stat-block"><div class="stat-lbl">${t('p_piece')} / ${t('p_hourly')}</div><div class="stat-num">${fmt$(T.piece)}</div><div class="stat-meta">${fmt$(T.hourly)} ${t('p_hourly').toLowerCase()} · ${fmt$(T.recall)} ${t('p_recall').toLowerCase()}</div></div>`;
+    const body=document.getElementById('payBody');
+    if(!rows.some(p=>p.total>0)&&!rows.length){body.innerHTML=`<tr><td colspan="10"><div class="empty-note">${t('pay_none')}</div></td></tr>`;return;}
+    const hrs=n=>Math.round(n*100)/100;
+    body.innerHTML=rows.map(p=>{
+        const open=payOpen===p.id;
+        let h=`<tr style="cursor:pointer" onclick="togglePay('${p.id}')"><td>${open?'▾':'▸'} ${esc(p.name)} <span class="pill ${p.group}">${GNAME[p.group]||p.group||''}</span>${p.archived?` <span class="pill">${t('pay_archived')}</span>`:''}</td><td class="r" style="color:var(--green);font-weight:700">${fmt$(p.total)}</td><td class="r">${fmt$(p.month)}</td><td class="r">${fmt$(p.piece)}</td><td class="r">${fmt$(p.hourly)}</td><td class="r">${fmt$(p.recall)}</td><td class="r">${hrs(p.hours)}</td><td class="r">${p.jobs}</td><td class="r">${fmt$(p.appr)}</td><td class="r" style="${p.pend?'color:var(--amber,#f59e0b)':''}">${fmt$(p.pend)}</td></tr>`;
+        if(open)h+=`<tr><td colspan="10" style="background:var(--s2);padding:12px 14px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px">${p.m.map((m,i)=>`<div style="border:1px solid var(--wire);padding:8px 10px;${m.total?'':'opacity:.45'}"><div class="stat-lbl" style="font-size:10px">${MONTHS[i]} · ${m.jobs} ${t('p_jobs').toLowerCase()}</div><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px">${fmt$(m.total)}</div><div style="font-size:10px;color:var(--muted)">${fmt$(m.appr)} ${t('p_appr').toLowerCase()}</div></div>`).join('')}</div></td></tr>`;
+        return h;
+    }).join('')+`<tr style="font-weight:700;border-top:2px solid var(--wire2)"><td>${t('p_all')} · ${rows.length}</td><td class="r" style="color:var(--green)">${fmt$(T.total)}</td><td class="r">${fmt$(T.month)}</td><td class="r">${fmt$(T.piece)}</td><td class="r">${fmt$(T.hourly)}</td><td class="r">${fmt$(T.recall)}</td><td class="r">${hrs(T.hours)}</td><td class="r">${T.jobs}</td><td class="r">${fmt$(T.appr)}</td><td class="r">${fmt$(T.pend)}</td></tr>`;
+}
+function exportPayCSV(){
+    const year=document.getElementById('payYear').value,rows=payData(year);
+    const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+    const out=[['Installer','Division','Total YTD','This Month','Piece','Hourly','Recalls','Hours','Installs','Approved','Pending',...MONTHS]];
+    rows.forEach(p=>out.push([p.name,GNAME[p.group]||p.group,p.total.toFixed(2),p.month.toFixed(2),p.piece.toFixed(2),p.hourly.toFixed(2),p.recall.toFixed(2),Math.round(p.hours*100)/100,p.jobs,p.appr.toFixed(2),p.pend.toFixed(2),...p.m.map(m=>m.total.toFixed(2))]));
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'}));a.download=`install-pay-${year}.csv`;document.body.appendChild(a);a.click();a.remove();toast('CSV downloaded ✓');
+}
+
+// ── HISTORY (who approved, who edited what, rate changes) ──
+const ACT_COLOR={approve:'var(--green)',unapprove:'var(--amber,#f59e0b)',delete:'#ef4444',rate:'#3b82f6',edit:'var(--text)',roster:'var(--muted)'};
+function histWhen(ts){const d=new Date(ts||0);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+'<br>'+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+function histRowHTML(a,withCtx){
+    const bits=[];
+    if(withCtx){if(a.personName)bits.push(esc(a.personName));if(a.col)bits.push(a.col==='recalls'?'↩ Recall':'Install');if(a.job)bits.push('#'+esc(a.job));if(a.customer)bits.push(esc(a.customer));if(a.dk)bits.push(new Date(a.dk+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}));}
+    return `<div class="hist-row ${esc(a.action)}"><div class="hist-when">${histWhen(a.ts)}</div><div class="hist-main"><b>${esc(a.by||'—')}</b> <span class="pill" style="font-size:9px">${t(a.role==='tech'?'role_tech':'role_manager')}</span> <span class="hist-act" style="color:${ACT_COLOR[a.action]||'var(--text)'}">${t('a_'+a.action)}</span>${a.detail?' — '+esc(a.detail):''}${bits.length?`<div class="hist-ctx">${bits.join(' · ')}</div>`:''}</div></div>`;
+}
+function entryHistoryHTML(col,id){
+    const rows=audit.filter(a=>a.col===col&&a.id===id);
+    return rows.length?rows.map(a=>histRowHTML(a,false)).join(''):`<div class="empty-note" style="padding:12px">${t('hist_entry_none')}</div>`;
+}
+function renderHistory(){
+    const sel=document.getElementById('histPerson');const cur=sel.value;
+    const names=Object.entries(people).map(([id,p])=>[id,p.name||'—']).sort((a,b)=>a[1].localeCompare(b[1]));
+    sel.innerHTML=`<option value="">${t('hist_everyone')}</option>`+names.map(([id,n])=>`<option value="${id}"${cur===id?' selected':''}>${esc(n)}</option>`).join('');
+    const type=document.getElementById('histType').value,q=document.getElementById('histSearch').value.trim().toLowerCase();
+    const TYPES={appr:['approve','unapprove'],edit:['edit'],delete:['delete'],rate:['rate','roster','setting']};
+    const rows=audit.filter(a=>{
+        if(type!=='all'&&!(TYPES[type]||[]).includes(a.action))return false;
+        if(cur&&a.personId!==cur)return false;
+        if(q&&![a.by,a.personName,a.job,a.customer,a.detail].some(x=>String(x||'').toLowerCase().includes(q)))return false;
+        return true;
+    });
+    const el=document.getElementById('historyBody');
+    if(!rows.length){el.innerHTML=`<div class="empty-note">${t('hist_none')}</div>`;return;}
+    el.innerHTML=rows.slice(0,histLimit).map(a=>histRowHTML(a,true)).join('')+(rows.length>histLimit?`<button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="histLimit+=150;renderHistory()">${t('hist_more')} (${rows.length-histLimit})</button>`:'');
+}
 
 // ── MANAGER LOGINS (not installers — they land straight in this portal) ──
 const SESSION_KEY='ait_session',TIMEOUT_MS=30*60*1000;
@@ -1040,12 +1250,13 @@ function saveMgrLogin(){
         db.ref('installManagerLogins/'+editId).set(data);
         const s=getSession();if(s&&s.role==='manager'&&s.loginId===editId){s.name=name;s.username=username;localStorage.setItem(SESSION_KEY,JSON.stringify(s));showMgrWho();}
         close();toast('Manager login updated ✓');
-    }else{db.ref('installManagerLogins').push({name,username,password,disabled:false,created:Date.now()});close();toast('Manager login created ✓');}
+    }else{db.ref('installManagerLogins').push({name,username,password,disabled:false,created:Date.now()});AIT_AUDIT.log('roster',{},'Created manager login for '+name+' (@'+username+')');close();toast('Manager login created ✓');}
 }
 function removeMgrLogin(id){
     const r=mgrLogins[id];if(!r)return;const me=mgrSession();
     const mine=me&&me.loginId===id;
     if(!confirm(mine?`Remove YOUR OWN manager login (${r.name||r.username})? You will be signed out.`:`Remove manager login for ${r.name||r.username}? They won't be able to sign in.`))return;
+    AIT_AUDIT.log('roster',{},'Removed manager login for '+(r.name||r.username)+' (@'+r.username+')');
     db.ref('installManagerLogins/'+id).remove();toast('Manager login removed');
 }
 // portal open/close for a signed-in manager

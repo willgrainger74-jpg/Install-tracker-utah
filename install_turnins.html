@@ -36,6 +36,18 @@
         .summary-stat-label{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);}
         .summary-stat-val{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px;line-height:1.1;}
         .summary-stat-val.red{color:var(--red);}
+        .pay-break{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:-6px 0 16px;}
+        .pay-break b{color:var(--text);font-weight:600;}
+        .ytd-wrap{margin-top:26px;border-top:1px solid var(--wire);padding-top:18px;}
+        .ytd-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text);}
+        .ytd-sub{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+        .ytd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--wire);}
+        @media(max-width:560px){.ytd-grid{grid-template-columns:repeat(2,1fr);}}
+        .ytd-cell{background:var(--s1);padding:12px 14px;}
+        .ytd-cell .l{font-family:'Oswald',sans-serif;font-size:10px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);}
+        .ytd-cell .v{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;line-height:1.15;color:var(--text);}
+        .ytd-cell.big .v{color:var(--green);font-size:30px;}
+        .rate-line{color:var(--muted);white-space:nowrap;}
         .turnin-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--wire);}
         .turnin-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;}
         .turnin-meta{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px;}
@@ -77,6 +89,12 @@
             table.ti td{border-bottom:1px solid #ccc !important;font-size:11px;padding:7px 8px;}
             tr.totals td{background:#f2f2f2 !important;border-top:2px solid #000 !important;color:#000 !important;}
             .pill{border-color:#888 !important;color:#000 !important;}
+            .pay-break,.pay-break b,.ytd-title,.ytd-sub,.ytd-cell .l,.ytd-cell .v,.rate-line{color:#000 !important;}
+            .pay-break{margin:0 0 10px;font-size:10px;}
+            .ytd-wrap{margin-top:16px;padding-top:10px;border-top:2px solid #000;page-break-inside:avoid;}
+            .ytd-grid{background:#fff !important;gap:0;grid-template-columns:repeat(5,1fr);border:1px solid #ccc;}
+            .ytd-cell{background:#fff !important;padding:6px 8px;border:1px solid #eee;}
+            .ytd-cell .v,.ytd-cell.big .v{font-size:16px;}
             tr.blank td{height:30px;border-bottom:1px solid #ccc !important;}
         }
         @media (max-width:640px){
@@ -117,6 +135,13 @@ const I18N={
  print_suffix:{en:'WEEKLY TURN-IN',es:'REPORTE SEMANAL'},
  sheet_default:{en:'WEEKLY TURN-IN',es:'REPORTE SEMANAL'},
  s_pay:{en:'Total Pay',es:'Pago Total'},
+ b_piece:{en:'Piece rate',es:'Por pieza'},b_hourly:{en:'Hourly',es:'Por hora'},b_recall:{en:'Recalls',es:'Rellamadas'},b_appr:{en:'Approved',es:'Aprobado'},b_pend:{en:'Awaiting approval',es:'Por aprobar'},
+ ytd_title:{en:'Year to Date',es:'Acumulado del Año'},
+ ytd_through:{en:'through',es:'hasta'},
+ y_total:{en:'Total Pay',es:'Pago Total'},y_piece:{en:'Piece Rate Pay',es:'Pago por Pieza'},y_hourly:{en:'Hourly Pay',es:'Pago por Hora'},y_recall:{en:'Recall Pay',es:'Pago de Rellamadas'},
+ y_month:{en:'This Month',es:'Este Mes'},y_avg:{en:'Avg per Week Worked',es:'Promedio por Semana'},y_jobs:{en:'Installs',es:'Instalaciones'},y_hours:{en:'Hours',es:'Horas'},
+ y_appr:{en:'Approved',es:'Aprobado'},y_pend:{en:'Awaiting Approval',es:'Por Aprobar'},
+ hrs_word:{en:'hrs',es:'hrs'},
  s_installs:{en:'Installs',es:'Instalaciones'},
  s_hours:{en:'Hours',es:'Horas'},
  s_piece:{en:'Piece Items',es:'Piezas'},
@@ -190,6 +215,8 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
             <div class="summary-stat"><div class="summary-stat-label" data-i18n="s_piece">Piece Items</div><div class="summary-stat-val" id="statPiece">0</div></div>
         </div>
 
+        <div class="pay-break" id="payBreak"></div>
+
         <div class="ti-table-wrap">
             <table class="ti">
                 <thead>
@@ -206,6 +233,12 @@ document.addEventListener('DOMContentLoaded',applyStaticLang);
                 </thead>
                 <tbody id="ticBody"></tbody>
             </table>
+        </div>
+
+        <div class="ytd-wrap">
+            <div class="ytd-title" data-i18n="ytd_title">Year to Date</div>
+            <div class="ytd-sub" id="ytdSub"></div>
+            <div class="ytd-grid" id="ytdGrid"></div>
         </div>
 
         <div class="sign-row">
@@ -244,6 +277,42 @@ function pieceNames(r){if(!r.pieceItems)return [];return (TRADE_ITEMS[r.trade]||
 function fmt$(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function jobPay(r){let p=0;if(r.pieceItems){Object.keys(r.pieceItems).forEach(i=>{if(r.pieceItems[i]){const q=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?parseFloat(r.pieceQty[i]):1;const a=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;p+=(isNaN(q)?0:q)*a;}});}p+=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return p;}
 
+// each line of a job with the rate it was paid at: piece items (qty × rate) and hours × hourly rate
+function payLines(r){
+    const out=[];
+    if(r.pieceItems)(TRADE_ITEMS[r.trade]||[]).forEach((nm,i)=>{if(r.pieceItems[i]){const q=(r.pieceQty&&r.pieceQty[i]!=null&&r.pieceQty[i]!=='')?parseFloat(r.pieceQty[i]):1;const a=parseFloat((r.pieceAmounts&&r.pieceAmounts[i])||0)||0;out.push({txt:nm+(q!==1?' ×'+q:''),rate:fmt$(a)+(q!==1?' ea':''),amt:(isNaN(q)?0:q)*a});}});
+    const h=parseFloat(r.hours)||0,hr=parseFloat(r.hourlyRate)||0;
+    if(h)out.push({txt:h+' '+(h===1?'hr':t('hrs_word')),rate:fmt$(hr)+'/hr',amt:h*hr});
+    return out;
+}
+function paySplit(r,isRecall){const pay=jobPay(r);const h=(parseFloat(r.hours)||0)*(parseFloat(r.hourlyRate)||0);return isRecall?{piece:0,hourly:0,recall:pay,pay}:{piece:pay-h,hourly:h,recall:0,pay};}
+// ── year to date: one read of the year's logs + recalls, cached while the page is open ──
+const yearCache={};
+function loadYear(y){
+    if(!yearCache[y])yearCache[y]=Promise.all([
+        db.ref('installLogs').orderByKey().startAt(y+'-01-01').endAt(y+'-12-31').once('value'),
+        db.ref('recalls').orderByKey().startAt(y+'-01-01').endAt(y+'-12-31').once('value')
+    ]).then(([a,b])=>({logs:a.val()||{},recalls:b.val()||{}}));
+    return yearCache[y];
+}
+function mondayKey(key){const d=new Date(key+'T12:00:00');const day=d.getDay();d.setDate(d.getDate()-day+(day===0?-6:1));return dk(d);}
+function renderYTD(week,token){
+    const end=week[6],y=end.getFullYear(),endKey=dk(end),monthKey=endKey.slice(0,7);
+    document.getElementById('ytdSub').textContent=`Jan 1 ${t('ytd_through')} ${end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+    loadYear(y).then(({logs,recalls})=>{
+        if(token!==renderToken)return;
+        const T={pay:0,piece:0,hourly:0,recall:0,month:0,jobs:0,hours:0,appr:0,pend:0};const weeks=new Set();
+        const add=(r,key,isRecall)=>{const sp=paySplit(r,isRecall);T.pay+=sp.pay;T.piece+=sp.piece;T.hourly+=sp.hourly;T.recall+=sp.recall;T.hours+=parseFloat(r.hours)||0;if(!isRecall)T.jobs++;if(key.slice(0,7)===monthKey)T.month+=sp.pay;if(r.approved)T.appr+=sp.pay;else T.pend+=sp.pay;if(sp.pay)weeks.add(mondayKey(key));};
+        Object.keys(logs).forEach(key=>{if(key>endKey)return;Object.values(logs[key]||{}).forEach(r=>{if(r.personId===selected)add(r,key,false);});});
+        Object.keys(recalls).forEach(key=>{if(key>endKey)return;Object.values(recalls[key]||{}).forEach(r=>{if((r.personId||r.loggedById)===selected&&(r.hoursOn||r.pieceOn))add(r,key,true);});});
+        const cell=(l,v,big)=>`<div class="ytd-cell${big?' big':''}"><div class="l">${t(l)}</div><div class="v">${v}</div></div>`;
+        document.getElementById('ytdGrid').innerHTML=cell('y_total',fmt$(T.pay),true)+cell('y_piece',fmt$(T.piece))+cell('y_hourly',fmt$(T.hourly))+cell('y_recall',fmt$(T.recall))
+            +cell('y_month',fmt$(T.month))+cell('y_avg',fmt$(weeks.size?T.pay/weeks.size:0))+cell('y_jobs',T.jobs)+cell('y_hours',Math.round(T.hours*100)/100)
+            +cell('y_appr',fmt$(T.appr))+cell('y_pend',fmt$(T.pend));
+    });
+}
+let renderToken=0;
+
 db.ref('installPeople/'+selected).once('value',snap=>{
     const p=snap.val();
     if(!p){location.href='install_index.html';return;}
@@ -260,12 +329,15 @@ function renderWeek(){
     document.getElementById('sheetTitle').textContent=t('week_of')+' '+rangeTxt;
     document.getElementById('sheetMeta').textContent=(me?me.name:'')+' · '+rangeTxt;
     document.getElementById('printRange').textContent=rangeTxt;
+    const token=++renderToken;
+    renderYTD(week,token);
 
     Promise.all(week.map(d=>Promise.all([
         db.ref('installLogs/'+dk(d)).once('value'),
         db.ref('recalls/'+dk(d)).once('value')
     ]).then(([ls,rs])=>({d,logs:ls.val(),recalls:rs.val()})))).then(results=>{
-        const rows=[];
+        if(token!==renderToken)return;
+        const rows=[];const B={piece:0,hourly:0,recall:0,appr:0,pend:0};
         results.forEach(({d,logs,recalls})=>{
             if(logs)Object.values(logs).forEach(r=>{ if(r.personId===selected) rows.push({...r,_d:d}); });
             if(recalls)Object.values(recalls).forEach(r=>{ if(((r.personId||r.loggedById)===selected) && (r.hoursOn||r.pieceOn)) rows.push({...r,_d:d,_isRecall:true,trade:r.payTrade||r.division,jobNumber:r.originalJobNumber,whatInstalled:r.recallReason}); });
@@ -278,10 +350,12 @@ function renderWeek(){
             const pcs=pieceNames(r);
             const pay=jobPay(r);
             totHours+=hours;totPiece+=pcs.length;totPay+=pay;if(r.approved)nApproved++;
+            const sp=paySplit(r,r._isRecall);B.piece+=sp.piece;B.hourly+=sp.hourly;B.recall+=sp.recall;if(r.approved)B.appr+=pay;else B.pend+=pay;
+            const lines=payLines(r);
             const dateTxt=r._d.toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'});
             let work='';
             if(r.whatInstalled)work+=`<div class="work-note">${esc(r.whatInstalled)}</div>`;
-            if(pcs.length)work+=`<ul class="work-list">${pcs.map(p=>`<li>• ${esc(p)}</li>`).join('')}</ul>`;
+            if(lines.length)work+=`<ul class="work-list">${lines.map(l=>`<li>• ${esc(l.txt)} <span class="rate-line">@ ${l.rate} = ${fmt$(l.amt)}</span></li>`).join('')}</ul>`;
             if(!work)work='<span class="work-note">—</span>';
             return `<tr>
                 <td style="white-space:nowrap">${dateTxt}${r.continuing?'<div class="cont-tag">&#8635; cont.</div>':''}${r._isRecall?'<div class="cont-tag" style="color:var(--red)">&#8617; recall</div>':''}</td>
@@ -291,7 +365,7 @@ function renderWeek(){
                 <td>${work}</td>
                 <td class="r">${hours?hours:(pcs.length?t('c_piece'):'—')}</td>
                 <td class="r" style="font-weight:600">${pay?fmt$(pay):'—'}</td>
-                <td class="c">${r.approved?'<span class="stat-approved">✓</span>':'<span class="stat-pending">—</span>'}</td>
+                <td class="c">${r.approved?`<span class="stat-approved">✓${r.approvedBy&&r.approvedBy!=='manager'?'<div style="font-size:10px;font-weight:500">'+esc(r.approvedBy)+'</div>':''}</span>`:'<span class="stat-pending">—</span>'}</td>
             </tr>`;
         }).join('');
 
@@ -304,6 +378,7 @@ function renderWeek(){
         }else{
             tbody.innerHTML=body+blanks+totals;
         }
+        document.getElementById('payBreak').innerHTML=`<span>${t('b_piece')} <b>${fmt$(B.piece)}</b></span><span>${t('b_hourly')} <b>${fmt$(B.hourly)}</b></span>${B.recall?`<span>${t('b_recall')} <b>${fmt$(B.recall)}</b></span>`:''}<span>${t('b_appr')} <b>${fmt$(B.appr)}</b></span><span>${t('b_pend')} <b>${fmt$(B.pend)}</b></span>`;
         document.getElementById('statPay').textContent=fmt$(totPay);
         document.getElementById('statInstalls').textContent=rows.length;
         document.getElementById('statHours').textContent=Math.round(totHours*100)/100;

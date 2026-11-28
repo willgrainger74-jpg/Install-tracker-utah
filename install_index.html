@@ -45,7 +45,17 @@
         .hero-date .d-value{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;color:var(--muted);letter-spacing:.05em;}
 
         /* STAT STRIP */
-        .stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;}
+        .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;}
+        @media(max-width:900px){.stat-strip{grid-template-columns:repeat(2,1fr);}}
+        #dueBanner{display:none;align-items:flex-start;gap:12px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.45);border-left:4px solid #f59e0b;padding:14px 16px;margin-bottom:22px;}
+        #dueBanner.urgent{background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.5);border-left-color:#dc2626;}
+        #dueBanner .db-ico{font-size:22px;line-height:1.1;}
+        #dueBanner .db-main{flex:1;min-width:0;}
+        #dueBanner .db-title{font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text);}
+        #dueBanner .db-text{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.5;}
+        #dueBanner .db-text b{color:var(--text);}
+        #dueBanner .db-go{display:inline-block;margin-top:10px;background:var(--red);color:#fff;text-decoration:none;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;padding:9px 14px;}
+        #dueBanner .db-x{background:transparent;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:0 2px;}
         .stat-block{background:var(--s1);border:1px solid var(--wire);border-top:2px solid var(--red);padding:24px 28px;position:relative;overflow:hidden;transition:border-color .2s;}
         .stat-block:hover{border-color:var(--red);}
         .stat-block::after{content:'';position:absolute;right:-30px;bottom:-30px;width:100px;height:100px;background:var(--red);opacity:.04;transform:rotate(45deg);}
@@ -161,6 +171,16 @@ const I18N={
   piece_word:{en:'Piece',es:'Pieza'},
   hourly_word:{en:'Hourly',es:'Hora'},
   sec_pay:{en:'My Pay',es:'Mi Pago'},
+  my_ytd:{en:'Year to Date',es:'Acumulado del Año'},
+  my_ytd_meta:{en:'approved',es:'aprobado'},
+  due_title:{en:'Turn-ins due',es:'Entregas para el'},
+  due_at:{en:'at',es:'a las'},
+  due_missing:{en:'Nothing logged for',es:'Sin registros para'},
+  due_go:{en:'Log now →',es:'Registrar ahora →'},
+  due_in_h:{en:'hours left',es:'horas restantes'},
+  due_in_d:{en:'days left',es:'días restantes'},
+  due_lt1:{en:'less than an hour left',es:'menos de una hora'},
+  due_dismiss:{en:'Hide until next week',es:'Ocultar hasta la próxima semana'},
   sec_work:{en:'Log Work',es:'Registrar Trabajo'},
   sec_team:{en:'Team',es:'Equipo'},
   today_chip:{en:'today',es:'hoy'},
@@ -223,11 +243,14 @@ function applyStaticLang(){
         </div>
     </div>
 
+    <div id="dueBanner"></div>
+
     <div class="section-divider"><span class="sdl" data-i18n="sec_pay">My Pay</span></div>
     <div class="stat-strip" id="payStrip">
         <div class="stat-block pay-block"><div class="stat-label" data-i18n="my_week">This Week's Pay</div><div id="myWeekPay" class="stat-num">$0</div><div id="myWeekMeta" class="stat-meta">—</div></div>
         <div class="stat-block"><div class="stat-label" data-i18n="my_today">Today's Pay</div><div id="myTodayPay" class="stat-num">$0</div><div id="myTodayMeta" class="stat-meta">—</div></div>
         <div class="stat-block"><div class="stat-label" data-i18n="my_pending">Awaiting Approval</div><div id="myPendingPay" class="stat-num">$0</div><div class="stat-meta" data-i18n="my_pending_meta">This week · not approved yet</div></div>
+        <div class="stat-block"><div class="stat-label" data-i18n="my_ytd">Year to Date</div><div id="myYtdPay" class="stat-num">$0</div><div id="myYtdMeta" class="stat-meta">—</div></div>
     </div>
 
     <!-- ACTIONS (after picking person) -->
@@ -404,13 +427,50 @@ function initApp(){
         render();
     });
     db.ref('installLogs').on('value',snap=>{logs=snap.val()||{};renderStats();});
+    db.ref('installSettings/turninCutoff').on('value',snap=>{const v=snap.val()||{};CUTOFF={day:v.day!=null?+v.day:0,hour:v.hour!=null?+v.hour:20,warnDays:v.warnDays!=null?+v.warnDays:2};renderReminder();});
     db.ref('recalls').on('value',snap=>{recalls=snap.val()||{};renderStats();});
 }
 
 function dkOf(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 
+// ── TURN-IN DEADLINE REMINDER ───────────────────────────────────────
+// The deadline (day + time) and how early to remind are set by a manager in the Manager Portal → Turn-Ins.
+let CUTOFF={day:0,hour:20,warnDays:2};
+function nextCutoff(now){const c=new Date(now);c.setHours(CUTOFF.hour,0,0,0);c.setDate(c.getDate()+((CUTOFF.day-c.getDay()+7)%7));if(c<=now)c.setDate(c.getDate()+7);return c;}
+function loggedOn(key){
+    const a=Object.values(logs[key]||{}).some(r=>r.personId===selected);
+    const b=Object.values(recalls[key]||{}).some(r=>(r.personId||r.loggedById)===selected);
+    return a||b;
+}
+function renderReminder(){
+    const el=document.getElementById('dueBanner');if(!el)return;
+    const hide=()=>{el.style.display='none';};
+    if(!selected||!people.find(p=>p.id===selected))return hide();
+    const now=new Date(),C=nextCutoff(now),left=C-now;
+    if(left>CUTOFF.warnDays*864e5)return hide();
+    if(localStorage.getItem('aitDueDismiss')===selected+'|'+dkOf(C))return hide();
+    // the Mon–Sun pay week this deadline closes out (a Monday/Tuesday deadline closes the week before)
+    const ref=new Date(C.getTime()-2*864e5),wd=ref.getDay(),mon=new Date(ref);mon.setDate(ref.getDate()-wd+(wd===0?-6:1));mon.setHours(0,0,0,0);
+    const todayKey=dkOf(now),missing=[];
+    for(let i=0;i<5;i++){ // weekdays only — weekends aren't expected
+        const d=new Date(mon);d.setDate(mon.getDate()+i);const key=dkOf(d);
+        if(key>todayKey||d>C)continue;
+        if(key===todayKey&&now.getHours()<17)continue; // don't nag about today until late afternoon
+        if(!loggedOn(key))missing.push(d);
+    }
+    if(!missing.length)return hide();
+    const loc=LANG==='es'?'es-US':'en-US';
+    const hrs=left/36e5,leftTxt=hrs<1?t('due_lt1'):(hrs<36?Math.round(hrs)+' '+t('due_in_h'):Math.round(hrs/24)+' '+t('due_in_d'));
+    const when=C.toLocaleDateString(loc,{weekday:'long'})+' '+t('due_at')+' '+C.toLocaleTimeString(loc,{hour:'numeric',minute:'2-digit'});
+    el.className=hrs<24?'urgent':'';el.style.display='flex';
+    el.innerHTML=`<div class="db-ico">⏰</div><div class="db-main"><div class="db-title">${t('due_title')} ${when} — ${leftTxt}</div>
+        <div class="db-text">${t('due_missing')}: <b>${missing.map(d=>d.toLocaleDateString(loc,{weekday:'short',month:'numeric',day:'numeric'})).join(', ')}</b></div>
+        <a class="db-go" href="install_log.html">${t('due_go')}</a></div>
+        <button class="db-x" title="${t('due_dismiss')}" onclick="localStorage.setItem('aitDueDismiss','${selected}|${dkOf(C)}');renderReminder()">×</button>`;
+}
+
 function renderStats(){
-    renderMyPay();
+    renderMyPay();renderReminder();
     const today=dkOf(new Date());
     let installs=0;
     const day=logs[today]||{};installs=Object.keys(day).length;
@@ -451,6 +511,11 @@ function renderMyPay(){
     document.getElementById('myTodayPay').textContent=$(td);
     document.getElementById('myTodayMeta').textContent=`${tdJobs} ${t('jobs_word')} ${t('today_chip')}`;
     document.getElementById('myPendingPay').textContent=$(pending);
+    // year to date (calendar year) — everything this person has logged, and how much of it is approved
+    const yr=String(new Date().getFullYear());let ytd=0,ytdAppr=0;
+    [logs,recalls].forEach((src,isR)=>Object.keys(src).forEach(k=>{if(k.slice(0,4)!==yr)return;Object.values(src[k]||{}).forEach(r=>{if((isR?(r.personId||r.loggedById):r.personId)===selected){const v=AIT_CC.split(r).total;ytd+=v;if(r.approved)ytdAppr+=v;}});}));
+    document.getElementById('myYtdPay').textContent=$(ytd);
+    document.getElementById('myYtdMeta').textContent=`${$(ytdAppr)} ${t('my_ytd_meta')} · ${yr}`;
     const c1=document.getElementById('chipToday'),c2=document.getElementById('chipWeek');
     c1.style.display=tdJobs?'':'none';c1.textContent=`${tdJobs} ${t('today_chip')}`;
     c2.style.display=wk?'':'none';c2.textContent=`${$(wk)} ${t('week_chip')}`;
